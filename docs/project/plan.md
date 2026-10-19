@@ -226,7 +226,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
     10. Copy every `[QuickMenu] BEGIN … END` block from the log and paste them back, with the screenshots.
   - **Size**: S
 
-- [ ] **T-14**: Record spike results; remove spike-only code
+- [x] **T-14**: Record spike results; remove spike-only code
   - **Owner**: developer (visual-designer contributes the S-7 verdict)
   - **Requirements**: FR-1, FR-7, FR-8, FR-10, FR-14, NFR-2
   - **Depends on**: T-13
@@ -238,7 +238,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Tests**: build; `scripts/test.sh`.
   - **Size**: S
 
-- [ ] **T-15**: Performance baseline from UC-1 · `parallel-ok`
+- [x] **T-15**: Performance baseline from UC-1 · `parallel-ok`
   - **Owner**: performance-engineer
   - **Requirements**: NFR-1
   - **Depends on**: T-13
