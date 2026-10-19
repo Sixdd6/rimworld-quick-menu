@@ -20,6 +20,18 @@ internal static class SettingsPage
     private const float RowHeight = 30f;
     private const float ColumnGap = 40f;
 
+    /// <summary>The narrowest label column (design.md §8 UC-4 review, item 9): controls never start closer than this to the column edge.</summary>
+    private const float MinLabelWidth = 90f;
+
+    /// <summary>Space between the widest label of a column and its controls.</summary>
+    private const float LabelGap = 8f;
+
+    /// <summary>Space between the stepper's [+] and the slot count on the same row.</summary>
+    private const float SlotsGap = 8f;
+
+    /// <summary>Thickness of the <c>accent</c> outline inside a selected segment (S7, item 7: 2 px, at least 3:1 state contrast).</summary>
+    private const int SelectedOutline = 2;
+
     private static string? _headOpening;
     private static string? _headPinning;
     private static string? _headLayout;
@@ -49,6 +61,10 @@ internal static class SettingsPage
     private static string? _modCtrl;
     private static string? _modAlt;
     private static string? _modShift;
+
+    // Label column widths, measured once with the strings (one control x per column).
+    private static float _leftLabelWidth = MinLabelWidth;
+    private static float _rightLabelWidth = MinLabelWidth;
 
     // One cached value text per stepper, so no stepper re-formats its number when another one is drawn (indexed by StepKind).
     private static readonly int[] _stepValueFor = { int.MinValue, int.MinValue, int.MinValue };
@@ -110,7 +126,7 @@ internal static class SettingsPage
         try
         {
             Heading(listing, _headOpening!);
-            BindingRow.Draw(listing);
+            BindingRow.Draw(listing, _leftLabelWidth);
             listing.Gap(18f);
             Heading(listing, _headPinning!);
             DrawPinModifier(listing, settings);
@@ -194,6 +210,37 @@ internal static class SettingsPage
         _modShift = "QuickMenu.Settings.Modifier.Shift".Translate();
         _reset = "QuickMenu.Settings.ResetDefaults".Translate();
         _resetTip = "QuickMenu.Settings.ResetDefaultsTip".Translate();
+        MeasureLabels();
+    }
+
+    /// <summary>One label width per column: the widest label of that column + <see cref="LabelGap"/>, at least <see cref="MinLabelWidth"/>.</summary>
+    private static void MeasureLabels()
+    {
+        GameFont font = Text.Font;
+        Text.Font = GameFont.Small;
+        try
+        {
+            _leftLabelWidth = LabelColumn(Width(BindingRow.Label), Width(_pinWith!));
+            float widestSize = Width($"{_buttonSize} {LayoutConstants.MaxButtonSize.ToString("0", CultureInfo.CurrentCulture)}");
+            float steppers = Math.Max(Width(_rings!), Math.Max(Width(_columns!), Width(_rows!)));
+            _rightLabelWidth = LabelColumn(Math.Max(Width(_shape!), Width(_size!)), Math.Max(steppers, widestSize));
+        }
+        finally
+        {
+            Text.Font = font;
+        }
+    }
+
+    private static float Width(string text) => Text.CalcSize(text).x;
+
+    private static float LabelColumn(float a, float b) => Math.Max(MinLabelWidth, Math.Max(a, b) + LabelGap);
+
+    /// <summary>A row label, vertically centred on the row's controls (<c>MiddleLeft</c>); the anchor is reset afterwards.</summary>
+    internal static void RowLabel(Rect row, float width, string text)
+    {
+        Text.Anchor = TextAnchor.MiddleLeft;
+        Widgets.Label(new Rect(row.x, row.y, width, row.height), text);
+        Text.Anchor = TextAnchor.UpperLeft;
     }
 
     private static void Heading(Listing_Standard listing, string text)
@@ -206,8 +253,8 @@ internal static class SettingsPage
     private static void DrawPinModifier(Listing_Standard listing, QuickMenuSettings settings)
     {
         Rect row = listing.GetRect(RowHeight);
-        Widgets.Label(new Rect(row.x, row.y, 90f, row.height), _pinWith);
-        var button = new Rect(row.x + 90f, row.y, 90f, row.height);
+        RowLabel(row, _leftLabelWidth, _pinWith!);
+        var button = new Rect(row.x + _leftLabelWidth, row.y, 90f, row.height);
         if (Widgets.ButtonText(button, ModifierLabel(QuickMenuMod.EffectiveModifier)))
         {
             Find.WindowStack.Add(new FloatMenu(new List<FloatMenuOption>
@@ -218,7 +265,7 @@ internal static class SettingsPage
             }));
         }
 
-        Widgets.Label(new Rect(button.xMax + 8f, row.y, row.width - button.xMax - 8f, row.height), _pinSuffix);
+        RowLabel(new Rect(button.xMax + LabelGap, row.y, row.xMax - button.xMax - LabelGap, row.height), row.xMax - button.xMax - LabelGap, _pinSuffix!);
 
         if (!settings.PinModifierUserSet && QuickMenuMod.MintActive)
         {
@@ -253,8 +300,6 @@ internal static class SettingsPage
         QuickMenuMod.SaveSettings();
     }
 
-    private const float StepLabelWidth = 90f;
-
     private enum StepKind
     {
         Rings,
@@ -265,8 +310,8 @@ internal static class SettingsPage
     private static void DrawShape(Listing_Standard listing, QuickMenuSettings settings)
     {
         Rect row = listing.GetRect(RowHeight);
-        Widgets.Label(new Rect(row.x, row.y, StepLabelWidth, row.height), _shape);
-        var wheel = new Rect(row.x + StepLabelWidth, row.y, 90f, row.height);
+        RowLabel(row, _rightLabelWidth, _shape!);
+        var wheel = new Rect(row.x + _rightLabelWidth, row.y, 90f, row.height);
         var grid = new Rect(wheel.xMax + 4f, row.y, 90f, row.height);
         MenuLayout layout = settings.Layout;
         if (DrawSegment(wheel, _shapeWheel!, layout == MenuLayout.Wheel))
@@ -289,8 +334,8 @@ internal static class SettingsPage
     private static void DrawSizing(Listing_Standard listing, QuickMenuSettings settings)
     {
         Rect row = listing.GetRect(RowHeight);
-        Widgets.Label(new Rect(row.x, row.y, StepLabelWidth, row.height), _size);
-        var fixedRect = new Rect(row.x + StepLabelWidth, row.y, 90f, row.height);
+        RowLabel(row, _rightLabelWidth, _size!);
+        var fixedRect = new Rect(row.x + _rightLabelWidth, row.y, 90f, row.height);
         var autoRect = new Rect(fixedRect.xMax + 4f, row.y, 90f, row.height);
         SizingMode sizing = settings.Sizing;
         if (DrawSegment(fixedRect, _sizeFixed!, sizing == SizingMode.Fixed))
@@ -312,13 +357,20 @@ internal static class SettingsPage
         }
     }
 
-    /// <summary>One segment of a segmented control; the selected one is highlighted (accent marks only the selection). True when an unselected segment was clicked.</summary>
+    /// <summary>
+    /// One segment of a segmented control. The selected one keeps the game's selected highlight and adds a 2 px <c>accent</c>
+    /// outline inside its rect (accent marks only the selection). True when an unselected segment was clicked.
+    /// </summary>
     private static bool DrawSegment(Rect rect, string label, bool selected)
     {
         bool clicked = Widgets.ButtonText(rect, label) && !selected;
         if (selected)
         {
             Widgets.DrawHighlightSelected(rect);
+            Color color = GUI.color;
+            GUI.color = QMStyle.Accent;
+            Widgets.DrawBox(rect, SelectedOutline);
+            GUI.color = color;
         }
 
         return clicked;
@@ -329,19 +381,27 @@ internal static class SettingsPage
         int rings = settings.Rings;
         int columns = settings.GridColumns;
         int rows = settings.GridRows;
+        Rect last = default;
+        bool any = false;
         if (SettingsPreview.ShowsRings(settings.Layout, settings.Sizing))
         {
-            rings = DrawStepper(listing.GetRect(RowHeight), _rings!, rings, StepKind.Rings);
+            last = listing.GetRect(RowHeight);
+            any = true;
+            rings = DrawStepper(last, _rings!, rings, StepKind.Rings);
         }
 
         if (SettingsPreview.ShowsColumns(settings.Layout, settings.Sizing))
         {
-            columns = DrawStepper(listing.GetRect(RowHeight), _columns!, columns, StepKind.Columns);
+            last = listing.GetRect(RowHeight);
+            any = true;
+            columns = DrawStepper(last, _columns!, columns, StepKind.Columns);
         }
 
         if (SettingsPreview.ShowsRows(settings.Layout, settings.Sizing))
         {
-            rows = DrawStepper(listing.GetRect(RowHeight), _rows!, rows, StepKind.Rows);
+            last = listing.GetRect(RowHeight);
+            any = true;
+            rows = DrawStepper(last, _rows!, rows, StepKind.Rows);
         }
 
         if (rings != settings.Rings || columns != settings.GridColumns || rows != settings.GridRows)
@@ -352,7 +412,8 @@ internal static class SettingsPage
             settings.NotifyChanged();
         }
 
-        if (settings.Sizing == SizingMode.Fixed)
+        // The slot count sits on the last stepper row, after [+] (S7; UC-4 review item 10).
+        if (any && settings.Sizing == SizingMode.Fixed)
         {
             int slots = SettingsRules.PinCapacity(settings.Layout, settings.Sizing, settings.Rings, settings.GridColumns, settings.GridRows);
             if (slots != _slotsFor)
@@ -361,19 +422,21 @@ internal static class SettingsPage
                 _slotsText = "QuickMenu.Settings.Slots".Translate(slots.ToString(CultureInfo.CurrentCulture));
             }
 
-            Text.Font = GameFont.Tiny;
+            float x = last.x + _rightLabelWidth + StepperWidth + SlotsGap;
             GUI.color = QMStyle.TextMuted;
-            listing.Label(_slotsText);
+            RowLabel(new Rect(x, last.y, last.xMax - x, last.height), last.xMax - x, _slotsText);
             GUI.color = Color.white;
-            Text.Font = GameFont.Small;
         }
     }
+
+    /// <summary>Width of [-], value, [+].</summary>
+    private const float StepperWidth = 90f;
 
     /// <summary>Label, [-], value, [+]. Returns the new value (stepped and clamped by <see cref="SettingsPreview"/>).</summary>
     private static int DrawStepper(Rect row, string label, int value, StepKind kind)
     {
-        Widgets.Label(new Rect(row.x, row.y, StepLabelWidth, row.height), label);
-        float x = row.x + StepLabelWidth;
+        RowLabel(row, _rightLabelWidth, label);
+        float x = row.x + _rightLabelWidth;
         int result = value;
         if (Widgets.ButtonText(new Rect(x, row.y, 30f, row.height), "-"))
         {
@@ -464,12 +527,13 @@ internal static class SettingsPage
             _sizeText = $"{_buttonSize} {settings.ButtonSize.ToString("0", CultureInfo.CurrentCulture)}";
         }
 
-        Widgets.Label(new Rect(row.x, row.y, 110f, row.height), _sizeText);
+        RowLabel(row, _rightLabelWidth, _sizeText);
         float value = Widgets.HorizontalSlider(
-            new Rect(row.x + 120f, row.y + 6f, row.width - 120f, row.height - 6f),
+            new Rect(row.x + _rightLabelWidth, row.y, row.width - _rightLabelWidth, row.height),
             settings.ButtonSize,
             LayoutConstants.MinButtonSize,
             LayoutConstants.MaxButtonSize,
+            middleAlignment: true,
             roundTo: LayoutConstants.ButtonSizeStep);
         float snapped = SettingsRules.ClampButtonSize(value);
         if (snapped != settings.ButtonSize)

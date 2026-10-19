@@ -136,7 +136,12 @@ internal static class LayoutPreview
     private static void DrawFrame(Rect area)
     {
         Widgets.DrawBoxSolid(area, _frameFill);
+
+        // 1 px quiet border in slotBorder, not the white default (UC-4 review item 8): it must not compete with the preview's accent rim.
+        Color color = GUI.color;
+        GUI.color = QMStyle.SlotBorder;
         Widgets.DrawBox(area);
+        GUI.color = color;
         if (_model == null)
         {
             return;

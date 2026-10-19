@@ -25,10 +25,12 @@ internal static class BindingRow
     private static string? _useMiddle;
     private static string? _note;
 
-    /// <summary>Draws the row and note in the listing's column.</summary>
-    internal static void Draw(Listing_Standard listing)
+    /// <summary>The row label ("Open menu with"); the settings page measures it for the left column's label width.</summary>
+    internal static string Label => _openWith ??= "QuickMenu.Settings.OpenWith".Translate();
+
+    /// <summary>Draws the row and note in the listing's column; the binding button starts <paramref name="labelWidth"/> after the column's left edge.</summary>
+    internal static void Draw(Listing_Standard listing, float labelWidth)
     {
-        _openWith ??= "QuickMenu.Settings.OpenWith".Translate();
         _clear ??= "QuickMenu.Settings.Clear".Translate();
         _useMiddle ??= "QuickMenu.Settings.UseMiddleMouse".Translate();
         _note ??= "QuickMenu.Settings.BindingNote".Translate();
@@ -37,8 +39,7 @@ internal static class BindingRow
         Refresh(settings.Trigger, QuickMenuMod.EffectiveModifier);
 
         Rect row = listing.GetRect(RowHeight);
-        float labelWidth = row.width * 0.3f;
-        Widgets.Label(new Rect(row.x, row.y, labelWidth, row.height), _openWith);
+        SettingsPage.RowLabel(row, labelWidth, Label);
         var buttonRect = new Rect(row.x + labelWidth, row.y, 150f, row.height);
         if (settings.Trigger.Kind == TriggerBindingKind.None)
         {
