@@ -164,7 +164,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **In-game check**: UC-1 (user)
   - **Size**: M
 
-- [ ] **T-10**: Dev-mode `MeasureScope`, closed-state and window counters
+- [x] **T-10**: Dev-mode `MeasureScope`, closed-state and window counters
   - **Owner**: performance-engineer
   - **Requirements**: NFR-1 (P-1, P-2, P-6, P-7a, P-8, P-9, P-18; performance.md T-6)
   - **Depends on**: T-5, T-7, T-9
