@@ -1186,17 +1186,17 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-6 (user)
   - **Size**: M
 
-- [ ] **T-92**: Pin marker on pinned entries in an open dropdown list (hook site 5)
+- [x] **T-92**: Pin marker on pinned entries in an open dropdown list (hook site 5)
   - **Owner**: developer
   - **Requirements**: FR-19, FR-10, NFR-1, NFR-2, NFR-6 (ADR 0009; T-27 entry pinning)
   - **Depends on**: T-91
   - **Files**: `src/QuickMenu/Pinning/{DropdownMarkerPatch,PinnedDesignators}.cs`, `src/QuickMenu/QuickMenuMod.cs` (patch registration), `src/QuickMenu/Diagnostics/{FaultInjection,SelfTest}.cs`
   - **Acceptance criteria**:
-    - [ ] ADR-0009 site 5: postfixes on `Designator_Dropdown.ProcessInput` (map options → entries via DropdownEntryPatch's EntryAction — expose it), `FloatMenuOption.DoGUI` and `FloatMenuGridOption.OnGUI`; files include `src/QuickMenu/Pinning/DropdownEntryPatch.cs`.
-    - [ ] Given the site chosen in ADR 0009 for dropdown entries, then the option → element mapping is built once when the list opens (allocation allowed there), and the per-frame draw path does only an identity lookup and a `Contains` (0 bytes), under the same patch-guard convention; if ADR 0009 found a UI (e.g. BAM's dropdown list) with no usable site, that UI is listed as a known limit for T-79 and the user is told.
-    - [ ] Given a single entry of an open dropdown list is pinned, then that entry shows the marker in the same corner logic as T-91 (adapted to the list row); given only the whole dropdown is pinned, then no entry shows it.
-    - [ ] Given a modifier+click on an entry in the open list (T-27 path), then its marker appears or disappears on the next frame if the list stays open.
-    - [ ] Given "Quick Menu: inject fault" for this site, then one error is logged, the site is disabled, and the dropdown list keeps working without markers.
+    - [x] ADR-0009 site 5: postfixes on `Designator_Dropdown.ProcessInput` (map options → entries via DropdownEntryPatch's EntryAction — expose it), `FloatMenuOption.DoGUI` and `FloatMenuGridOption.OnGUI`; files include `src/QuickMenu/Pinning/DropdownEntryPatch.cs`.
+    - [x] Given the site chosen in ADR 0009 for dropdown entries, then the option → element mapping is built once when the list opens (allocation allowed there), and the per-frame draw path does only an identity lookup and a `Contains` (0 bytes), under the same patch-guard convention; if ADR 0009 found a UI (e.g. BAM's dropdown list) with no usable site, that UI is listed as a known limit for T-79 and the user is told.
+    - [x] Given a single entry of an open dropdown list is pinned, then that entry shows the marker in the same corner logic as T-91 (adapted to the list row); given only the whole dropdown is pinned, then no entry shows it.
+    - [x] Given a modifier+click on an entry in the open list (T-27 path), then its marker appears or disappears on the next frame if the list stays open.
+    - [x] Given "Quick Menu: inject fault" for this site, then one error is logged, the site is disabled, and the dropdown list keeps working without markers.
     - [ ] *(UC-6)* In setups (a) and (b), a pinned entry shows the marker in the open list and an unpinned one does not.
   - **Tests**: Core rules in T-90 (entry vs whole dropdown); build; `scripts/test.sh`, `scripts/perf.sh`; in-game UC-6.
   - **In-game check**: UC-6 (user)
