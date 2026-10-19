@@ -124,10 +124,10 @@ public class PinKeyFactoryTests
     }
 
     [Fact]
-    public void Assign_BuildWithoutDefName_Throws()
+    public void Assign_BuildWithoutDefName_BecomesOrder()
     {
         var bad = new DesignatorDescriptor(DescriptorKind.BuildThing, "T", null, "C");
-        Assert.Throws<ArgumentException>(() => PinKeyFactory.Assign([bad]));
+        Assert.Equal("order:T", Assert.Single(PinKeyFactory.Assign([bad])).Value);
     }
 
     [Fact]
@@ -138,7 +138,7 @@ public class PinKeyFactoryTests
     }
 
     [Fact]
-    public void Assign_AbsurdNesting_Throws()
+    public void Assign_AbsurdNesting_IsCutOff()
     {
         DesignatorDescriptor d = Other("T");
         for (int i = 0; i < 20; i++)
@@ -146,6 +146,6 @@ public class PinKeyFactoryTests
             d = Drop("D", "C", d);
         }
 
-        Assert.Throws<ArgumentException>(() => PinKeyFactory.Assign([d]));
+        Assert.Equal(PinKeyFactory.MaxDepth + 1, PinKeyFactory.Assign([d]).Count);
     }
 }

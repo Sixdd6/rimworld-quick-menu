@@ -210,16 +210,16 @@ public class PinKeyFactoryEdgeTests
     }
 
     [Fact]
-    public void Assign_BuildWithEmptyDefName_Throws()
+    public void Assign_BuildWithEmptyDefName_BecomesOrder()
     {
-        Assert.Throws<ArgumentException>(() => PinKeyFactory.Assign([Thing("")]));
+        Assert.Equal(["order:RimWorld.Designator_Build"], Keys(Thing("")));
     }
 
     [Fact]
-    public void Assign_BuildWithoutDefName_NestedInDropdown_Throws()
+    public void Assign_BuildWithoutDefName_NestedInDropdown_BecomesOrderChild()
     {
         var bad = new DesignatorDescriptor(DescriptorKind.BuildTerrain, "T", null, "C", "G");
-        Assert.Throws<ArgumentException>(() => PinKeyFactory.Assign([Drop("D", "C", bad)]));
+        Assert.Equal(["moddrop:D@C~order:T", "order:T"], Keys(Drop("D", "C", bad)));
     }
 
     [Theory]
@@ -236,10 +236,12 @@ public class PinKeyFactoryEdgeTests
     }
 
     [Fact]
-    public void Depth_Boundary_NineLevelsAccepted_TenRejected()
+    public void Depth_Boundary_NineLevelsKeptInFull_TenCutOff()
     {
-        Assert.NotEmpty(PinKeyFactory.Assign([Nest(9)]));
-        Assert.Throws<ArgumentException>(() => PinKeyFactory.Assign([Nest(10)]));
+        Assert.Equal(17, PinKeyFactory.Assign([Nest(9)]).Count);
+        IReadOnlyList<PinKey> cut = PinKeyFactory.Assign([Nest(10)]);
+        Assert.Equal(17, cut.Count);
+        Assert.DoesNotContain(cut, static k => k.Value == "order:Leaf");
     }
 
     [Fact]
@@ -249,9 +251,42 @@ public class PinKeyFactoryEdgeTests
     }
 
     [Fact]
-    public void Depth_DeepChainBeyondLimit_ThrowsInsteadOfOverflowing()
+    public void Depth_DeepChainBeyondLimit_IsCutOffInsteadOfOverflowing()
     {
-        Assert.Throws<ArgumentException>(() => PinKeyFactory.Assign([Nest(10_000)]));
+        Assert.Equal(17, PinKeyFactory.Assign([Nest(10_000)]).Count);
+    }
+
+    [Fact]
+    public void Dropdown_AtCutOffDepth_WithOnlyCutChildren_BecomesOrder()
+    {
+        DesignatorDescriptor d = Other("T");
+        for (int i = 0; i < PinKeyFactory.MaxDepth + 1; i++)
+        {
+            d = Drop("D", "C", d);
+        }
+
+        IReadOnlyList<PinKey> keys = PinKeyFactory.Assign([d]);
+        Assert.Equal(PinKeyFactory.MaxDepth + 1, keys.Count);
+        Assert.Equal(PinKeyKind.Order, keys[^1].Kind);
+    }
+
+    [Fact]
+    public void Dropdown_WhoseOnlyChildrenAreModDropdowns_BecomesOrder()
+    {
+        DesignatorDescriptor inner = Drop("Inner", "C", Other("X"));
+        Assert.Equal(["order:Outer", "moddrop:Inner@C~order:X", "order:X"], Keys(Drop("Outer", "C", inner)));
+    }
+
+    [Fact]
+    public void Dropdown_WhoseOnlyChildrenAreModDropdowns_CountsTowardsOrdinals()
+    {
+        Assert.Equal(["order:Outer#1", "moddrop:Inner@C~order:X", "order:X", "order:Outer#2"], Keys(Drop("Outer", "C", Drop("Inner", "C", Other("X"))), Other("Outer")));
+    }
+
+    [Fact]
+    public void Assign_EmptyTypeAndCategory_DoNotThrow()
+    {
+        Assert.Equal(["moddrop:(unknown)@(unknown)~order:(unknown)", "order:(unknown)"], Keys(Drop("", "", Other(""))));
     }
 
     [Fact]

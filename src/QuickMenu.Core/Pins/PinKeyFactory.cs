@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace QuickMenu.Core.Pins;
 
@@ -8,104 +7,166 @@ namespace QuickMenu.Core.Pins;
 public static class PinKeyFactory
 {
     /// <summary>
-    /// Returns one key per descriptor in depth-first pre-order: a dropdown's key comes first, then the keys of its
-    /// children (recursively). A dropdown without elements gets an <c>order:</c> key. Nested mod dropdowns are
-    /// left out of the parent's child keys. <c>order:</c> keys get <c>#n</c> (1-based, in that same order) only when the type
-    /// occurs more than once in the whole list.
+    /// Deepest nesting level that gets keys (roots are level 0). Descriptors below it are treated as absent. The
+    /// adapter must not build deeper levels either, so that its entries and the returned keys line up.
     /// </summary>
+    public const int MaxDepth = 8;
+
+    private const string UnknownName = "(unknown)";
+
+    /// <summary>
+    /// Returns one key per descriptor in depth-first pre-order: a dropdown's key comes first, then the keys of its
+    /// children (recursively). A dropdown without elements, or with no element that can be keyed, gets an
+    /// <c>order:</c> key, as does a build without a def name. Nested mod dropdowns are left out of the parent's
+    /// child keys. <c>order:</c> keys get <c>#n</c> (1-based, in that same order) only when the type occurs more than
+    /// once in the whole list. Descriptors nested deeper than <see cref="MaxDepth"/> are ignored. Never throws for
+    /// non-null input.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">A descriptor (or the list) is null.</exception>
     public static IReadOnlyList<PinKey> Assign(IReadOnlyList<DesignatorDescriptor> roots)
     {
         ArgumentNullException.ThrowIfNull(roots);
 
-        var flat = new List<DesignatorDescriptor>();
+        var items = new List<Item>(roots.Count);
+        var totals = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (DesignatorDescriptor root in roots)
         {
-            Flatten(root, flat, 0);
-        }
-
-        var totals = new Dictionary<string, int>(StringComparer.Ordinal);
-        foreach (DesignatorDescriptor d in flat)
-        {
-            if (IsOrder(d))
-            {
-                totals[d.TypeFullName] = totals.GetValueOrDefault(d.TypeFullName) + 1;
-            }
+            items.Add(Resolve(root, 0, totals));
         }
 
         var seen = new Dictionary<string, int>(StringComparer.Ordinal);
-        var keys = new List<PinKey>(flat.Count);
-        foreach (DesignatorDescriptor d in roots)
+        var keys = new List<PinKey>(items.Count);
+        foreach (Item item in items)
         {
-            Append(d, keys, totals, seen);
+            Append(item, keys, totals, seen);
         }
 
         return keys;
     }
 
-    private const int MaxDepth = 8;
-
-    private static void Flatten(DesignatorDescriptor d, List<DesignatorDescriptor> into, int depth)
+    private static Item Resolve(DesignatorDescriptor d, int depth, Dictionary<string, int> totals)
     {
         ArgumentNullException.ThrowIfNull(d);
-        if (depth > MaxDepth)
+
+        // Pre-order position among orders is fixed later; here only the totals are counted.
+        var children = new List<Item>();
+        if (depth < MaxDepth)
         {
-            throw new ArgumentException("Dropdowns are nested too deeply.");
+            foreach (DesignatorDescriptor child in d.Children)
+            {
+                children.Add(Resolve(child, depth + 1, totals));
+            }
         }
 
-        into.Add(d);
-        foreach (DesignatorDescriptor child in d.Children)
+        ItemKind kind = KindOf(d, children);
+        var item = new Item(d, kind, children);
+        if (kind == ItemKind.Order)
         {
-            Flatten(child, into, depth + 1);
+            string type = TypeOf(d);
+            totals[type] = totals.GetValueOrDefault(type) + 1;
+        }
+
+        return item;
+    }
+
+    private static ItemKind KindOf(DesignatorDescriptor d, List<Item> children)
+    {
+        switch (d.Kind)
+        {
+            case DescriptorKind.BuildThing:
+                return string.IsNullOrEmpty(d.DefName) ? ItemKind.Order : ItemKind.BuildThing;
+            case DescriptorKind.BuildTerrain:
+                return string.IsNullOrEmpty(d.DefName) ? ItemKind.Order : ItemKind.BuildTerrain;
+            case DescriptorKind.Dropdown:
+                if (SharedGroup(children) != null)
+                {
+                    return ItemKind.Dropdown;
+                }
+
+                foreach (Item child in children)
+                {
+                    if (child.Kind != ItemKind.ModDropdown)
+                    {
+                        return ItemKind.ModDropdown;
+                    }
+                }
+
+                return ItemKind.Order;
+            default:
+                return ItemKind.Order;
         }
     }
 
-    private static PinKey Append(DesignatorDescriptor d, List<PinKey> keys, Dictionary<string, int> totals, Dictionary<string, int> seen)
+    private static PinKey Append(Item item, List<PinKey> keys, Dictionary<string, int> totals, Dictionary<string, int> seen)
     {
+        DesignatorDescriptor d = item.Descriptor;
+        if (item.Kind == ItemKind.Order)
+        {
+            // Ordinals follow pre-order, so take the parent's before its children's.
+            PinKey order = OrderKey(d, totals, seen);
+            keys.Add(order);
+            foreach (Item child in item.Children)
+            {
+                Append(child, keys, totals, seen);
+            }
+
+            return order;
+        }
+
         // Reserve the parent's slot so the output stays pre-order.
         int index = keys.Count;
         keys.Add(null!);
-        var childKeys = new List<PinKey>(d.Children.Count);
-        foreach (DesignatorDescriptor child in d.Children)
+        var childKeys = new List<PinKey>(item.Children.Count);
+        foreach (Item child in item.Children)
         {
             childKeys.Add(Append(child, keys, totals, seen));
         }
 
-        PinKey key = d.Kind switch
+        PinKey key = item.Kind switch
         {
-            DescriptorKind.BuildThing => PinKey.Build(PinKeyKind.BuildThing, Require(d.DefName, d)),
-            DescriptorKind.BuildTerrain => PinKey.Build(PinKeyKind.BuildTerrain, Require(d.DefName, d)),
-            _ when IsOrder(d) => OrderKey(d, totals, seen),
-            _ => DropdownKey(d, childKeys),
+            ItemKind.BuildThing => PinKey.Build(PinKeyKind.BuildThing, d.DefName!),
+            ItemKind.BuildTerrain => PinKey.Build(PinKeyKind.BuildTerrain, d.DefName!),
+            _ => DropdownKey(item, childKeys),
         };
         keys[index] = key;
         return key;
     }
 
-    private static PinKey DropdownKey(DesignatorDescriptor d, List<PinKey> childKeys)
+    private static PinKey DropdownKey(Item item, List<PinKey> childKeys)
     {
-        string? group = SharedGroup(d);
-        return group != null
-            ? PinKey.Dropdown(group)
-            : PinKey.ModDropdown(d.TypeFullName, d.Category, childKeys.Where(static k => k.Kind != PinKeyKind.ModDropdown));
+        string? group = SharedGroup(item.Children);
+        if (group != null)
+        {
+            return PinKey.Dropdown(group);
+        }
+
+        var keyable = new List<PinKey>(childKeys.Count);
+        foreach (PinKey k in childKeys)
+        {
+            if (k.Kind != PinKeyKind.ModDropdown)
+            {
+                keyable.Add(k);
+            }
+        }
+
+        string category = string.IsNullOrEmpty(item.Descriptor.Category) ? UnknownName : item.Descriptor.Category;
+        return PinKey.ModDropdown(TypeOf(item.Descriptor), category, keyable);
     }
 
-    /// <summary>Plain designators, and dropdowns without elements, are identified by type.</summary>
-    private static bool IsOrder(DesignatorDescriptor d) =>
-        d.Kind == DescriptorKind.Other || (d.Kind == DescriptorKind.Dropdown && d.Children.Count == 0);
-
     /// <summary>The group def name when every element is a build in the same group; otherwise null.</summary>
-    private static string? SharedGroup(DesignatorDescriptor d)
+    private static string? SharedGroup(List<Item> children)
     {
         string? group = null;
-        foreach (DesignatorDescriptor child in d.Children)
+        foreach (Item child in children)
         {
-            bool build = child.Kind is DescriptorKind.BuildThing or DescriptorKind.BuildTerrain;
-            if (!build || string.IsNullOrEmpty(child.DropdownGroup) || (group != null && group != child.DropdownGroup))
+            bool build = child.Kind is ItemKind.BuildThing or ItemKind.BuildTerrain;
+            string? childGroup = child.Descriptor.DropdownGroup;
+            if (!build || string.IsNullOrEmpty(childGroup) || (group != null && group != childGroup))
             {
                 return null;
             }
 
-            group = child.DropdownGroup;
+            group = childGroup;
         }
 
         return group;
@@ -113,18 +174,41 @@ public static class PinKeyFactory
 
     private static PinKey OrderKey(DesignatorDescriptor d, Dictionary<string, int> totals, Dictionary<string, int> seen)
     {
-        if (totals[d.TypeFullName] < 2)
+        string type = TypeOf(d);
+        if (totals[type] < 2)
         {
-            return PinKey.Order(d.TypeFullName);
+            return PinKey.Order(type);
         }
 
-        int n = seen.GetValueOrDefault(d.TypeFullName) + 1;
-        seen[d.TypeFullName] = n;
-        return PinKey.Order(d.TypeFullName, n);
+        int n = seen.GetValueOrDefault(type) + 1;
+        seen[type] = n;
+        return PinKey.Order(type, n);
     }
 
-    private static string Require(string? defName, DesignatorDescriptor d) =>
-        string.IsNullOrEmpty(defName)
-            ? throw new ArgumentException($"A build descriptor of type {d.TypeFullName} needs a def name.")
-            : defName;
+    private static string TypeOf(DesignatorDescriptor d) => string.IsNullOrEmpty(d.TypeFullName) ? UnknownName : d.TypeFullName;
+
+    private enum ItemKind
+    {
+        BuildThing,
+        BuildTerrain,
+        Dropdown,
+        ModDropdown,
+        Order,
+    }
+
+    private sealed class Item
+    {
+        internal Item(DesignatorDescriptor descriptor, ItemKind kind, List<Item> children)
+        {
+            Descriptor = descriptor;
+            Kind = kind;
+            Children = children;
+        }
+
+        internal DesignatorDescriptor Descriptor { get; }
+
+        internal ItemKind Kind { get; }
+
+        internal List<Item> Children { get; }
+    }
 }

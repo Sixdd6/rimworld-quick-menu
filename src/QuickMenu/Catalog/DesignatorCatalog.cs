@@ -23,6 +23,7 @@ internal static class DesignatorCatalog
     private static readonly List<CatalogEntry> _entries = new();
     private static readonly Dictionary<PinKey, CatalogEntry> _byKey = new();
     private static readonly Dictionary<Designator, CatalogEntry> _byDesignator = new();
+    private static readonly List<PinKey> _duplicateKeys = new();
 
     static DesignatorCatalog()
     {
@@ -41,6 +42,21 @@ internal static class DesignatorCatalog
 
     /// <summary>Wall-clock time of the last build, for the self-test (budget P-11c: at most 200 ms).</summary>
     internal static TimeSpan BuildTime { get; private set; }
+
+    /// <summary>Number of entries dropped from the key lookup because their key was already taken.</summary>
+    internal static int DuplicateKeyCount => _duplicateKeys.Count;
+
+    /// <summary>The keys that were produced more than once (one item per dropped entry).</summary>
+    internal static IReadOnlyList<PinKey> DuplicateKeys => _duplicateKeys;
+
+    /// <summary>Count of <see cref="DesignationCategoryDef.AllResolvedDesignators"/> over all categories at build time.</summary>
+    internal static int ResolvedDesignatorCount { get; private set; }
+
+    /// <summary>Number of top-level entries (entries without a dropdown parent) in the catalog.</summary>
+    internal static int TopLevelCount { get; private set; }
+
+    /// <summary>True when every resolved designator became a top-level entry (nothing was skipped or dropped).</summary>
+    internal static bool IsComplete => ResolvedDesignatorCount == TopLevelCount;
 
     /// <summary>Entries whose designator or mod information could not be read and were left out.</summary>
     internal static int SkippedCount { get; private set; }
@@ -86,38 +102,87 @@ internal static class DesignatorCatalog
     internal static void Rebuild()
     {
         var stopwatch = Stopwatch.StartNew();
-        _entries.Clear();
-        _byKey.Clear();
-        _byDesignator.Clear();
-        SkippedCount = 0;
-
-        var nodes = new List<Node>();
-        var descriptors = new List<DesignatorDescriptor>();
-        var categories = new List<DesignationCategoryDef>(DefDatabase<DesignationCategoryDef>.AllDefsListForReading);
-        categories.Sort(static (a, b) => a.order != b.order ? a.order.CompareTo(b.order) : string.CompareOrdinal(a.defName, b.defName));
-        var mods = new ModLookup();
-        foreach (DesignationCategoryDef category in categories)
+        try
         {
-            foreach (Designator designator in category.AllResolvedDesignators)
+            _entries.Clear();
+            _byKey.Clear();
+            _byDesignator.Clear();
+            _duplicateKeys.Clear();
+            SkippedCount = 0;
+            ResolvedDesignatorCount = 0;
+            TopLevelCount = 0;
+
+            var nodes = new List<Node>();
+            var categories = new List<DesignationCategoryDef>(DefDatabase<DesignationCategoryDef>.AllDefsListForReading);
+            categories.Sort(static (a, b) => a.order != b.order ? a.order.CompareTo(b.order) : string.CompareOrdinal(a.defName, b.defName));
+            var mods = new ModLookup();
+            foreach (DesignationCategoryDef category in categories)
             {
-                Node? node = MakeNode(designator, category, mods, depth: 0);
-                if (node != null)
+                foreach (Designator designator in category.AllResolvedDesignators)
                 {
-                    nodes.Add(node);
-                    descriptors.Add(node.Descriptor);
+                    ResolvedDesignatorCount++;
+                    Node? node = MakeNode(designator, category, mods, depth: 0);
+                    if (node != null)
+                    {
+                        nodes.Add(node);
+                    }
                 }
+            }
+
+            IReadOnlyList<PinKey> keys = AssignKeys(nodes);
+            int index = 0;
+            foreach (Node node in nodes)
+            {
+                AddEntries(node, -1, keys, ref index);
+            }
+
+            TopLevelCount = nodes.Count;
+        }
+        finally
+        {
+            stopwatch.Stop();
+            BuildTime = stopwatch.Elapsed;
+        }
+    }
+
+    // Key assignment should never throw, but one root must not be able to empty the catalog if it does.
+    private static IReadOnlyList<PinKey> AssignKeys(List<Node> nodes)
+    {
+        try
+        {
+            return PinKeyFactory.Assign(Descriptors(nodes));
+        }
+        catch (Exception ex)
+        {
+            Log.LogOnce("Catalog.Keys", $"Assigning pin keys failed, isolating the bad designators: {ex}");
+        }
+
+        for (int i = nodes.Count - 1; i >= 0; i--)
+        {
+            try
+            {
+                PinKeyFactory.Assign(new[] { nodes[i].Descriptor });
+            }
+            catch (Exception ex)
+            {
+                SkippedCount++;
+                Log.LogOnce("Catalog.Keys." + nodes[i].Descriptor.TypeFullName, $"A designator of type {nodes[i].Descriptor.TypeFullName} was left out of the catalog: {ex.Message}");
+                nodes.RemoveAt(i);
             }
         }
 
-        IReadOnlyList<PinKey> keys = PinKeyFactory.Assign(descriptors);
-        int index = 0;
+        return PinKeyFactory.Assign(Descriptors(nodes));
+    }
+
+    private static List<DesignatorDescriptor> Descriptors(List<Node> nodes)
+    {
+        var descriptors = new List<DesignatorDescriptor>(nodes.Count);
         foreach (Node node in nodes)
         {
-            AddEntries(node, -1, keys, ref index);
+            descriptors.Add(node.Descriptor);
         }
 
-        stopwatch.Stop();
-        BuildTime = stopwatch.Elapsed;
+        return descriptors;
     }
 
     private static void AddEntries(Node node, int parentId, IReadOnlyList<PinKey> keys, ref int index)
@@ -126,7 +191,11 @@ internal static class DesignatorCatalog
         PinKey key = keys[index++];
         var entry = new CatalogEntry(id, parentId, node.Designator, key, node.Label, node.CategoryLabel, node.ModName, node.PackageId, node.Descriptor.Kind == DescriptorKind.Dropdown);
         _entries.Add(entry);
-        _byKey.TryAdd(key, entry);
+        if (!_byKey.TryAdd(key, entry))
+        {
+            _duplicateKeys.Add(key);
+        }
+
         _byDesignator.TryAdd(node.Designator, entry);
         foreach (Node child in node.Children)
         {
@@ -146,7 +215,7 @@ internal static class DesignatorCatalog
 
             var children = new List<Node>();
             var childDescriptors = new List<DesignatorDescriptor>();
-            if (designator is Designator_Dropdown dropdown && depth < 4)
+            if (designator is Designator_Dropdown dropdown && depth < PinKeyFactory.MaxDepth)
             {
                 foreach (Designator element in dropdown.Elements)
                 {
@@ -182,14 +251,16 @@ internal static class DesignatorCatalog
             Type type = designator.GetType();
             var descriptor = new DesignatorDescriptor(kind, type.FullName ?? type.Name, defName, category.defName, group, childDescriptors);
             ModContentPack? pack = placing?.modContentPack ?? mods.Of(type);
-            return new Node(
-                designator,
-                descriptor,
-                designator.Label ?? string.Empty,
-                category.LabelCap.ToString(),
-                pack?.Name ?? string.Empty,
-                pack?.PackageId ?? string.Empty,
-                children);
+            string modName = pack?.Name ?? string.Empty;
+            string packageId = pack?.PackageId ?? string.Empty;
+            if (kind == DescriptorKind.Dropdown && pack is { IsCoreMod: true } && children.Count > 0)
+            {
+                // Def dropdowns from mods are plain Designator_Dropdown, which the type lookup credits to Core.
+                modName = children[0].ModName;
+                packageId = children[0].PackageId;
+            }
+
+            return new Node(designator, descriptor, designator.Label ?? string.Empty, category.LabelCap.ToString(), modName, packageId, children);
         }
         catch (Exception ex)
         {
