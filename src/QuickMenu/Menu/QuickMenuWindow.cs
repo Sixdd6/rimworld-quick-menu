@@ -251,9 +251,8 @@ internal sealed class QuickMenuWindow : Window
 
     private void Paint(WheelModel model, Hit hit)
     {
-        bool hoverEnabled = MenuController.HoverEnabled;
-        MenuRenderer.Draw(model, hit, _pressHit, hoverEnabled);
-        int slot = hoverEnabled && hit.Kind == HitKind.Slot && model.Kinds[hit.Index] is not (SlotKind.Empty or SlotKind.Reserved) ? hit.Index : -1;
+        MenuRenderer.Draw(model, hit, _pressHit);
+        int slot = hit.Kind == HitKind.Slot && model.Kinds[hit.Index] is not (SlotKind.Empty or SlotKind.Reserved) ? hit.Index : -1;
         if (slot != _hoverSlot)
         {
             _hoverSlot = slot;

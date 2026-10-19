@@ -277,6 +277,7 @@ sequenceDiagram
   - Catalog: the static part is built once during loading (`[StaticConstructorOnStartup]`), not on first open. The first open therefore costs the same as any other open. The Ideology part is rebuilt only when its signature (game, primary ideo, precept count) changes. This happens at most once per loaded game or ideo change, and costs well under the 200 ms index budget.
   - Pin-by-click reads a cached effective modifier. Settings are written on pin change or edit end, never per drag step.
   - Per-frame drawing while open: no LINQ, no string building (labels and tooltips are cached per open), availability is evaluated on open and on hover.
+  - Hover reacts immediately, also on open with the pointer on the hub (user decision UC-2b, 2026-10-19): no movement threshold in `TriggerStateMachine`; `WheelVisuals.Hub/Plate` depend only on the hover hit. The hub plays no hover sound; slots play `Mouseover_Command` on enter.
 - **Accessibility / i18n**: English only. Every player-facing string is Keyed (NFR-4). Button size is a setting. Layout works in UI units (`UI.screenWidth/Height`, `UI.MousePositionOnUIInverted`), so the game's UI scale applies automatically (NFR-5). Hold mode has a toggle alternative. The binding accepts keyboard keys for players without side buttons, plus the one-click "use middle mouse" option.
 - **Clean-room (NFR-7)**: `reference/` is gitignored. No code, textures or strings are copied from Mint. The behaviour notes in the ADRs are written in our own words.
 

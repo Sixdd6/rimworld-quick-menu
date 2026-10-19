@@ -101,11 +101,9 @@ public static class WheelVisuals
     }
 
     /// <summary>
-    /// Hub state. The hover highlight waits for <paramref name="hoverEnabled"/> (the pointer moved
-    /// ≥ <see cref="TriggerStateMachine.HoverMoveThreshold"/> px since opening), so the menu does not open with
-    /// "Edit" lit; a deliberate press shows at once.
+    /// Hub state. Hover reacts at once, also when the menu opens with the pointer on the hub (user decision, UC-2b).
     /// </summary>
-    public static HubPartState Hub(Hit hover, Hit pressed, bool hoverEnabled)
+    public static HubPartState Hub(Hit hover, Hit pressed)
     {
         if (hover.Kind != HitKind.HubEdit)
         {
@@ -117,14 +115,13 @@ public static class WheelVisuals
             return HubPartState.Pressed;
         }
 
-        return hoverEnabled ? HubPartState.Hover : HubPartState.Normal;
+        return HubPartState.Hover;
     }
 
     /// <summary>
-    /// What the label plate shows: the hovered slot's label (not for empty slots), or a hub label once hover is
-    /// enabled. <paramref name="kinds"/> holds the slot kinds; only the first <paramref name="count"/> are used.
+    /// What the label plate shows: the hovered slot's label (not for empty slots), or the hub label when the hub is hovered. <paramref name="kinds"/> holds the slot kinds; only the first <paramref name="count"/> are used.
     /// </summary>
-    public static PlateContent Plate(Hit hover, bool hoverEnabled, SlotKind[] kinds, int count)
+    public static PlateContent Plate(Hit hover, SlotKind[] kinds, int count)
     {
         switch (hover.Kind)
         {
@@ -134,7 +131,7 @@ public static class WheelVisuals
                     ? PlateContent.Slot
                     : PlateContent.None;
             case HitKind.HubEdit:
-                return hoverEnabled ? PlateContent.Hub : PlateContent.None;
+                return PlateContent.Hub;
             default:
                 return PlateContent.None;
         }

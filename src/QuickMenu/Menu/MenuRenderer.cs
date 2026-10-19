@@ -8,8 +8,8 @@ namespace QuickMenu.Menu;
 /// <summary>
 /// Draws a wheel menu from a per-open <see cref="WheelModel"/> (design.md S1): disc + rim, slots, hub, label plate,
 /// in that order. It owns no input or menu logic: the caller hit-tests (<see cref="WheelModel.HitLayout"/>) and passes
-/// the hover hit, the hit where the current press began (<see cref="Hit.Outside"/> when no button is held), and
-/// whether hover is enabled yet (<see cref="Core.Input.TriggerStateMachine.HoverEnabled"/>, S4a 4 px rule).
+/// the hover hit and the hit where the current press began (<see cref="Hit.Outside"/> when no button is held).
+/// Hover reacts at once, also on open (user decision, UC-2b).
 /// </summary>
 /// <remarks>
 /// Draws only on <see cref="EventType.Repaint"/> and allocates nothing: every colour comes from <see cref="QMStyle"/>,
@@ -20,11 +20,11 @@ namespace QuickMenu.Menu;
 internal static class MenuRenderer
 {
     /// <summary>Draws the model where its layout put it, at full size.</summary>
-    internal static void Draw(WheelModel model, Hit hover, Hit pressed, bool hoverEnabled) =>
-        Draw(model, RenderTransform.Identity(model.Center), hover, pressed, hoverEnabled);
+    internal static void Draw(WheelModel model, Hit hover, Hit pressed) =>
+        Draw(model, RenderTransform.Identity(model.Center), hover, pressed);
 
     /// <summary>Draws the model with its hub at <c>transform.Origin</c>, scaled by <c>transform.Scale</c>.</summary>
-    internal static void Draw(WheelModel model, in RenderTransform transform, Hit hover, Hit pressed, bool hoverEnabled)
+    internal static void Draw(WheelModel model, in RenderTransform transform, Hit hover, Hit pressed)
     {
         if (Event.current.type != EventType.Repaint)
         {
@@ -40,8 +40,8 @@ internal static class MenuRenderer
                 SlotRenderer.Draw(model, i, WheelVisuals.Slot(i, model.Kinds[i], hover, pressed), transform);
             }
 
-            HubRenderer.Draw(model, transform, WheelVisuals.Hub(hover, pressed, hoverEnabled));
-            PlateRenderer.Draw(model, transform, WheelVisuals.Plate(hover, hoverEnabled, model.Kinds, model.SlotCount), hover.Index);
+            HubRenderer.Draw(model, transform, WheelVisuals.Hub(hover, pressed));
+            PlateRenderer.Draw(model, transform, WheelVisuals.Plate(hover, model.Kinds, model.SlotCount), hover.Index);
         }
         finally
         {

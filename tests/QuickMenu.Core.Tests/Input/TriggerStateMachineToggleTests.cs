@@ -306,30 +306,6 @@ public class TriggerStateMachineToggleTests
     }
 
     [Fact]
-    public void Hub_hover_is_off_until_the_mouse_moves_four_pixels()
-    {
-        var m = Opened();
-        Assert.False(m.HoverEnabled);
-        m.Handle(TriggerEvent.MouseMove(new Vec2(102, 102)));
-        Assert.False(m.HoverEnabled);
-        m.Handle(TriggerEvent.MouseMove(new Vec2(103, 103)));
-        Assert.True(m.HoverEnabled);
-        m.Handle(TriggerEvent.MouseMove(_origin));
-        Assert.True(m.HoverEnabled);
-    }
-
-    [Fact]
-    public void Hover_gate_resets_on_reopen_and_close()
-    {
-        var m = Opened();
-        m.Handle(TriggerEvent.MouseMove(new Vec2(200, 200)));
-        m.Handle(TriggerEvent.Escape(_origin));
-        Assert.False(m.HoverEnabled);
-        m.Handle(TriggerEvent.TriggerPressed(_origin));
-        Assert.False(m.HoverEnabled);
-    }
-
-    [Fact]
     public void Mouse_move_never_produces_a_command()
     {
         var m = Opened();

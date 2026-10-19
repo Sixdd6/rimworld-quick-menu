@@ -41,19 +41,17 @@ public class WheelVisualsTests
     }
 
     [Fact]
-    public void Hub_has_no_hover_until_hover_is_enabled()
+    public void Hub_hovers_at_once()
     {
-        Assert.Equal(HubPartState.Normal, WheelVisuals.Hub(Hit.HubEdit, _none, hoverEnabled: false));
-        Assert.Equal(HubPartState.Hover, WheelVisuals.Hub(Hit.HubEdit, _none, hoverEnabled: true));
-        Assert.Equal(HubPartState.Normal, WheelVisuals.Hub(Hit.Slot(0), _none, hoverEnabled: true));
+        Assert.Equal(HubPartState.Hover, WheelVisuals.Hub(Hit.HubEdit, _none));
+        Assert.Equal(HubPartState.Normal, WheelVisuals.Hub(Hit.Slot(0), _none));
     }
 
     [Fact]
-    public void Hub_shows_pressed_while_pressed_on_it_even_before_moving()
+    public void Hub_shows_pressed_while_pressed_on_it()
     {
-        Assert.Equal(HubPartState.Pressed, WheelVisuals.Hub(Hit.HubEdit, Hit.HubEdit, hoverEnabled: false));
-        Assert.Equal(HubPartState.Pressed, WheelVisuals.Hub(Hit.HubEdit, Hit.HubEdit, hoverEnabled: true));
-        Assert.Equal(HubPartState.Normal, WheelVisuals.Hub(Hit.Inside, Hit.HubEdit, hoverEnabled: true));
+        Assert.Equal(HubPartState.Pressed, WheelVisuals.Hub(Hit.HubEdit, Hit.HubEdit));
+        Assert.Equal(HubPartState.Normal, WheelVisuals.Hub(Hit.Inside, Hit.HubEdit));
     }
 
     [Fact]
@@ -61,23 +59,22 @@ public class WheelVisualsTests
     {
         SlotKind[] kinds = [SlotKind.Normal, SlotKind.Empty, SlotKind.Disabled];
 
-        Assert.Equal(PlateContent.Slot, WheelVisuals.Plate(Hit.Slot(0), false, kinds, 3));
-        Assert.Equal(PlateContent.Slot, WheelVisuals.Plate(Hit.Slot(2), false, kinds, 3));
-        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Slot(1), true, kinds, 3));
-        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Slot(2), true, kinds, 2));
-        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Slot(-1), true, kinds, 3));
-        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Slot(5), true, kinds, 9));
+        Assert.Equal(PlateContent.Slot, WheelVisuals.Plate(Hit.Slot(0), kinds, 3));
+        Assert.Equal(PlateContent.Slot, WheelVisuals.Plate(Hit.Slot(2), kinds, 3));
+        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Slot(1), kinds, 3));
+        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Slot(2), kinds, 2));
+        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Slot(-1), kinds, 3));
+        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Slot(5), kinds, 9));
     }
 
     [Fact]
-    public void Plate_shows_hub_labels_only_after_hover_is_enabled()
+    public void Plate_shows_the_hub_label_at_once_when_hovered()
     {
         SlotKind[] kinds = [];
 
-        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.HubEdit, false, kinds, 0));
-        Assert.Equal(PlateContent.Hub, WheelVisuals.Plate(Hit.HubEdit, true, kinds, 0));
-        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Inside, true, kinds, 0));
-        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Plate, true, kinds, 0));
+        Assert.Equal(PlateContent.Hub, WheelVisuals.Plate(Hit.HubEdit, kinds, 0));
+        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Inside, kinds, 0));
+        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Plate, kinds, 0));
     }
 
     [Fact]

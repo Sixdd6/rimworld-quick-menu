@@ -12,10 +12,6 @@ namespace QuickMenu.Core.Input;
 /// </summary>
 public sealed class TriggerStateMachine
 {
-    /// <summary>Pointer travel (UI px) after opening before the hub may highlight.</summary>
-    public const float HoverMoveThreshold = 4f;
-
-    private Vec2 _openPosition;
     private bool _pressValid;
     private Hit _pressHit;
 
@@ -27,9 +23,6 @@ public sealed class TriggerStateMachine
     /// <summary>True when the trigger is held to use the menu and released to choose (FR-2).</summary>
     public bool HoldMode { get; set; }
 
-    /// <summary>False until the pointer has moved <see cref="HoverMoveThreshold"/> px since opening.</summary>
-    public bool HoverEnabled { get; private set; }
-
     public MenuCommand Handle(in TriggerEvent e)
     {
         if (e.Kind == TriggerEventKind.TriggerPressed)
@@ -37,8 +30,6 @@ public sealed class TriggerStateMachine
             if (State == MenuState.Closed)
             {
                 State = MenuState.Main;
-                _openPosition = e.Position;
-                HoverEnabled = false;
                 _pressValid = false;
                 return MenuCommand.Open;
             }
@@ -56,28 +47,17 @@ public sealed class TriggerStateMachine
             case TriggerEventKind.MapLost:
                 return CloseAll();
             case TriggerEventKind.MouseMove:
-                TrackHover(e.Position);
                 return MenuCommand.None;
             case TriggerEventKind.Escape:
                 return Cancel(true);
             case TriggerEventKind.MouseDown:
-                TrackHover(e.Position);
                 return OnDown(e);
             case TriggerEventKind.MouseUp:
-                TrackHover(e.Position);
                 return OnUp(e);
             case TriggerEventKind.TriggerReleased:
                 return HoldMode && State != MenuState.Edit && e.Hit.Kind == HitKind.HubEdit ? CloseAll() : MenuCommand.None;
             default:
                 return MenuCommand.None;
-        }
-    }
-
-    private void TrackHover(Vec2 p)
-    {
-        if (!HoverEnabled && p.Distance(_openPosition) >= HoverMoveThreshold)
-        {
-            HoverEnabled = true;
         }
     }
 
@@ -91,7 +71,6 @@ public sealed class TriggerStateMachine
         var wasEditing = State == MenuState.Edit;
         State = MenuState.Closed;
         _pressValid = false;
-        HoverEnabled = false;
         return wasEditing ? MenuCommand.CloseFromEdit : MenuCommand.Close;
     }
 
@@ -196,7 +175,6 @@ public sealed class TriggerStateMachine
                 var level = State == MenuState.Satellite ? MenuLevel.Satellite : MenuLevel.Main;
                 var activate = MenuCommand.Activate(e.Hit.Index, level);
                 State = MenuState.Closed;
-                HoverEnabled = false;
                 return activate;
             default:
                 return MenuCommand.None;

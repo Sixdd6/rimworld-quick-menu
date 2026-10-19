@@ -167,10 +167,10 @@ Geometry is in §1.1: drawn circle `H` = round(0.64 B) (default 36), glyph `Hg` 
 Rings are rasterized at `H` in screen px (like the slot rings at B); glyphs at `Hg`. All values are §2 tokens; no literals.
 
 **Behaviour**
-- **Click** (left mouse down and up both inside the hit area): use mode → enter edit mode (S5); edit mode → Done (leave edit mode). Hover plays `Mouseover_Command` once on enter, as on slots. Entering and leaving edit mode play no sound (Q-D3: sounds only for picking, pinning and rejects).
+- **Click** (left mouse down and up both inside the hit area): use mode → enter edit mode (S5); edit mode → Done (leave edit mode). The hub plays no hover sound (user decision, UC-2b: the menu opens with the pointer on the hub, and a sound on every open would be noise); `Mouseover_Command` plays only when the pointer enters a non-empty slot after open. Entering and leaving edit mode play no sound (Q-D3: sounds only for picking, pinning and rejects).
 - **Before edit mode ships (T-81 → T-44)**: the pencil is drawn with its normal, hover and pressed states so it clearly looks like a button, but a click does **nothing** (no sound, no message, no edit mode). No tooltip until T-44.
 - **Hold mode**: releasing the trigger over the hub **cancels** (closes the menu without an action), like releasing over empty space. A release never enters edit mode. While the hold trigger is still held, the hub shows **no hover highlight and no plate**, so it never looks as if releasing there would edit. A deliberate left-click while holding still enters edit mode.
-- **Hover delay (kept)**: the mouse starts on the hub. Its hover highlight and plate appear only after the mouse has moved ≥ 4 px since opening (`TriggerStateMachine.HoverMoveThreshold`). Without it, every open would light the pencil and put "Edit" in the label plate, which reads as "Edit is selected".
+- **No hover delay (user decision, UC-2b, 2026-10-19)**: the mouse starts on the hub, and the hub highlight and the "Edit" plate show immediately on open, with no movement needed ("more snappy and responsive"). This replaces the earlier 4 px movement rule (`HoverMoveThreshold`, removed). Slots likewise react at once: highlight, plate, sound and tooltip.
 - **Label plate on hover**: "Edit" (use mode), "Done" (edit mode).
 - **Right-click on the hub**: the same as right-click anywhere (close in use and edit mode, back in a satellite).
 
@@ -338,7 +338,7 @@ Target: **WCAG 2.2 AA** (text ≥ 4.5:1, UI parts ≥ 3:1). Every text pair pass
 |---|---|---|
 | Disc | normal, dimmed | `Disc` mask (gradient, tinted `discCentre`) + the **disc rim** texture: 2 px `accent` with 1 px `rimOutline` on each side, colours baked in, rasterized at the actual disc diameter in screen px (`Core.Render.DiscRim`) and rebuilt when B, rings in use or UI scale change. The stretched 128 px `Ring2` is not used for the rim. Dimmed: drawn with `GUI.color` α `dimmedMenu`. **Satellites draw the same disc and rim** at their own diameter `2·D_s` (§1.1), so a sub-menu reads as a menu of its own; their rim comes from `Textures.EnsureSatelliteRim(m)` (see §6) |
 | Grid panel | normal, dimmed | 9-slice `Panel` mask drawn with `Widgets.DrawAtlas` + 9-slice `PanelRim` |
-| Hub (S4a) | One Edit button: Edit (use mode) / Done (edit mode), each normal, hover, pressed; no hover until the mouse moves 4 px, and none while a hold trigger is held | `Circle` at `H` + hub rings 1/2/3 px rasterized at `H` + `IconEdit` / `IconDone` at `Hg` |
+| Hub (S4a) | One Edit button: Edit (use mode) / Done (edit mode), each normal, hover, pressed; hover reacts immediately on open (and none while a hold trigger is held, T-63) | `Circle` at `H` + hub rings 1/2/3 px rasterized at `H` + `IconEdit` / `IconDone` at `Hg` |
 | Slot | S4 states 1–14 | `Circle` (fill), slot rings 1/2/3 px and dashed rasterized at B in screen px (`Textures.SlotRing1/2/3/Dashed`), badges at their drawn size (`Textures.Glyph`), `Command.DrawIcon` |
 | Plate (label, hint, help) | — | 9-slice `Plate` mask |
 | Binding row + capture dialog | bound, unbound, capturing, rejected, conflict warning | vanilla buttons and a dialog |

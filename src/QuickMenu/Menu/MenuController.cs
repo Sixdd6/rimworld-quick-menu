@@ -35,9 +35,6 @@ internal static class MenuController
 
     internal static bool IsOpen => _window != null;
 
-    /// <summary>False until the pointer has moved a few pixels since opening (S4a), so a hub under the pointer does not light up.</summary>
-    internal static bool HoverEnabled => _machine?.HoverEnabled ?? false;
-
     /// <summary>Opens the menu in the current frame. Pressing the trigger while it is open closes it.</summary>
     internal static void Open()
     {

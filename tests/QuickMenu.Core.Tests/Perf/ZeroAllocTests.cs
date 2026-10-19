@@ -136,15 +136,14 @@ public class ZeroAllocTests
         {
             Hit hover = hits[i % hits.Length];
             Hit pressed = hits[(i / 3) % hits.Length];
-            bool enabled = i % 2 == 0;
             for (int s = 0; s < kinds.Length; s++)
             {
                 sum += (int)WheelVisuals.Slot(s, kinds[s], hover, pressed);
                 sum += t.Rect(WheelVisuals.IconRect(new Vec2(s, s), 56f)).Width;
             }
 
-            sum += (int)WheelVisuals.Hub(hover, pressed, enabled);
-            sum += (int)WheelVisuals.Plate(hover, enabled, kinds, kinds.Length);
+            sum += (int)WheelVisuals.Hub(hover, pressed);
+            sum += (int)WheelVisuals.Plate(hover, kinds, kinds.Length);
             sum += t.Rect(WheelVisuals.PlateRect(new Vec2(500f, 400f), 168f, 90f, 30f)).Y;
             sum += LayoutConstants.HubDiameter(56f) + LayoutConstants.HubGlyphSize(56f);
         });
