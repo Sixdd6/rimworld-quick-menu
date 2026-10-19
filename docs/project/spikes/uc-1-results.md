@@ -32,3 +32,7 @@ Screenshots: `../design/spikes/uc1-texture-probe-scale1.0.png`, `uc1-texture-pro
 | P-11c catalog build | 5.2 ms (a), 5.3 ms (b) | ≤ 200 ms | PASS |
 | P-12 builds per session | 1 | 1 | PASS |
 | P-18 mod ctor | 29 ms (a) | ≤ 150 ms | PASS |
+
+## User-confirmed observations (setup a, wheel)
+
+The user reported "everything else seemed fine" for the wheel steps, which confirms: the wheel appears at the mouse while the game keeps running (not paused); pressing the trigger again closes it; clicking away from the slots closes it with no effect on the map; Mine activates the mining tool; Wall opens the material list and then the wall tool; 20 open/close cycles near screen edges worked. Esc closed the wheel without opening the pause menu. Clicking the World button while the wheel was open only closed the wheel (the click is absorbed), so "world view closes the wheel" was not directly exercised; it is covered by code (`WindowUpdate`) and rechecked at UC-2. No `[QuickMenu]` errors or exceptions in either log. Map-change close and the trigger-cycle debug action were not exercised.
