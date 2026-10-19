@@ -192,11 +192,14 @@ internal static class LayoutPreview
         Vec2 offset = SettingsPreview.HubOffset(_bounds, scale);
         var origin = new Vec2((area.width / 2f) + offset.X, (area.height / 2f) + offset.Y);
         var transform = new RenderTransform(default, origin, scale);
-        float built = Textures.SizedButtonSize;
+        var wanted = TextureSizing.Create(_model.ButtonSize, _model.RingsInUse, Prefs.UIScale);
+        TextureSizing? built = Textures.BuiltSizing;
         GUI.BeginGroup(area);
         try
         {
-            MenuRenderer.SizedStretch = _gate.Pending && built > 0f ? _key.ButtonSize / built : 1f;
+            // Derived from what is actually built, not from the gate: aligned while a rebuild is pending and exactly 1 after it.
+            MenuRenderer.SizedStretch = TextureSizing.ButtonStretch(built, wanted);
+            MenuRenderer.RimStretch = TextureSizing.RimStretch(built, wanted);
             if (_key.Layout == MenuLayout.Grid)
             {
                 GridRenderer.Draw(_model, transform, Hit.Outside, Hit.Outside);
@@ -209,6 +212,7 @@ internal static class LayoutPreview
         finally
         {
             MenuRenderer.SizedStretch = 1f;
+            MenuRenderer.RimStretch = 1f;
             GUI.EndGroup();
         }
     }

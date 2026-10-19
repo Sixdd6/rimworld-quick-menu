@@ -160,6 +160,23 @@ public readonly record struct TextureSizing(float ButtonSize, int RingsInUse, fl
     public int GlyphTexels(MaskId id) =>
         Math.Max(Glyphs.MinSize, (int)MathF.Round(GlyphDrawSize(id) * UiScale, MidpointRounding.AwayFromZero));
 
+    /// <summary>
+    /// Factor that stretches textures built for <paramref name="built"/> to the shape of <paramref name="wanted"/> while a
+    /// rebuild is pending (the settings preview during a slider drag): ring, hub and glyph textures scale with B.
+    /// 1 when nothing is built or the sizes agree.
+    /// </summary>
+    public static float ButtonStretch(TextureSizing? built, TextureSizing wanted) =>
+        built is { } b && b.ButtonSize > 0f ? wanted.ButtonSize / b.ButtonSize : 1f;
+
+    /// <summary>
+    /// Factor that stretches the disc rim built for <paramref name="built"/> to the disc of <paramref name="wanted"/>.
+    /// The disc diameter 2 (m P + B/2 + rimPad) is not proportional to B (the gap and the rim padding are constants, and
+    /// the ring count can differ), so <see cref="ButtonStretch"/> would leave the rim off the disc fill. The result makes the
+    /// stretched draw rect equal the wanted rim's own draw rect.
+    /// </summary>
+    public static float RimStretch(TextureSizing? built, TextureSizing wanted) =>
+        built is { } b && b.DiscDiameter > 0f ? wanted.Rim.DrawSize / b.Rim.DrawSize : 1f;
+
     /// <summary>Which groups must be rebuilt going from <paramref name="previous"/> (null = nothing built) to <paramref name="next"/>.</summary>
     public static SizedGroups Changed(TextureSizing? previous, TextureSizing next)
     {

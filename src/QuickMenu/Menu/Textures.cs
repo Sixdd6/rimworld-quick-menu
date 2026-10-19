@@ -84,8 +84,8 @@ internal static class Textures
     private static byte[] _rgba = new byte[MaskSet.MaxByteCount * 4];
     private static TextureSizing? _sizing;
 
-    /// <summary>Button size the sized textures were built for, 0 before the first build (the settings preview stretches them to the slider value meanwhile).</summary>
-    internal static float SizedButtonSize => _sizing?.ButtonSize ?? 0f;
+    /// <summary>What the sized textures are built for, null before the first build (the settings preview stretches them to the slider value meanwhile).</summary>
+    internal static TextureSizing? BuiltSizing => _sizing;
 
     /// <summary>Sized-texture rebuilds this session (T-95: at most one per slider drag), for the perf report.</summary>
     internal static int SizedRebuilds { get; private set; }

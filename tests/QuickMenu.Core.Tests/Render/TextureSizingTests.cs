@@ -279,4 +279,41 @@ public class TextureSizingTests
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => TextureSizing.Create(56f, 1, 1f).GlyphDrawSize(id));
     }
+
+    // ---- Preview stretch (T-95) ----------------------------------------------------------------
+
+    [Theory]
+    [InlineData(36f, 2, 96f, 2)]
+    [InlineData(96f, 2, 36f, 2)]
+    [InlineData(60f, 3, 60f, 1)]
+    [InlineData(36f, 1, 96f, 8)]
+    public void RimStretch_LandsTheStretchedRimOnTheWantedDisc(float builtB, int builtRings, float wantedB, int wantedRings)
+    {
+        var built = TextureSizing.Create(builtB, builtRings, 1f);
+        var wanted = TextureSizing.Create(wantedB, wantedRings, 1f);
+
+        float drawn = built.Rim.DrawSize * TextureSizing.RimStretch(built, wanted);
+
+        Assert.Equal(wanted.Rim.DrawSize, drawn, 0);
+    }
+
+    [Fact]
+    public void RimStretch_DiffersFromTheButtonStretch_WhenOnlyTheButtonSizeChanged()
+    {
+        var built = TextureSizing.Create(36f, 2, 1f);
+        var wanted = TextureSizing.Create(96f, 2, 1f);
+
+        Assert.NotEqual(TextureSizing.ButtonStretch(built, wanted), TextureSizing.RimStretch(built, wanted), 2);
+    }
+
+    [Fact]
+    public void Stretch_IsOneWhenNothingIsBuiltOrSizesAgree()
+    {
+        var size = TextureSizing.Create(48f, 3, 1f);
+
+        Assert.Equal(1f, TextureSizing.ButtonStretch(null, size));
+        Assert.Equal(1f, TextureSizing.RimStretch(null, size));
+        Assert.Equal(1f, TextureSizing.ButtonStretch(size, size));
+        Assert.Equal(1f, TextureSizing.RimStretch(size, size));
+    }
 }

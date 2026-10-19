@@ -160,12 +160,18 @@ internal static class MenuRenderer
     /// </summary>
     internal static float SizedStretch = 1f;
 
+    /// <summary>Like <see cref="SizedStretch"/> for the disc rim alone: its size is not proportional to B (<see cref="TextureSizing.RimStretch"/>).</summary>
+    internal static float RimStretch = 1f;
+
     /// <summary>A size-dependent texture centred on <paramref name="centre"/>, scaled; nothing when it is missing.</summary>
-    internal static void DrawSized(in SizedTexture texture, Vec2 centre, float scale)
+    internal static void DrawSized(in SizedTexture texture, Vec2 centre, float scale) =>
+        DrawSized(texture, centre, scale, SizedStretch);
+
+    private static void DrawSized(in SizedTexture texture, Vec2 centre, float scale, float stretch)
     {
         if (texture.Texture != null)
         {
-            GUI.DrawTexture(Square(centre, texture.DrawSize * scale * SizedStretch), texture.Texture);
+            GUI.DrawTexture(Square(centre, texture.DrawSize * scale * stretch), texture.Texture);
         }
     }
 
@@ -184,6 +190,6 @@ internal static class MenuRenderer
         }
 
         Tint(QMStyle.White);
-        DrawSized(model.Rim, c, transform.Scale);
+        DrawSized(model.Rim, c, transform.Scale, RimStretch);
     }
 }
