@@ -31,6 +31,7 @@ while IFS= read -r -d '' f; do
   [ -f "$f" ] || { echo "tracked file missing: $f" >&2; exit 1; }
   rel="${f#mod/}"; mkdir -p "$stage/QuickMenu/$(dirname "$rel")"; cp "$f" "$stage/QuickMenu/$rel"
 done < <(git ls-files -z mod/)
+cp LICENSE "$stage/QuickMenu/LICENSE"
 mkdir -p "$stage/QuickMenu/1.7/Assemblies"
 cp mod/1.7/Assemblies/QuickMenu.dll mod/1.7/Assemblies/QuickMenu.Core.dll "$stage/QuickMenu/1.7/Assemblies/"
 out="$REPO_ROOT/dist/QuickMenu-${version}.zip"

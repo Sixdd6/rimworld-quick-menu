@@ -18,6 +18,7 @@ Every non-code asset in the repository gets a row: images, icons, fonts, audio, 
 | `docs/project/design/spikes/uc4-settings-page.png` | Screenshot (UC-4 evidence) | In-game screenshot by the user, UC-4 (2026-10-19) | Our UI: MIT (project). Contains RimWorld game imagery © Ludeon Studios | No | No (docs only, not shipped in the mod) | T-60 |
 | `docs/project/design/spikes/uc5-preview-b96.png` | Screenshot (UC-5 evidence) | In-game screenshot by the user, UC-5 (2026-10-19) | Our UI: MIT (project). Contains RimWorld game imagery © Ludeon Studios | No | No (docs only, not shipped in the mod) | T-69 |
 | `docs/project/design/spikes/uc5-preview-b36.png` | Screenshot (UC-5 evidence) | In-game screenshot by the user, UC-5 (2026-10-19) | Our UI: MIT (project). Contains RimWorld game imagery © Ludeon Studios | No | No (docs only, not shipped in the mod) | T-69 |
+| `LICENSE` | Licence text (MIT), shipped in the package root | Project (Sixdd6) | MIT (project) | Yes (the notice itself) | No | T-74 |
 | `docs/project/design/mockup-wheel-states.png` | PNG mockup | Exported from the SVG with `magick` (librsvg) | MIT (project) | No | Yes: docs only | Direction phase |
 | `docs/project/design/mockup-subring-grid-edit.png` | PNG mockup | Exported from the SVG | MIT (project) | No | Yes: docs only | Direction phase |
 | `docs/project/design/mockup-settings-picker.png` | PNG mockup | Exported from the SVG | MIT (project) | No | Yes: docs only | Direction phase |
@@ -38,7 +39,7 @@ Every non-code asset in the repository gets a row: images, icons, fonts, audio, 
 | Fonts | RimWorld `Text.Font` | Not redistributed |
 
 ## License summary
-- **MIT (this project)**: all files in the repository: mockups, the preview image, and (fallback only) the exported mask PNGs.
+- **MIT (this project)**: all files in the repository: the LICENSE file, mockups, the preview image, and (fallback only) the exported mask PNGs.
 - **No third-party assets** are in the repository. Game textures, sounds and fonts are used at runtime from the player's own RimWorld install and are not distributed.
 - No attribution or share-alike obligations.
 
