@@ -47,8 +47,9 @@ public sealed class PinLoadResult
 }
 
 /// <summary>
-/// Pin line format v1: <c>slot|key|packageId|label</c>, with <c>\</c> and <c>|</c> escaped by a backslash in
-/// each field (ADR 0004). Loading never throws: bad lines are skipped and reported as data.
+/// Pin line format v1: <c>slot|key|packageId|label</c>. In each field <c>^</c>, <c>|</c> and <c>\</c> are written as
+/// <c>^^</c>, <c>^|</c> and <c>^/</c>, so a backslash never appears in a line: the game's string loader rewrites the two
+/// characters backslash and n to a newline (ADR 0004). Loading never throws: bad lines are skipped and reported as data.
 /// </summary>
 public static class PinSerializer
 {
@@ -56,7 +57,10 @@ public static class PinSerializer
     public const int MaxModDropdownChildren = 256;
     public const int MaxSlot = 4095;
 
-    private const char Escape = '\\';
+    private const char Escape = '^';
+    private const char Backslash = '\\';
+    private const char BackslashCode = '/';
+    private const char KeyEscape = '\\';
     private const char Sep = '|';
     private static readonly string[] _knownPrefixes = { "build:thing/", "build:terrain/", "dropdown:", "order:", "moddrop:" };
 
@@ -197,7 +201,7 @@ public static class PinSerializer
         int tilde = -1;
         for (int i = 0; i < key.Length; i++)
         {
-            if (key[i] == Escape)
+            if (key[i] == KeyEscape)
             {
                 i++;
             }
@@ -216,7 +220,7 @@ public static class PinSerializer
         int n = 1;
         for (int i = tilde + 1; i < key.Length; i++)
         {
-            if (key[i] == Escape)
+            if (key[i] == KeyEscape)
             {
                 i++;
             }
@@ -281,7 +285,7 @@ public static class PinSerializer
         int keep = 0;
         while (keep < label.Length)
         {
-            int cost = label[keep] is Escape or Sep ? 2 : 1;
+            int cost = label[keep] is Escape or Sep or Backslash ? 2 : 1;
             if (used + cost > budget)
             {
                 break;
@@ -311,7 +315,7 @@ public static class PinSerializer
         int n = s.Length;
         foreach (char c in s)
         {
-            if (c is Escape or Sep)
+            if (c is Escape or Sep or Backslash)
             {
                 n++;
             }
@@ -326,10 +330,16 @@ public static class PinSerializer
         {
             if (c is Escape or Sep)
             {
-                sb.Append(Escape);
+                sb.Append(Escape).Append(c);
             }
-
-            sb.Append(c);
+            else if (c == Backslash)
+            {
+                sb.Append(Escape).Append(BackslashCode);
+            }
+            else
+            {
+                sb.Append(c);
+            }
         }
     }
 
@@ -345,12 +355,12 @@ public static class PinSerializer
             char c = line[i];
             if (c == Escape)
             {
-                if (++i >= line.Length || line[i] is not (Escape or Sep))
+                if (++i >= line.Length || line[i] is not (Escape or Sep or BackslashCode))
                 {
                     return false;
                 }
 
-                sb.Append(line[i]);
+                sb.Append(line[i] == BackslashCode ? Backslash : line[i]);
             }
             else if (c == Sep)
             {

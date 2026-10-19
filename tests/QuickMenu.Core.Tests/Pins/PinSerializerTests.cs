@@ -81,8 +81,8 @@ public class PinSerializerTests
     [InlineData("01|build:thing/X||l")]
     [InlineData("0||p|l")]
     [InlineData("0|Build:thing/X||l")]
-    [InlineData("0|build:thing/X||bad\\x")]
-    [InlineData("0|build:thing/X||trail\\")]
+    [InlineData("0|build:thing/X||bad^x")]
+    [InlineData("0|build:thing/X||trail^")]
     public void MalformedLine_IsSkippedAndCounted_OthersLoad(string bad)
     {
         PinLoadResult r = PinSerializer.FromLines(new[] { "1|build:thing/Good||G", bad });
@@ -117,7 +117,7 @@ public class PinSerializerTests
     private static string ModDrop(int children)
     {
         var kids = Enumerable.Range(0, children).Select(i => "dropdown:" + i.ToString("x3", System.Globalization.CultureInfo.InvariantCulture));
-        return "0|moddrop:M@C~" + string.Join(",", kids).Replace("\\", "\\\\").Replace("|", "\\|") + "||L";
+        return "0|moddrop:M@C~" + string.Join(",", kids).Replace("^", "^^").Replace("|", "^|") + "||L";
     }
 
     [Fact]

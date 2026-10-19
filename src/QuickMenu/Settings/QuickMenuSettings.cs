@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using QuickMenu.Core.Input;
 using QuickMenu.Core.Pins;
 using QuickMenu.Core.Settings;
@@ -29,35 +31,53 @@ internal sealed class QuickMenuSettings : ModSettings
     internal bool MintNoticeShown;
 
     private List<string>? _pinLines;
+    private TriggerBinding _trigger = TriggerBinding.TryParse(SettingsRules.DefaultTrigger, out TriggerBinding d) ? d : TriggerBinding.Mouse(3);
+    private bool _unreadable;
 
     /// <summary>The pins as a live board. Opaque entries (unknown or newer lines) stay on it and are written back unchanged.</summary>
     internal PinBoard Board { get; private set; } = new(SettingsRules.PinCapacity(MenuLayout.Wheel, SizingMode.Fixed, SettingsRules.DefaultRings, SettingsRules.DefaultColumns, SettingsRules.DefaultRows));
 
+    /// <summary>The parsed trigger, cached: set by the setter and after loading, so reading it never parses.</summary>
     internal TriggerBinding Trigger
     {
-        get => TriggerBinding.TryParse(TriggerText, out TriggerBinding b) ? b : TriggerBinding.Mouse(3);
-        set => TriggerText = value.Serialize();
+        get => _trigger;
+        set
+        {
+            _trigger = value;
+            TriggerText = value.Serialize();
+        }
     }
 
     /// <summary>Recomputes the board capacity from the size settings. Pins beyond it are kept, just not shown.</summary>
     internal void ApplyCapacity() => Board.Capacity = SettingsRules.PinCapacity(Layout, Sizing, Rings, GridColumns, GridRows);
 
+    /// <summary>
+    /// Numbers, enums and flags are scribed as text and parsed here, so one corrupt value is one repaired setting and
+    /// one warning in total, not a red error per field from the game's own parser. The file format is the same XML
+    /// elements; enums hold their names. The schema version written is always the current one.
+    /// </summary>
     public override void ExposeData()
     {
         base.ExposeData();
-        Scribe_Values.Look(ref SchemaVersion, "schemaVersion", SettingsRules.SchemaVersion, forceSave: true);
+        _unreadable = false;
+        if (Scribe.mode == LoadSaveMode.Saving)
+        {
+            SchemaVersion = SettingsRules.SchemaVersion;
+        }
+
+        Look(ref SchemaVersion, "schemaVersion", SettingsRules.SchemaVersion);
         Scribe_Values.Look(ref TriggerText, "trigger", SettingsRules.DefaultTrigger, forceSave: true);
-        Scribe_Values.Look(ref TriggerMode, "triggerMode", TriggerMode.Toggle, forceSave: true);
-        Scribe_Values.Look(ref Layout, "layout", MenuLayout.Wheel, forceSave: true);
-        Scribe_Values.Look(ref Sizing, "sizing", SizingMode.Fixed, forceSave: true);
-        Scribe_Values.Look(ref Rings, "rings", SettingsRules.DefaultRings, forceSave: true);
-        Scribe_Values.Look(ref GridColumns, "gridColumns", SettingsRules.DefaultColumns, forceSave: true);
-        Scribe_Values.Look(ref GridRows, "gridRows", SettingsRules.DefaultRows, forceSave: true);
-        Scribe_Values.Look(ref ButtonSize, "buttonSize", SettingsRules.DefaultButtonSize, forceSave: true);
-        Scribe_Values.Look(ref PinModifier, "pinModifier", PinModifier.Ctrl, forceSave: true);
-        Scribe_Values.Look(ref PinModifierUserSet, "pinModifierUserSet", false, forceSave: true);
-        Scribe_Values.Look(ref FirstRunNoticeShown, "firstRunNoticeShown", false, forceSave: true);
-        Scribe_Values.Look(ref MintNoticeShown, "mintNoticeShown", false, forceSave: true);
+        LookEnum(ref TriggerMode, "triggerMode", TriggerMode.Toggle);
+        LookEnum(ref Layout, "layout", MenuLayout.Wheel);
+        LookEnum(ref Sizing, "sizing", SizingMode.Fixed);
+        Look(ref Rings, "rings", SettingsRules.DefaultRings);
+        Look(ref GridColumns, "gridColumns", SettingsRules.DefaultColumns);
+        Look(ref GridRows, "gridRows", SettingsRules.DefaultRows);
+        Look(ref ButtonSize, "buttonSize", (float)SettingsRules.DefaultButtonSize);
+        LookEnum(ref PinModifier, "pinModifier", PinModifier.Ctrl);
+        Look(ref PinModifierUserSet, "pinModifierUserSet", false);
+        Look(ref FirstRunNoticeShown, "firstRunNoticeShown", false);
+        Look(ref MintNoticeShown, "mintNoticeShown", false);
 
         if (Scribe.mode == LoadSaveMode.Saving)
         {
@@ -74,7 +94,8 @@ internal sealed class QuickMenuSettings : ModSettings
 
     private void PostLoad()
     {
-        bool repaired = Normalize();
+        bool repaired = Normalize() | _unreadable;
+        _trigger = TriggerBinding.TryParse(TriggerText, out TriggerBinding parsed) ? parsed : TriggerBinding.Mouse(3);
         PinLoadResult loaded = PinSerializer.FromLines(_pinLines);
         Board = loaded.Board;
         ApplyCapacity();
@@ -105,6 +126,41 @@ internal sealed class QuickMenuSettings : ModSettings
         changed |= Reset(ref GridRows, SettingsRules.ClampRows(GridRows), GridRows == SettingsRules.ClampRows(GridRows));
         changed |= Reset(ref ButtonSize, SettingsRules.ClampButtonSize(ButtonSize), ButtonSize == SettingsRules.ClampButtonSize(ButtonSize));
         return changed;
+    }
+
+    private void Look(ref int value, string label, int fallback) =>
+        LookText(ref value, label, fallback, static v => v.ToString(CultureInfo.InvariantCulture), static (string t, out int v) => int.TryParse(t, NumberStyles.Integer, CultureInfo.InvariantCulture, out v));
+
+    private void Look(ref float value, string label, float fallback) =>
+        LookText(ref value, label, fallback, static v => v.ToString("R", CultureInfo.InvariantCulture), static (string t, out float v) => float.TryParse(t, NumberStyles.Float, CultureInfo.InvariantCulture, out v));
+
+    private void Look(ref bool value, string label, bool fallback) =>
+        LookText(ref value, label, fallback, static v => v ? "true" : "false", static (string t, out bool v) => bool.TryParse(t, out v));
+
+    private void LookEnum<T>(ref T value, string label, T fallback)
+        where T : struct, Enum =>
+        LookText(ref value, label, fallback, static v => v.ToString(), static (string t, out T v) => Enum.TryParse(t, ignoreCase: false, out v) && SettingsRules.IsDefined(v));
+
+    private delegate bool TryParseText<T>(string text, out T value);
+
+    // Called a few times per settings load or save, never per frame: the delegates are static and do not capture.
+    private void LookText<T>(ref T value, string label, T fallback, Func<T, string> format, TryParseText<T> tryParse)
+    {
+        string? text = Scribe.mode == LoadSaveMode.Saving ? format(value) : null;
+        Scribe_Values.Look(ref text, label, format(fallback), forceSave: true);
+        if (Scribe.mode != LoadSaveMode.LoadingVars)
+        {
+            return;
+        }
+
+        if (text != null && tryParse(text.Trim(), out T parsed))
+        {
+            value = parsed;
+            return;
+        }
+
+        value = fallback;
+        _unreadable = true;
     }
 
     private static bool Reset<T>(ref T field, T replacement, bool valid)

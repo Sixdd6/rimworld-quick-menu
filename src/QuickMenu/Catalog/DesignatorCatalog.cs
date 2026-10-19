@@ -64,7 +64,19 @@ internal static class DesignatorCatalog
     /// <summary>Entries whose designator or mod information could not be read and were left out.</summary>
     internal static int SkippedCount { get; private set; }
 
-    /// <summary>Finds the entry for a key: exact match, then (for builds) the architect's own lookup. Never throws.</summary>
+    /// <summary>
+    /// Changes whenever the entries change (a rebuild, or the Ideology part being added). Pin resolution compares it to
+    /// the value it resolved against, an O(1) check, and resolves again when it differs.
+    /// </summary>
+    internal static int Version { get; private set; }
+
+    /// <summary>Call after the entries were changed outside <see cref="Rebuild"/> (the Ideology refresh), so pins resolve again.</summary>
+    internal static void NotifyChanged() => Version++;
+
+    /// <summary>
+    /// Finds the entry for a key: exact match, then (for builds, and only while a game is loaded) the architect's own
+    /// lookup, which evaluates designator visibility and so needs game state. Never throws, never logs the key.
+    /// </summary>
     /// <returns>The entry, or null when the key is unresolved.</returns>
     internal static CatalogEntry? Resolve(PinKey? key)
     {
@@ -78,7 +90,7 @@ internal static class DesignatorCatalog
             return exact;
         }
 
-        if (key.Kind is not (PinKeyKind.BuildThing or PinKeyKind.BuildTerrain))
+        if (key.Kind is not (PinKeyKind.BuildThing or PinKeyKind.BuildTerrain) || Current.Game == null)
         {
             return null;
         }
@@ -93,7 +105,8 @@ internal static class DesignatorCatalog
         }
         catch (Exception ex)
         {
-            Log.LogOnce("Catalog.Resolve", $"Resolving {key} failed: {ex}");
+            // The key holds a def name that can identify a mod, so only its kind and the exception type are logged.
+            Log.LogOnce("Catalog.Resolve", $"Resolving a {key.Kind} pin through the architect lookup failed ({ex.GetType().Name}); it stays unresolved.");
             return null;
         }
     }
@@ -144,6 +157,7 @@ internal static class DesignatorCatalog
         }
         finally
         {
+            Version++;
             stopwatch.Stop();
             BuildTime = stopwatch.Elapsed;
         }

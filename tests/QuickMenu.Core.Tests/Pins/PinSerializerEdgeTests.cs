@@ -9,6 +9,29 @@ public class PinSerializerEdgeTests
     private static PinKey Thing(string n) => PinKey.Build(PinKeyKind.BuildThing, n);
 
     [Theory]
+    [InlineData("a\\nb")]
+    [InlineData("\\n")]
+    [InlineData("\\\\n")]
+    [InlineData("^\\n^")]
+    [InlineData("a\nb")]
+    public void Written_lines_hold_no_backslash_so_the_game_string_loader_cannot_rewrite_them(string text)
+    {
+        var board = new PinBoard(4);
+        board.SetSlot(2, new PinEntry(Thing("We\\nird"), text, text));
+
+        List<string> lines = PinSerializer.ToLines(board);
+        // The game's ParseHelper.ParseString does Replace("\\n", "\n") on every loaded string.
+        List<string> loaded = lines.ConvertAll(l => l.Replace("\\n", "\n"));
+        PinLoadResult r = PinSerializer.FromLines(loaded);
+
+        Assert.DoesNotContain(lines, l => l.Contains('\\'));
+        Assert.Equal(lines, loaded);
+        Assert.Equal(0, r.SkippedCount);
+        Assert.Equal(text, r.Board.Entries[2]!.Label);
+        Assert.Equal(text, r.Board.Entries[2]!.PackageId);
+    }
+
+    [Theory]
     [InlineData("a|b")]
     [InlineData("a\\b")]
     [InlineData("\\")]
@@ -49,7 +72,7 @@ public class PinSerializerEdgeTests
     [Fact]
     public void Opaque_lines_keep_escapes_and_their_slot_unchanged()
     {
-        string[] lines = { "0|future:a\\|b|pk|la\\\\bel", "1|build:thing/Wall||W" };
+        string[] lines = { "0|future:a^|b|pk|la^^bel", "1|build:thing/Wall||W" };
         PinLoadResult r = PinSerializer.FromLines(lines);
 
         Assert.Equal(0, r.SkippedCount);
@@ -130,8 +153,8 @@ public class PinSerializerEdgeTests
     }
 
     [Theory]
-    [InlineData("0|build:thing/Wall||x\\")]
-    [InlineData("0|build:thing/Wall||x\\n")]
+    [InlineData("0|build:thing/Wall||x^")]
+    [InlineData("0|build:thing/Wall||x^n")]
     [InlineData("0|build:thing/Wall|||extra")]
     [InlineData("-1|build:thing/Wall||x")]
     [InlineData("01|build:thing/Wall||x")]

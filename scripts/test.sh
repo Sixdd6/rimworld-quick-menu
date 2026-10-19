@@ -6,6 +6,17 @@ set -euo pipefail
 cd "$REPO_ROOT"
 config="Release"; [ "${1:-}" = "-c" ] && config="${2:-Release}"
 min="${MIN_COVERAGE:-90}"
+
+# FR-17: nothing is written into save files. No game/world/map component and no Def subclass may exist in src/.
+# Comment lines are ignored; only declarations and base-type uses count.
+violations="$(grep -rnE --include='*.cs' '(:|,)[[:space:]]*(Verse\.)?(GameComponent|WorldComponent|MapComponent)\b|class[[:space:]]+[A-Za-z0-9_]+[[:space:]]*:[[:space:]]*([A-Za-z0-9_.]*\.)?[A-Za-z0-9_]*Def\b' src/ | grep -vE '^[^:]+:[0-9]+:[[:space:]]*(//|\*|/\*)' || true)"
+if [ -n "$violations" ]; then
+  echo "save-safety check FAILED (FR-17): save-file components or Def classes found in src/:" >&2
+  echo "$violations" >&2
+  exit 1
+fi
+echo "save-safety check: no GameComponent/WorldComponent/MapComponent/Def subclasses in src/"
+
 rm -rf TestResults
 dotnet build QuickMenu.slnx -c "$config" --no-restore
 dotnet run --no-build --project tests/QuickMenu.Core.Tests -c "$config" -- \

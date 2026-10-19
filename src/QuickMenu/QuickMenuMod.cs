@@ -42,15 +42,8 @@ public sealed class QuickMenuMod : Mod
         long started = Stopwatch.GetTimestamp();
         _instance = this;
         long settingsStart = Stopwatch.GetTimestamp();
-        try
-        {
-            _settings = GetSettings<QuickMenuSettings>();
-        }
-        catch (Exception ex)
-        {
-            Diagnostics.Log.WarnOnce("Settings.Load", $"Settings could not be loaded, defaults are used: {ex.GetType().Name}");
-            _settings = new QuickMenuSettings();
-        }
+        // LoadedModManager.ReadModSettings catches load failures itself and returns fresh settings, so no catch is needed here.
+        _settings = GetSettings<QuickMenuSettings>();
 
         _settings.ApplyCapacity();
         long settingsTicks = Stopwatch.GetTimestamp() - settingsStart;
