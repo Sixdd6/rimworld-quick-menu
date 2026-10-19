@@ -7,15 +7,37 @@ cd "$REPO_ROOT"
 config="Release"; [ "${1:-}" = "-c" ] && config="${2:-Release}"
 min="${MIN_COVERAGE:-90}"
 
-# FR-17: nothing is written into save files. No game/world/map component and no Def subclass may exist in src/.
-# Comment lines are ignored; only declarations and base-type uses count.
-violations="$(grep -rnE --include='*.cs' '(:|,)[[:space:]]*(Verse\.)?(GameComponent|WorldComponent|MapComponent)\b|class[[:space:]]+[A-Za-z0-9_]+[[:space:]]*:[[:space:]]*([A-Za-z0-9_.]*\.)?[A-Za-z0-9_]*Def\b' src/ | grep -vE '^[^:]+:[0-9]+:[[:space:]]*(//|\*|/\*)' || true)"
-if [ -n "$violations" ]; then
-  echo "save-safety check FAILED (FR-17): save-file components or Def classes found in src/:" >&2
-  echo "$violations" >&2
+# FR-17: nothing is written into save files. No saved component or Def-like class may exist in src/, and nothing may
+# implement saving outside src/QuickMenu/Settings/ (the mod settings are the only state). Comment lines are ignored.
+# SRC_DIR can be overridden to test the check itself against synthetic sources.
+src_dir="${SRC_DIR:-src/}"
+settings_dir="${SETTINGS_DIR:-src/QuickMenu/Settings/}"
+ns='(global::)?([A-Za-z0-9_]+\.)*'
+comps='(GameComponent|WorldComponent|MapComponent|ThingComp|HediffComp|WorldObject|GameCondition)[A-Za-z0-9_]*'
+defs='[A-Za-z0-9_]*(Def|Thing|Pawn|Building)'
+base_re="class[[:space:]]+[A-Za-z0-9_]+[^:{]*:[^{]*[[:space:],]${ns}(${comps}|${defs})([^A-Za-z0-9_]|\$)"
+not_comment='^[^:]+:[0-9]+:[[:space:]]*(//|\*|/\*)'
+scan() { # scan <pattern>: matching lines into $scan_out; no match is fine, a grep error (exit 2) fails the script
+  local rc=0
+  scan_out="$(grep -rnE --include='*.cs' "$1" "$src_dir")" || rc=$?
+  [ "$rc" -le 1 ] || { echo "save-safety check: grep failed (exit $rc)" >&2; exit 2; }
+  scan_out="$(printf '%s\n' "$scan_out" | grep -vE "$not_comment" || true)"
+}
+scan "$base_re"
+if [ -n "$scan_out" ]; then
+  echo "save-safety check FAILED (FR-17): save-file components or Def/Thing classes found in src/:" >&2
+  echo "$scan_out" >&2
   exit 1
 fi
-echo "save-safety check: no GameComponent/WorldComponent/MapComponent/Def subclasses in src/"
+scan '(ExposeData|Scribe_[A-Za-z]+|IExposable)'
+exposure="$(printf '%s\n' "$scan_out" | awk -v d="$settings_dir" 'NF && index($0, d) != 1')"
+if [ -n "$exposure" ]; then
+  echo "save-safety check FAILED (FR-17): ExposeData/Scribe_/IExposable used outside ${settings_dir}:" >&2
+  echo "$exposure" >&2
+  exit 1
+fi
+echo "save-safety check: no saved components, Def/Thing subclasses or Scribe use outside Settings in ${src_dir}"
+[ -z "${SAVE_CHECK_ONLY:-}" ] || exit 0
 
 rm -rf TestResults
 dotnet build QuickMenu.slnx -c "$config" --no-restore

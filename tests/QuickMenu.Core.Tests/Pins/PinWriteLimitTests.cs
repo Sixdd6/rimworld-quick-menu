@@ -44,6 +44,33 @@ public class PinWriteLimitTests
         Assert.Equal(0, PinSerializer.FromLines(new[] { line2 }).SkippedCount);
     }
 
+    [Theory]
+    [InlineData('\\')]
+    [InlineData('^')]
+    public void Escaped_char_at_the_exact_budget_boundary_fits_and_one_more_is_cut_whole(char special)
+    {
+        string head = "0|build:thing/X||";
+        int budget = PinSerializer.MaxLineLength - head.Length;
+
+        // The special char costs 2 in the line, so budget - 2 filler chars plus it fill the line exactly.
+        string exact = new string('a', budget - 2) + special;
+        var b = new PinBoard(1);
+        b.Toggle(K("X"), exact);
+        string line = PinSerializer.ToLines(b)[0];
+        Assert.Equal(PinSerializer.MaxLineLength, line.Length);
+        Assert.Equal(exact, PinSerializer.FromLines(new[] { line }).Board.Entries[0]!.Label);
+
+        // One filler less: the pair no longer fits, and is dropped whole rather than split.
+        string over = new string('a', budget - 1) + special;
+        var c = new PinBoard(1);
+        c.Toggle(K("X"), over);
+        string line2 = PinSerializer.ToLines(c)[0];
+        Assert.Equal(PinSerializer.MaxLineLength - 1, line2.Length);
+        PinLoadResult r = PinSerializer.FromLines(new[] { line2 });
+        Assert.Equal(0, r.SkippedCount);
+        Assert.Equal(new string('a', budget - 1), r.Board.Entries[0]!.Label);
+    }
+
     [Fact]
     public void Short_label_is_stored_unchanged()
     {

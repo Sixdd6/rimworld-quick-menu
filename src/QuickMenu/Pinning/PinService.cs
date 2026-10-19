@@ -23,11 +23,13 @@ internal static class PinService
     private static readonly Dictionary<PinKey, CatalogEntry> _resolved = new();
     private static bool _initialized;
     private static int _stamp = -1;
+    private static int _failedStamp = -1;
 
     /// <summary>
     /// True when pins have been resolved against a built, non-empty catalog. When false, "unresolved" means "not known yet",
-    /// not "mod removed": ForgetUnresolved and the missing-pin count and button must be disabled (T-51), so a transient
-    /// fault can never wipe valid pins.
+    /// and the missing-pin count and "Forget missing pins" button must be disabled (T-51). Being ready is not enough to
+    /// forget a pin: at the main menu resolution is incomplete (no game, so no architect lookup), so only
+    /// <see cref="IsMissing"/> decides which pins are gone, never plain "unresolved".
     /// </summary>
     internal static bool IsReady => _initialized && DesignatorCatalog.Entries.Count > 0;
 
@@ -52,11 +54,14 @@ internal static class PinService
             }
 
             _stamp = Stamp();
+            _failedStamp = -1;
             _initialized = true;
         }
         catch (Exception ex)
         {
             _initialized = false;
+            _stamp = -1;
+            _failedStamp = Stamp();
             Log.LogOnce("Pinning.Resolve", $"Resolving the pins failed, they are treated as not yet known: {ex}");
         }
     }
@@ -69,6 +74,70 @@ internal static class PinService
     {
         EnsureCurrent();
         return _resolved.TryGetValue(key, out CatalogEntry? e) ? e : null;
+    }
+
+    /// <summary>
+    /// True when a stored pin is really gone: unresolved, and (for a build pin) its def is not in the DefDatabase, or its
+    /// stored packageId is not an active mod. An unresolved pin that fails both tests is only unavailable right now
+    /// (no game loaded, hidden by research or a mode) and is never forgotten. Opaque pins are never missing.
+    /// </summary>
+    internal static bool IsMissing(PinEntry entry)
+    {
+        EnsureCurrent();
+        PinKey key = entry.Key;
+        if (!IsReady || key.Kind == PinKeyKind.Opaque || _resolved.ContainsKey(key))
+        {
+            return false;
+        }
+
+        try
+        {
+            if (key.Kind == PinKeyKind.BuildThing)
+            {
+                if (DefDatabase<ThingDef>.GetNamedSilentFail(key.Name) == null)
+                {
+                    return true;
+                }
+            }
+            else if (key.Kind == PinKeyKind.BuildTerrain && DefDatabase<TerrainDef>.GetNamedSilentFail(key.Name) == null)
+            {
+                return true;
+            }
+
+            return !string.IsNullOrEmpty(entry.PackageId) && !ModsConfig.IsActive(entry.PackageId);
+        }
+        catch (Exception ex)
+        {
+            Log.LogOnce("Pinning.IsMissing", $"Checking whether a pin is missing failed, it is kept: {ex.GetType().Name}");
+            return false;
+        }
+    }
+
+    /// <summary>How many stored pins are missing (see <see cref="IsMissing"/>); 0 while not ready.</summary>
+    internal static int CountMissing()
+    {
+        int n = 0;
+        foreach (PinEntry? entry in Board.Entries)
+        {
+            if (entry != null && IsMissing(entry))
+            {
+                n++;
+            }
+        }
+
+        return n;
+    }
+
+    /// <summary>Removes the missing pins only (see <see cref="IsMissing"/>) and writes the settings once; returns how many.</summary>
+    internal static int ForgetMissing()
+    {
+        int n = Board.ForgetUnresolved(new MissingResolver());
+        if (n > 0)
+        {
+            QuickMenuMod.SaveSettings();
+        }
+
+        return n;
     }
 
     internal static PinBoard Board => QuickMenuMod.Settings.Board;
@@ -105,11 +174,12 @@ internal static class PinService
         return result;
     }
 
-    private static int Stamp() => (DesignatorCatalog.Version * 2) + (Current.Game != null ? 1 : 0);
+    private static int Stamp() => (DesignatorCatalog.Version * 4) + (Current.Game != null ? 1 : 0) + (Current.ProgramState == ProgramState.Playing ? 2 : 0);
 
     private static void EnsureCurrent()
     {
-        if (_initialized && _stamp != Stamp())
+        int stamp = Stamp();
+        if (_stamp != stamp && _failedStamp != stamp)
         {
             Refresh();
         }
@@ -144,6 +214,25 @@ internal static class PinService
         {
             _resolved[key] = found;
         }
+    }
+
+    /// <summary>Reports every pin that is not missing as resolved, so ForgetUnresolved removes exactly the missing ones.</summary>
+    private sealed class MissingResolver : IPinResolver
+    {
+        private readonly Dictionary<PinKey, bool> _missing = new();
+
+        public MissingResolver()
+        {
+            foreach (PinEntry? entry in Board.Entries)
+            {
+                if (entry != null)
+                {
+                    _missing[entry.Key] = IsMissing(entry);
+                }
+            }
+        }
+
+        public bool IsResolved(PinKey key) => !_missing.TryGetValue(key, out bool missing) || !missing;
     }
 
     private sealed class CacheResolver : IPinResolver

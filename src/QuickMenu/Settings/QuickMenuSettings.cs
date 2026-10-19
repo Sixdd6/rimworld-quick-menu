@@ -17,7 +17,7 @@ namespace QuickMenu.Settings;
 internal sealed class QuickMenuSettings : ModSettings
 {
     internal int SchemaVersion = SettingsRules.SchemaVersion;
-    internal string TriggerText = SettingsRules.DefaultTrigger;
+    private string _triggerText = SettingsRules.DefaultTrigger;
     internal TriggerMode TriggerMode = TriggerMode.Toggle;
     internal MenuLayout Layout = MenuLayout.Wheel;
     internal SizingMode Sizing = SizingMode.Fixed;
@@ -44,7 +44,7 @@ internal sealed class QuickMenuSettings : ModSettings
         set
         {
             _trigger = value;
-            TriggerText = value.Serialize();
+            _triggerText = value.Serialize();
         }
     }
 
@@ -94,14 +94,18 @@ internal sealed class QuickMenuSettings : ModSettings
     public override void ExposeData()
     {
         base.ExposeData();
-        _unreadable = false;
+        if (Scribe.mode == LoadSaveMode.LoadingVars)
+        {
+            _unreadable = false;
+        }
+
         if (Scribe.mode == LoadSaveMode.Saving)
         {
             SchemaVersion = SettingsRules.SchemaVersion;
         }
 
         Look(ref SchemaVersion, "schemaVersion", SettingsRules.SchemaVersion);
-        Scribe_Values.Look(ref TriggerText, "trigger", SettingsRules.DefaultTrigger, forceSave: true);
+        Scribe_Values.Look(ref _triggerText, "trigger", SettingsRules.DefaultTrigger, forceSave: true);
         LookEnum(ref TriggerMode, "triggerMode", TriggerMode.Toggle);
         LookEnum(ref Layout, "layout", MenuLayout.Wheel);
         LookEnum(ref Sizing, "sizing", SizingMode.Fixed);
@@ -130,7 +134,7 @@ internal sealed class QuickMenuSettings : ModSettings
     private void PostLoad()
     {
         bool repaired = Normalize() | _unreadable;
-        _trigger = TriggerBinding.TryParse(TriggerText, out TriggerBinding parsed) ? parsed : TriggerBinding.Mouse(3);
+        _trigger = TriggerBinding.TryParse(_triggerText, out TriggerBinding parsed) ? parsed : TriggerBinding.Mouse(3);
         PinLoadResult loaded = PinSerializer.FromLines(_pinLines);
         Board = loaded.Board;
         ApplyCapacity();
@@ -151,7 +155,7 @@ internal sealed class QuickMenuSettings : ModSettings
     {
         bool changed = false;
         changed |= Reset(ref SchemaVersion, SettingsRules.SchemaVersion, SchemaVersion >= 1);
-        changed |= Reset(ref TriggerText, SettingsRules.DefaultTrigger, TriggerBinding.TryParse(TriggerText, out _));
+        changed |= Reset(ref _triggerText, SettingsRules.DefaultTrigger, TriggerBinding.TryParse(_triggerText, out _));
         changed |= Reset(ref TriggerMode, TriggerMode.Toggle, SettingsRules.IsDefined(TriggerMode));
         changed |= Reset(ref Layout, MenuLayout.Wheel, SettingsRules.IsDefined(Layout));
         changed |= Reset(ref Sizing, SizingMode.Fixed, SettingsRules.IsDefined(Sizing));
