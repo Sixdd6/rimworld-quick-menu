@@ -408,7 +408,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **In-game check**: UC-2 (user)
   - **Size**: S
 
-- [ ] **T-28**: Runtime textures and style tokens
+- [x] **T-28**: Runtime textures and style tokens
   - **Owner**: visual-designer
   - **Requirements**: NFR-5, NFR-7 (design.md §2, §6; ADR 0007)
   - **Depends on**: T-14, T-22, T-23
