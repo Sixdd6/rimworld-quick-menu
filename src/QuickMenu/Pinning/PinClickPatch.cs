@@ -13,7 +13,8 @@ namespace QuickMenu.Pinning;
 
 /// <summary>
 /// Shared Harmony prefix on every declared, non-abstract <c>ProcessInput(Event)</c> in <see cref="Designator"/> and its
-/// subclasses (ADR 0005). In this build (spike S-1/S-3) the prefix only observes and always returns <c>true</c>.
+/// subclasses (ADR 0005). The event is bound by index (<c>Event __0</c>) because Harmony binds named parameters by name
+/// and overrides do not agree on the parameter name. In this build (spike S-1/S-3) the prefix only observes and always returns <c>true</c>.
 /// </summary>
 internal static class PinClickPatch
 {
@@ -58,8 +59,11 @@ internal static class PinClickPatch
         }
     }
 
+    // TODO(T-14): remove the ProcessInputProbe dependency when the real pin logic replaces the observe-only body.
+    // TODO(T-27): add a re-entrancy guard; an override calling base.ProcessInput fires this prefix twice for one click.
+
     /// <summary>Observe-only prefix. Invoked on clicks and hotkeys only; one flag check when the probe is off.</summary>
-    internal static bool Prefix(Designator __instance, Event ev)
+    internal static bool Prefix(Designator __instance, Event __0)
     {
         if (Site.Disabled || !ProcessInputProbe.Enabled)
         {
@@ -68,7 +72,7 @@ internal static class PinClickPatch
 
         try
         {
-            ProcessInputProbe.Record(__instance, ev);
+            ProcessInputProbe.Record(__instance, __0);
         }
         catch (Exception ex)
         {
@@ -78,43 +82,29 @@ internal static class PinClickPatch
         return true;
     }
 
+    /// <summary>
+    /// <see cref="Designator"/> plus every subclass in every loaded assembly (ADR 0005). Abstract subclasses are included
+    /// because they can declare a concrete override. Each type is probed in its own try/catch so one bad type
+    /// (for example a mod type with an unloadable signature) cannot abort <see cref="Apply"/>.
+    /// </summary>
     private static IEnumerable<MethodInfo> EnumerateTargets()
     {
-        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+        var types = new List<Type> { typeof(Designator) };
+        try
         {
-            Type[] types;
+            types.AddRange(GenTypes.AllSubclasses(typeof(Designator)));
+        }
+        catch (Exception ex)
+        {
+            _failed.Add("GenTypes.AllSubclasses :: " + ex.GetType().Name + ": " + ex.Message);
+        }
+
+        foreach (var type in types)
+        {
+            MethodInfo? method = null;
             try
             {
-                types = assembly.GetTypes();
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                types = Array.FindAll(ex.Types, t => t != null)!;
-            }
-            catch (Exception)
-            {
-                continue;
-            }
-
-            foreach (var type in types)
-            {
-                if (type.IsAbstract && type.IsSealed)
-                {
-                    continue;
-                }
-
-                if (type != typeof(Designator) && !type.IsSubclassOf(typeof(Designator)))
-                {
-                    continue;
-                }
-
-                if (type.ContainsGenericParameters)
-                {
-                    continue;
-                }
-
-                MethodInfo? method;
-                try
+                if (!type.ContainsGenericParameters)
                 {
                     method = type.GetMethod(
                         "ProcessInput",
@@ -123,15 +113,15 @@ internal static class PinClickPatch
                         new[] { typeof(Event) },
                         null);
                 }
-                catch (Exception)
-                {
-                    continue;
-                }
+            }
+            catch (Exception ex)
+            {
+                _failed.Add(type.FullName + " :: scan " + ex.GetType().Name + ": " + ex.Message);
+            }
 
-                if (method != null && !method.IsAbstract)
-                {
-                    yield return method;
-                }
+            if (method != null && !method.IsAbstract)
+            {
+                yield return method;
             }
         }
     }

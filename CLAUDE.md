@@ -140,7 +140,7 @@ Templates are in `.claude/templates/`. Copy a template, then fill it in. Never l
 ### Conventions
 - Namespaces `QuickMenu.Core.*` and `QuickMenu.*`. Keyed string keys are prefixed `QuickMenu.`, and every player-facing string is Keyed.
 - Harmony patches exist only at the sites listed in architecture.md §6. No transpilers. Every patch body has try/catch → `LogOnce` → disable that patch and run the original.
-- Patch parameters use exact types (`Designator __instance`, `Event ev`), because Harmony 3 type-checks injections.
+- Patch parameters use exact types (`Designator __instance`, `Event __0`), because Harmony 3 type-checks injections. Bind by index (`__0`), not by name: overrides name the parameter differently (`ev`, `e`), and a named parameter that does not match fails to bind.
 - No GameComponent, WorldComponent or MapComponent, and nothing written into save files. All state lives in `QuickMenuSettings : ModSettings`.
 - No per-frame allocations in the trigger poller or in OnGUI drawing: no LINQ, no string building, no closures in hot paths. Cache labels and layout per open.
 - IMGUI only (no native Waylith UI, no custom shaders, no rotated GUI drawing). Use designator icons through `Command.DrawIcon`.

@@ -19,12 +19,38 @@ internal static class ProcessInputProbe
     private static int _inFrame;
     private static int _maxInFrame;
     private static int _framesWithCalls;
+    private static int _firstCallFrame = -1;
+    private static int _callsBeforeFirstInput;
+    private static int _inputCalls;
+    private static int _multiCallFrames;
+    private static int _nullEvents;
+    private static bool _sawInputEvent;
 
     internal static bool Enabled { get; private set; }
 
-    internal static void Record(Designator designator, Event ev)
+    internal static void Record(Designator designator, Event? ev)
     {
         var frame = Time.frameCount;
+        if (_firstCallFrame < 0)
+        {
+            _firstCallFrame = frame;
+        }
+
+        if (ev == null)
+        {
+            _nullEvents++;
+        }
+        else if (ev.isMouse || ev.isKey)
+        {
+            _sawInputEvent = true;
+            _inputCalls++;
+        }
+
+        if (!_sawInputEvent)
+        {
+            _callsBeforeFirstInput++;
+        }
+
         if (frame != _frame)
         {
             _frame = frame;
@@ -34,19 +60,27 @@ internal static class ProcessInputProbe
 
         _inFrame++;
         _total++;
+        if (_inFrame == 2)
+        {
+            _multiCallFrames++;
+        }
+
         if (_inFrame > _maxInFrame)
         {
             _maxInFrame = _inFrame;
         }
 
         var type = designator.GetType();
+        var evText = ev == null
+            ? "ev=null\n"
+            : "ev.type=" + ev.type + " ev.rawType=" + ev.rawType + " ev.button=" + ev.button + " ev.isKey=" + ev.isKey
+            + " ev.isMouse=" + ev.isMouse + " used=" + (ev.type == EventType.Used) + "\n"
+            + "ev.control=" + ev.control + " ev.alt=" + ev.alt + " ev.shift=" + ev.shift + "\n";
         Verse.Log.Message(
             Log.Prefix + "BEGIN ProcessInput call\n"
             + "instance=" + type.FullName + " [" + type.Assembly.GetName().Name + "]\n"
             + "frame=" + frame + " callInFrame=" + _inFrame + "\n"
-            + "ev.type=" + ev.type + " ev.rawType=" + ev.rawType + " ev.button=" + ev.button + " ev.isKey=" + ev.isKey
-            + " ev.isMouse=" + ev.isMouse + " used=" + (ev.type == EventType.Used) + "\n"
-            + "ev.control=" + ev.control + " ev.alt=" + ev.alt + " ev.shift=" + ev.shift + "\n"
+            + evText
             + "Input.GetKey ctrl L/R=" + UnityEngine.Input.GetKey(KeyCode.LeftControl) + "/" + UnityEngine.Input.GetKey(KeyCode.RightControl)
             + " alt L/R=" + UnityEngine.Input.GetKey(KeyCode.LeftAlt) + "/" + UnityEngine.Input.GetKey(KeyCode.RightAlt)
             + " shift L/R=" + UnityEngine.Input.GetKey(KeyCode.LeftShift) + "/" + UnityEngine.Input.GetKey(KeyCode.RightShift) + "\n"
@@ -65,6 +99,12 @@ internal static class ProcessInputProbe
             _inFrame = 0;
             _maxInFrame = 0;
             _framesWithCalls = 0;
+            _firstCallFrame = -1;
+            _callsBeforeFirstInput = 0;
+            _inputCalls = 0;
+            _multiCallFrames = 0;
+            _nullEvents = 0;
+            _sawInputEvent = false;
         }
 
         Log.Info("ProcessInput probe " + (Enabled ? "ON from frame " + _startFrame : "OFF"));
@@ -90,6 +130,9 @@ internal static class ProcessInputProbe
         sb.AppendLine("probeEnabled=" + Enabled + " startFrame=" + _startFrame + " nowFrame=" + Time.frameCount
             + " framesElapsed=" + (Time.frameCount - _startFrame));
         sb.AppendLine("invocations=" + _total + " framesWithCalls=" + _framesWithCalls + " maxPerFrame=" + _maxInFrame);
+        sb.AppendLine("firstCallFrame=" + _firstCallFrame + " callsBeforeFirstMouseOrKeyEvent=" + _callsBeforeFirstInput
+            + " mouseOrKeyCalls=" + _inputCalls + " nullEvents=" + _nullEvents + " framesWithCallInFrame>1=" + _multiCallFrames);
+        sb.AppendLine("idle phase: invocations with no mouse/key event should be 0 when no click was made; run this report again after the click phase.");
         sb.AppendLine(Log.Prefix + "END ProcessInput report");
         Verse.Log.Message(sb.ToString());
     }

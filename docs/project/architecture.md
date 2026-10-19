@@ -244,7 +244,7 @@ sequenceDiagram
 
 - **Harmony patches** (complete list; the code-reviewer checks any additions):
   1. Postfix `RimWorld.UIRoot_Play.UIRootUpdate()`: trigger polling.
-  2. Prefix `ProcessInput(UnityEngine.Event ev)` on `Verse.Designator` and on every subclass in any loaded assembly that declares its own non-abstract override (vanilla: `Designator_Build`, `Designator_Dropdown`, `Designator_AreaAllowed`, `Designator_Install`, `Designator_Plan_Add`, plus mods' overrides). Signature: `static bool Prefix(Designator __instance, Event ev)`. The `__instance` type is `Designator`, which Harmony 3's type checks accept for subclasses.
+  2. Prefix `ProcessInput(UnityEngine.Event __0)` on `Verse.Designator` and on every subclass in any loaded assembly that declares its own non-abstract override (vanilla: `Designator_Build`, `Designator_Dropdown`, `Designator_AreaAllowed`, `Designator_Install`, `Designator_Plan_Add`, plus mods' overrides). Signature: `static bool Prefix(Designator __instance, Event ev)`. The `__instance` type is `Designator`, which Harmony 3's type checks accept for subclasses.
   - No transpilers. No patches on BAM, Mint or Multiplayer code.
 - **Settings file**: as in section 4.
 - **Keyed strings**: `mod/Languages/English/Keyed/QuickMenu.xml`, keys prefixed `QuickMenu.` (NFR-4). Mint's Keyed file is read for behaviour reference only. No strings are copied.

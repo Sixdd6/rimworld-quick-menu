@@ -19,7 +19,7 @@ Findings (1.7.4982 binaries and BAM 1.6 assembly, which is what loads on 1.7):
 4. **Integrate with BAM directly** (like BAM's own Mint integration): couples us to BAM internals. Rejected (spec: work through the designator).
 
 ## Decision
-- At startup, collect `typeof(Designator)` and all subclasses (`GenTypes.AllSubclasses`). For each, get `ProcessInput(Event)` with `DeclaredOnly`, skip abstract methods, de-duplicate, and patch each with one shared prefix `static bool Prefix(Designator __instance, Event ev)`. Each patch is wrapped in try/catch; failures are logged once and skipped.
+- At startup, collect `typeof(Designator)` and all subclasses (`GenTypes.AllSubclasses`). For each, get `ProcessInput(Event)` with `DeclaredOnly`, skip abstract methods, de-duplicate, and patch each with one shared prefix `static bool Prefix(Designator __instance, Event __0)`. Each patch is wrapped in try/catch; failures are logged once and skipped.
 - Prefix logic (allocation-free on the fast path):
   1. Return `true` (run the original) unless the effective modifier is held. The modifier is checked through `ev.control`/`ev.alt`/`ev.shift`, falling back to `Input.GetKey(Left/Right Ctrl|Alt|Shift)`.
   2. Return `true` if the event is a key event (hotkey activation) or not a left mouse button event (`ev.rawType` MouseDown/MouseUp, `ev.button == 0`). Spike S-3 confirms which fields are reliable after the event is `Used`.
