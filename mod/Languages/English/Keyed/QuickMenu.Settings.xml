@@ -24,6 +24,22 @@
   <QuickMenu.Settings.ClearAllPins>Clear all pins...</QuickMenu.Settings.ClearAllPins>
   <QuickMenu.Settings.ClearAllPinsConfirm>Remove every pin from the quick menu? This cannot be undone.</QuickMenu.Settings.ClearAllPinsConfirm>
   <QuickMenu.Settings.Rings>Rings</QuickMenu.Settings.Rings>
+  <QuickMenu.Settings.Columns>Columns</QuickMenu.Settings.Columns>
+  <QuickMenu.Settings.Rows>Rows</QuickMenu.Settings.Rows>
+  <QuickMenu.Settings.Shape>Shape</QuickMenu.Settings.Shape>
+  <QuickMenu.Settings.ShapeWheel>Wheel</QuickMenu.Settings.ShapeWheel>
+  <QuickMenu.Settings.ShapeGrid>Grid</QuickMenu.Settings.ShapeGrid>
+  <QuickMenu.Settings.Size>Size</QuickMenu.Settings.Size>
+  <QuickMenu.Settings.SizeFixed>Fixed</QuickMenu.Settings.SizeFixed>
+  <QuickMenu.Settings.SizeAuto>Auto</QuickMenu.Settings.SizeAuto>
+  <QuickMenu.Settings.SizeFixedTip>The menu always has the rings, or the columns and rows, set here. Empty slots are drawn, and a pin keeps its place.</QuickMenu.Settings.SizeFixedTip>
+  <QuickMenu.Settings.SizeAutoTip>The menu grows with your pins: one ring or row more when the last is full, up to what fits the screen.</QuickMenu.Settings.SizeAutoTip>
+  <QuickMenu.Settings.PreviewTooBig>At this UI scale the menu is bigger than the screen and will be centred.</QuickMenu.Settings.PreviewTooBig>
+  <QuickMenu.Settings.PreviewHidden>{0} pins are outside the menu and stay hidden until you make it bigger again.</QuickMenu.Settings.PreviewHidden>
+  <QuickMenu.Settings.MissingPins>{0} pins are from mods that are not loaded. They come back when the mods are added back.</QuickMenu.Settings.MissingPins>
+  <QuickMenu.Settings.MissingUnknown>Pins from mods that are not loaded can be checked once the game has finished loading its build menu.</QuickMenu.Settings.MissingUnknown>
+  <QuickMenu.Settings.ForgetMissing>Forget missing pins</QuickMenu.Settings.ForgetMissing>
+  <QuickMenu.Settings.ForgetMissingConfirm>Remove the pins from mods that are not loaded? They will not come back when you add the mods again.</QuickMenu.Settings.ForgetMissingConfirm>
   <QuickMenu.Settings.Slots>{0} slots</QuickMenu.Settings.Slots>
   <QuickMenu.Settings.ButtonSize>Button size</QuickMenu.Settings.ButtonSize>
   <QuickMenu.Settings.ResetDefaults>Reset to defaults</QuickMenu.Settings.ResetDefaults>
