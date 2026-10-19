@@ -4,7 +4,7 @@
 - **Autonomy**: gated   <!-- gated | autonomous -->
 - **Specialists**: visual-designer (all-UI product), performance-engineer (NFR-1 per-frame budget)
 - **Current phase**: 5 Build
-- **Current milestone / task**: M6 — T-75 UC-6 final session in progress (T-87…T-92 done, M6 review fixed)
+- **Current milestone / task**: M6 — T-75 UC-6 paused after Part 9 (Parts 1–9 done; resume at Part 10, BAM + Mint, Alt pin key; retest DropdownMarkerPatch.Draw fault there). Pending fixes: "..." label capitalisation in pin messages; P-5 pin-click 17.7 KB alloc (perf agent). Settings backup: Config/Mod_QuickMenu_QuickMenuMod.xml.bak (restore at session end if wanted).
 - **Last updated**: 2026-10-19
 
 ## Phases
