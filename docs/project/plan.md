@@ -121,7 +121,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **In-game check**: UC-1 (user, via T-9)
   - **Size**: M
 
-- [ ] **T-7**: Skeleton menu window (spike S-6)
+- [x] **T-7**: Skeleton menu window (spike S-6)
   - **Owner**: developer
   - **Requirements**: FR-3 (centred), FR-13, NFR-1 (P-6) (ADR 0007)
   - **Depends on**: T-2, T-5, T-6
@@ -150,7 +150,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **In-game check**: UC-1 (user)
   - **Size**: M
 
-- [ ] **T-9**: Spike S-4 and S-5: "Quick Menu: self-test" debug action
+- [x] **T-9**: Spike S-4 and S-5: "Quick Menu: self-test" debug action
   - **Owner**: developer
   - **Requirements**: FR-7, FR-10, FR-14, FR-17, NFR-1 (P-11c, P-12, P-18), NFR-2 (ADR 0004, 0006)
   - **Depends on**: T-6, T-8
