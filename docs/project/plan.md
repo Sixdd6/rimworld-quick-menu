@@ -376,7 +376,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **In-game check**: UC-2 (user)
   - **Size**: M
 
-- [ ] **T-26**: Pin by modifier+click (production prefix)
+- [x] **T-26**: Pin by modifier+click (production prefix)
   - **Owner**: developer
   - **Requirements**: FR-8, FR-10, FR-15, NFR-1, NFR-2, NFR-6 (ADR 0005)
   - **Depends on**: T-8, T-14, T-25
@@ -394,7 +394,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **In-game check**: UC-2 (user)
   - **Size**: M
 
-- [ ] **T-27**: Pin a single entry inside an open dropdown list (needed: S-3 confirmed)
+- [x] **T-27**: Pin a single entry inside an open dropdown list (needed: S-3 confirmed)
   - **Owner**: developer
   - **Requirements**: FR-8, FR-10 (user decision U-3; ADR 0005)
   - **Depends on**: T-26
@@ -437,7 +437,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **In-game check**: UC-2 (user)
   - **Size**: M
 
-- [ ] **T-30**: Trigger binding: capture dialog, binding row, poller reads the setting
+- [x] **T-30**: Trigger binding: capture dialog, binding row, poller reads the setting
   - **Owner**: developer
   - **Requirements**: FR-1, NFR-1, NFR-4 (ADR 0003; design.md S7 binding, capture dialog)
   - **Depends on**: T-14, T-20, T-25
@@ -452,7 +452,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **In-game check**: UC-2 (user)
   - **Size**: M
 
-- [ ] **T-31**: Settings page v1
+- [x] **T-31**: Settings page v1
   - **Owner**: developer
   - **Requirements**: FR-6, FR-8, NFR-4, NFR-5 (design.md S7)
   - **Depends on**: T-30
