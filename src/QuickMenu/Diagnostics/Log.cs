@@ -26,6 +26,21 @@ internal static class Log
         return true;
     }
 
+    /// <summary>Like <see cref="LogOnce"/> but a warning, for recoverable problems such as a damaged settings file.</summary>
+    internal static bool WarnOnce(string key, string message)
+    {
+        lock (_lock)
+        {
+            if (!_logged.Add(key))
+            {
+                return false;
+            }
+        }
+
+        Verse.Log.Warning(Prefix + message);
+        return true;
+    }
+
     /// <summary>Logs a normal informational message with the mod prefix.</summary>
     internal static void Info(string message) => Verse.Log.Message(Prefix + message);
 }

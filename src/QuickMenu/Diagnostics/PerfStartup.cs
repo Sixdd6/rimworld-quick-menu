@@ -9,9 +9,11 @@ internal static class PerfStartup
 {
     private static long _ctorTicks;
     private static long _patchTicks;
+    private static long _settingsTicks;
 
-    internal static void Note(long ctorTicks, long patchTicks)
+    internal static void Note(long ctorTicks, long patchTicks, long settingsTicks)
     {
+        _settingsTicks = settingsTicks;
         _ctorTicks = ctorTicks;
         _patchTicks = patchTicks;
     }
@@ -21,7 +23,8 @@ internal static class PerfStartup
         double ctorMs = _ctorTicks * 1000.0 / Stopwatch.Frequency;
         double patchMs = _patchTicks * 1000.0 / Stopwatch.Frequency;
         sb.AppendLine("modCtorMs=" + ctorMs.ToString("F2", CultureInfo.InvariantCulture) + " (P-18 <= 150 vanilla, <= 300 large list); of which patching (postfix + pin overrides)="
-            + patchMs.ToString("F2", CultureInfo.InvariantCulture) + "ms; settings load=n/a and Mint/BAM/MP detection=n/a (not implemented yet, later tasks add scopes)");
+            + patchMs.ToString("F2", CultureInfo.InvariantCulture) + "ms; settings load="
+            + (_settingsTicks * 1000.0 / Stopwatch.Frequency).ToString("F2", CultureInfo.InvariantCulture) + "ms; Mint/BAM/MP detection=n/a (not implemented yet, later tasks add scopes)");
         sb.AppendLine("pin override scan/patch ms (reflection, inside patching)="
             + Pinning.PinClickPatch.PatchMilliseconds.ToString("F2", CultureInfo.InvariantCulture) + " patched=" + Pinning.PinClickPatch.PatchedCount);
     }

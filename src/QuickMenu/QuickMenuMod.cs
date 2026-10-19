@@ -5,6 +5,7 @@ using HarmonyLib;
 using QuickMenu.Diagnostics;
 using QuickMenu.Menu;
 using QuickMenu.Pinning;
+using QuickMenu.Settings;
 using QuickMenu.Trigger;
 using RimWorld;
 using Verse;
@@ -16,10 +17,44 @@ public sealed class QuickMenuMod : Mod
 {
     internal const string HarmonyId = "sixdd.QuickMenu";
 
+    private static QuickMenuMod? _instance;
+    private static QuickMenuSettings _settings = new();
+
+    /// <summary>The loaded settings (defaults until the mod is constructed or when loading failed).</summary>
+    internal static QuickMenuSettings Settings => _settings;
+
+    /// <summary>Writes the settings file. Call once per pin, at the end of an edit and when the menu closes, never per frame or per drag step.</summary>
+    internal static void SaveSettings()
+    {
+        try
+        {
+            _instance?.WriteSettings();
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Log.LogOnce("Settings.Write", $"Writing the settings failed: {ex}");
+        }
+    }
+
     public QuickMenuMod(ModContentPack content)
         : base(content)
     {
         long started = Stopwatch.GetTimestamp();
+        _instance = this;
+        long settingsStart = Stopwatch.GetTimestamp();
+        try
+        {
+            _settings = GetSettings<QuickMenuSettings>();
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Log.WarnOnce("Settings.Load", $"Settings could not be loaded, defaults are used: {ex.GetType().Name}");
+            _settings = new QuickMenuSettings();
+        }
+
+        _settings.ApplyCapacity();
+        long settingsTicks = Stopwatch.GetTimestamp() - settingsStart;
+        long patchStart = Stopwatch.GetTimestamp();
         try
         {
             ApplyPatches();
@@ -29,9 +64,8 @@ public sealed class QuickMenuMod : Mod
             Diagnostics.Log.LogOnce("Harmony.Bootstrap", $"Harmony is unavailable, Quick Menu patches were not applied: {ex}");
         }
 
-        // Settings load and Mint/BAM/MP detection are not implemented yet; the ctor time is currently all patching (P-18).
         long end = Stopwatch.GetTimestamp();
-        PerfStartup.Note(end - started, end - started);
+        PerfStartup.Note(end - started, end - patchStart, settingsTicks);
     }
 
     // Isolated and not inlined so a missing 0Harmony assembly fails here, inside the caller's try block.
