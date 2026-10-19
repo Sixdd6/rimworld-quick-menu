@@ -195,7 +195,16 @@ internal static class MenuController
 
                 break;
             case MenuCommandKind.Activate:
-                ActivateSlot(command);
+                try
+                {
+                    ActivateSlot(command);
+                }
+                catch (System.Exception ex)
+                {
+                    Diagnostics.Log.LogOnce("Menu.Activate", $"Activating a slot failed: {ex}");
+                    Close();
+                }
+
                 break;
             case MenuCommandKind.Reject:
                 RejectSlot(command.Index);

@@ -17,11 +17,18 @@ namespace QuickMenu.Activation;
 /// </summary>
 internal static class DesignatorActivator
 {
-    private static readonly MethodInfo? _checkCanInteract = AccessTools.Method(typeof(Designator), "CheckCanInteract");
+    private static MethodInfo? _checkCanInteract;
+    private static bool _checkCanInteractResolved;
 
     /// <summary>The tutor gate of <c>Designator.ProcessInput</c> (protected in the game). True when it cannot be reached (logged once).</summary>
     private static bool CanInteract(Designator designator)
     {
+        if (!_checkCanInteractResolved)
+        {
+            _checkCanInteract = AccessTools.Method(typeof(Designator), "CheckCanInteract", Type.EmptyTypes);
+            _checkCanInteractResolved = true;
+        }
+
         if (_checkCanInteract == null)
         {
             Log.LogOnce("Activation.CheckCanInteract", "Designator.CheckCanInteract was not found; the tutor gate is skipped when choosing a material.");

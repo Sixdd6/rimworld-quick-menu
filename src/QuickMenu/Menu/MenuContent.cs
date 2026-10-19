@@ -103,7 +103,16 @@ internal sealed class MenuContent
         System.Collections.Generic.List<ThingDef>? present = materialPending.Count > 0 ? StuffOptions.Present() : null; // once per open
         foreach ((int slot, Designator d) in materialPending)
         {
-            content.Classify(slot, d, present);
+            try
+            {
+                content.Classify(slot, d, present);
+            }
+            catch (Exception ex)
+            {
+                Type type = d.GetType();
+                Log.LogOnce("Menu.Classify." + type.FullName, $"Classifying pinned designator {type.FullName} failed; its slot is greyed: {ex}");
+                content.Model.Kinds[slot] = SlotKind.Disabled;
+            }
         }
 
         return content;

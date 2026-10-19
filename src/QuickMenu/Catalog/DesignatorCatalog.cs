@@ -262,6 +262,17 @@ internal static class DesignatorCatalog
         try
         {
             Game? game = Current.Game;
+            if (game == null)
+            {
+                // Quit to the main menu: drop the old game's designators now so nothing here keeps it alive.
+                if (_ideoSignature.Update(null, null, 0))
+                {
+                    RebuildIdeology(false);
+                }
+
+                return;
+            }
+
             Ideo? ideo = null;
             int precepts = 0;
             long fingerprint = 0;
@@ -350,13 +361,20 @@ internal static class DesignatorCatalog
             var mods = new ModLookup();
             foreach (DesignationCategoryDef category in categories)
             {
-                foreach (Designator designator in category.AllIdeoDesignators)
+                try
                 {
-                    Node? node = MakeNode(designator, category, mods, depth: 0);
-                    if (node != null)
+                    foreach (Designator designator in category.AllIdeoDesignators)
                     {
-                        nodes.Add(node);
+                        Node? node = MakeNode(designator, category, mods, depth: 0);
+                        if (node != null)
+                        {
+                            nodes.Add(node);
+                        }
                     }
+                }
+                catch (Exception ex)
+                {
+                    Log.LogOnce($"Catalog.Ideo.{category.defName}", $"Reading the Ideology designators of category {category.defName} failed; the rest of it is skipped: {ex}");
                 }
             }
 

@@ -10,6 +10,7 @@ n="${1:-2000}"
 out="${2:-$repo/dist/stress/QuickMenuStress}"
 case "$n" in ''|*[!0-9]*) echo "N must be a positive integer, got '$n'" >&2; exit 1 ;; esac
 [ "$n" -ge 1 ] && [ "$n" -le 50000 ] || { echo "N must be 1..50000" >&2; exit 1; }
+out="$(realpath -m -- "$out")"
 case "$out" in */QuickMenuStress) ;; *) echo "OUT_DIR must end in /QuickMenuStress (safety: it is deleted and recreated)" >&2; exit 1 ;; esac
 
 case "$out" in "$repo/mod"|"$repo/mod/"*) echo "OUT_DIR must not be under the repo's mod/ folder" >&2; exit 1 ;; esac

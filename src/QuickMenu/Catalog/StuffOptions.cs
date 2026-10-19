@@ -73,6 +73,19 @@ internal static class StuffOptions
     /// </summary>
     internal static List<ThingDef> Present()
     {
+        try
+        {
+            return CollectPresent();
+        }
+        catch (Exception ex)
+        {
+            Log.LogOnce("Stuff.Present", $"Reading the materials present on the map failed: {ex}");
+            return new List<ThingDef>();
+        }
+    }
+
+    private static List<ThingDef> CollectPresent()
+    {
         var present = new List<ThingDef>();
         Map? map = Find.CurrentMap;
         if (map == null)
@@ -99,13 +112,18 @@ internal static class StuffOptions
     /// <summary>As <see cref="For(Designator)"/> with the map's stuffs collected once by <see cref="Present"/>; null collects them here.</summary>
     internal static StuffOptionSet For(Designator designator, List<ThingDef>? present)
     {
-        if (designator is not Designator_Build build || build.PlacingDef is not ThingDef def || !def.MadeFromStuff)
+        if (designator is not Designator_Build build)
         {
             return StuffOptionSet.NotStuffBuild;
         }
 
         try
         {
+            if (build.PlacingDef is not ThingDef def || !def.MadeFromStuff)
+            {
+                return StuffOptionSet.NotStuffBuild;
+            }
+
             return Build(build, def, present ?? Present());
         }
         catch (Exception ex)

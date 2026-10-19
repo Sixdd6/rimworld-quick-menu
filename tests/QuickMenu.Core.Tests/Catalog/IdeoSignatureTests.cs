@@ -1,3 +1,5 @@
+using System;
+using System.Runtime.CompilerServices;
 using QuickMenu.Core.Catalog;
 using Xunit;
 
@@ -76,5 +78,30 @@ public class IdeoSignatureTests
         var s = new IdeoSignature();
         s.Update(_game, null, 0, fingerprint: 1);
         Assert.False(s.Update(_game, null, 0, fingerprint: 2));
+    }
+
+    [Fact]
+    public void Does_not_keep_game_or_ideo_alive()
+    {
+        var s = new IdeoSignature();
+        (WeakReference game, WeakReference ideo) = Record(s);
+        for (int i = 0; i < 3; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+
+        Assert.False(game.IsAlive);
+        Assert.False(ideo.IsAlive);
+        Assert.False(s.HasIdeo);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static (WeakReference, WeakReference) Record(IdeoSignature s)
+    {
+        var g = new object();
+        var i = new object();
+        s.Update(g, i, 2);
+        return (new WeakReference(g), new WeakReference(i));
     }
 }

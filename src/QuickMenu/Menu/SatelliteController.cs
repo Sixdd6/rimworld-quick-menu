@@ -239,42 +239,57 @@ internal sealed class SatelliteController
         for (int i = 0; i < elements.Count; i++)
         {
             Designator d = elements[i];
-            ring.Designators[i] = d;
-            bool usable = MenuContent.IsUsable(d);
-            StuffOptionSet set = StuffOptions.For(d, present);
-            ring.Sets[i] = set;
-            if (!set.IsStuffBuild)
+            try
             {
-                model.SetSlot(i, d, usable ? SlotKind.Normal : SlotKind.Disabled);
-                if (materials?[i] is { } material)
-                {
-                    model.SetMaterialIcon(i, material);
-                }
-
-                continue;
+                BuildSubOption(ring, model, i, d, present, materials);
             }
-
-            model.SetSlot(i, d, StuffSlotPolicy.KindFor(set.Outcome, usable));
-            if (model.Kinds[i] == SlotKind.Disabled)
+            catch (Exception ex)
             {
-                if (StuffSlotPolicy.IsNoMaterials(set.Outcome, usable))
-                {
-                    ring.SetReason(i, "NoStuffsToBuildWith".Translate().Resolve());
-                }
-            }
-            else if (set.Outcome == StuffRingOutcome.Ring)
-            {
-                model.SetDecor(i, SlotDecor.Material, LastUsedColor(d, set));
-            }
-            else if (set.Outcome == StuffRingOutcome.Skip)
-            {
-                ring.Stuffs[i] = set.Options[0].Def;
+                Type type = d.GetType();
+                Log.LogOnce("Menu.Classify." + type.FullName, $"Building sub-ring option {type.FullName} failed; it is greyed: {ex}");
+                ring.Designators[i] = d;
+                model.Kinds[i] = SlotKind.Disabled;
             }
         }
 
         model.SetHubLabels(main.Label(slot), main.Label(slot));
         model.PrepareSatellite();
         return ring;
+    }
+
+    private static void BuildSubOption(RingContent ring, WheelModel model, int i, Designator d, List<ThingDef> present, ThingDef?[]? materials)
+    {
+        ring.Designators[i] = d;
+        bool usable = MenuContent.IsUsable(d);
+        StuffOptionSet set = StuffOptions.For(d, present);
+        ring.Sets[i] = set;
+        if (!set.IsStuffBuild)
+        {
+            model.SetSlot(i, d, usable ? SlotKind.Normal : SlotKind.Disabled);
+            if (materials?[i] is { } material)
+            {
+                model.SetMaterialIcon(i, material);
+            }
+
+            return;
+        }
+
+        model.SetSlot(i, d, StuffSlotPolicy.KindFor(set.Outcome, usable));
+        if (model.Kinds[i] == SlotKind.Disabled)
+        {
+            if (StuffSlotPolicy.IsNoMaterials(set.Outcome, usable))
+            {
+                ring.SetReason(i, "NoStuffsToBuildWith".Translate().Resolve());
+            }
+        }
+        else if (set.Outcome == StuffRingOutcome.Ring)
+        {
+            model.SetDecor(i, SlotDecor.Material, LastUsedColor(d, set));
+        }
+        else if (set.Outcome == StuffRingOutcome.Skip)
+        {
+            ring.Stuffs[i] = set.Options[0].Def;
+        }
     }
 
     private RingContent? BuildMaterial(int parentSlot, Designator target, Designator_Dropdown? dropdown, in StuffOptionSet set, WheelModel hubSource, int hubIndex)

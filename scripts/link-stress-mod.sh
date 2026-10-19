@@ -6,15 +6,16 @@
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo="$(cd "$here/.." && pwd)"
-src="$(readlink -f "${1:-$repo/dist/stress/QuickMenuStress}")"
 game="${RIMWORLD_DIR:-$HOME/.steam/steam/steamapps/common/RimWorld}"
 target="$game/Mods/QuickMenuStress"
 if [ "${1:-}" = "--remove" ]; then
   if [ -L "$target" ]; then rm "$target"; echo "removed $target"; else echo "no link at $target"; fi
   exit 0
 fi
+src="$(readlink -f -- "${1:-$repo/dist/stress/QuickMenuStress}")"
 [ -d "$game" ] || { echo "RimWorld not found at $game (set RIMWORLD_DIR)" >&2; exit 1; }
 [ -f "$src/About/About.xml" ] || { echo "Run scripts/make-stress-mod.sh first" >&2; exit 1; }
+grep -qs 'sixdd\.QuickMenuStress' "$src/About/About.xml" || { echo "$src is not a Quick Menu stress mod (no sixdd.QuickMenuStress in About.xml); refusing to link" >&2; exit 1; }
 mkdir -p "$game/Mods"
 if [ -L "$target" ]; then
   if [ "$(readlink -f "$target")" = "$(readlink -f "$src")" ]; then echo "already linked: $target"; exit 0; fi
