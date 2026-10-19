@@ -73,7 +73,7 @@ These rules are written so Core can implement them exactly and test them against
   - **Main area** (Close in use mode, Done in edit mode): the hub hit area minus the sub-button. Hub hit area = distance ≤ `P/2` from the centre (wheel) or the centre cell (grid).
   - Defaults (B = 56): hub hit radius 32; sub-button spans y +6 … +26.
 - There are no buttons on the rim.
-- **Label plate**: horizontally centred on cx. Top = `cy + D + plateGap`. Width = text width + 12, max `2·D`.
+- **Label plate**: horizontally centred on cx. Top = `cy + D + plateGap`. Width = text width + 12, max `2·D`. The menu's label plate is one line: a longer label is truncated with the game's `Truncate` once per open (T-29), so `plateH` stays fixed for the bounding box. (Hint and help plates still wrap.)
 - **Bounding box (for edge dodging)**: x `cx ± D`; y top `cy − D`, y bottom `cy + D + plateGap + plateH`. With the defaults: 336 wide, top −168, bottom +206.
 
 **Grid (main)**

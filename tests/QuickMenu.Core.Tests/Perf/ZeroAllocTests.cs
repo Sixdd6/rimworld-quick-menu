@@ -3,6 +3,7 @@ using System;
 using QuickMenu.Core.Geometry;
 using QuickMenu.Core.Input;
 using QuickMenu.Core.Layout;
+using QuickMenu.Core.Render;
 using Xunit;
 
 namespace QuickMenu.Core.Tests.Perf;
@@ -115,6 +116,35 @@ public class ZeroAllocTests
         Rect2 inside = MenuBounds.ForWheel(new Vec2(480f, 270f), 56f, 2);
         float sum = 0f;
         long bytes = AllocatedBy(i => sum += EdgeDodger.Fit(i % 2 == 0 ? near : inside, screen).X);
+
+        Assert.Equal(0L, bytes);
+        Assert.True(sum > 0f);
+    }
+
+    [Fact]
+    public void WheelVisuals_per_frame_calls_allocate_nothing()
+    {
+        // T-29: the renderer resolves every slot and hub state, the plate and the transform per frame.
+        SlotKind[] kinds = [SlotKind.Normal, SlotKind.Empty, SlotKind.Submenu, SlotKind.Disabled, SlotKind.Empty, SlotKind.Normal];
+        Hit[] hits = [Hit.Slot(0), Hit.Slot(1), Hit.HubClose, Hit.HubEdit, Hit.Plate, Hit.Outside];
+        var t = new RenderTransform(new Vec2(500f, 400f), new Vec2(100f, 80f), 0.5f);
+        float sum = 0f;
+        long bytes = AllocatedBy(i =>
+        {
+            Hit hover = hits[i % hits.Length];
+            Hit pressed = hits[(i / 3) % hits.Length];
+            bool enabled = i % 2 == 0;
+            for (int s = 0; s < kinds.Length; s++)
+            {
+                sum += (int)WheelVisuals.Slot(s, kinds[s], hover, pressed);
+                sum += t.Rect(WheelVisuals.IconRect(new Vec2(s, s), 56f)).Width;
+            }
+
+            sum += (int)WheelVisuals.HubMain(hover, pressed, enabled) + (int)WheelVisuals.HubSub(hover, pressed, enabled);
+            sum += (int)WheelVisuals.Plate(hover, enabled, true, kinds, kinds.Length);
+            sum += t.Rect(WheelVisuals.PlateRect(new Vec2(500f, 400f), 168f, 90f, 30f)).Y;
+            sum += t.Point(WheelVisuals.HubGlyphCenter(new Vec2(500f, 400f), 56f)).Y + WheelVisuals.HubSubCenter(new Vec2(500f, 400f), 56f).Y;
+        });
 
         Assert.Equal(0L, bytes);
         Assert.True(sum > 0f);

@@ -22,6 +22,15 @@ public static class StyleTokens
     /// <summary>Slot fill, picker icon tile: <c>#1E2328</c> α 0.92.</summary>
     public static readonly Rgba32 SlotBg = Rgba32.FromHex(0x1E2328, 0.92f);
 
+    /// <summary>Empty slot fill (S4 state 6): <see cref="SlotBg"/>'s colour at α 0.70.</summary>
+    public static readonly Rgba32 SlotBgEmpty = Rgba32.FromHex(0x1E2328, 0.70f);
+
+    /// <summary>Hub main area fill (S4a): <see cref="SlotBg"/>'s colour at α 0.60.</summary>
+    public static readonly Rgba32 HubBg = Rgba32.FromHex(0x1E2328, 0.60f);
+
+    /// <summary>The 8 % white overlay of a hovered slot (S4 state 2).</summary>
+    public static readonly Rgba32 HoverOverlay = Rgba32.FromHex(0xFFFFFF, 0.08f);
+
     /// <summary>Hover, drop target: <c>#2A3540</c>.</summary>
     public static readonly Rgba32 SlotBgHover = Rgba32.FromHex(0x2A3540);
 

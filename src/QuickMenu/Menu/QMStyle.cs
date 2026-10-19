@@ -22,6 +22,16 @@ internal static class QMStyle
     internal static readonly Color SlotBgHover = ToColor(StyleTokens.SlotBgHover);
     internal static readonly Color SlotBgPressed = ToColor(StyleTokens.SlotBgPressed);
     internal static readonly Color SlotBorder = ToColor(StyleTokens.SlotBorder);
+
+    /// <summary>Empty slot fill (S4 state 6): <c>slotBg</c> at 70 %.</summary>
+    internal static readonly Color SlotBgEmpty = ToColor(StyleTokens.SlotBgEmpty);
+
+    /// <summary>Hub main area fill (S4a): <c>slotBg</c> at 60 %.</summary>
+    internal static readonly Color HubBg = ToColor(StyleTokens.HubBg);
+
+    /// <summary>The 8 % white overlay of a hovered slot (S4 state 2).</summary>
+    internal static readonly Color HoverOverlay = ToColor(StyleTokens.HoverOverlay);
+
     internal static readonly Color EmptyBorder = ToColor(StyleTokens.EmptyBorder);
     internal static readonly Color Text = ToColor(StyleTokens.Text);
     internal static readonly Color TextMuted = ToColor(StyleTokens.TextMuted);
