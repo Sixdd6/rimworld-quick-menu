@@ -277,3 +277,55 @@ Only the **self-test** and the **ProcessInput probe** are repeated. Copy your lo
 | P-9 draw allocation | perf report | 512 bytes per frame or less above the control window |
 | P-18 startup | self-test, perf report | 150 ms or less (a); 300 ms or less (b)/(R) |
 | NFR-3 | mod list | game loads with Harmony and Quick Menu only |
+
+## FR-18 Multiplayer (setup (e))
+
+**Task**: T-68 (audit), run in UC-6 (T-75) or later. **Status: BLOCKED, not failed (spec A-2).** Multiplayer (`rwmt.Multiplayer`) is not installed, and its newest release (v0.11.5) and "Continuous" snapshot support RimWorld 1.6 only (checked 2026-10-19). Run this section only when Multiplayer lists 1.7. Until then, record it in the session report as `FR-18: blocked (Multiplayer has no 1.7 build)`.
+
+### Source audit (done 2026-10-19, no game needed)
+
+The grep audit and its result are in ADR 0006, "Multiplayer audit (2026-10-19)". Summary: no `Designate*` call, no Multiplayer API, nothing written into the save, no `Rand` or game-time use. The only game-state calls are `SetStuffDef`, `DesignatorManager.Select` and `Designator_Dropdown.SetActiveDesignator`, the same calls the architect makes. Pass. Re-run the grep from the ADR before this session if `src/QuickMenu/Activation/` or `src/QuickMenu/Pinning/` changed since then.
+
+### Steps (when Multiplayer supports 1.7, about 30 min)
+
+You need two game clients: a second PC, a friend, or a second copy of the game started with `-savedatafolder=<another folder>` so the two clients do not share settings. Both clients must have exactly the same mod list.
+
+e.0. Check that Multiplayer's `About/About.xml` (or its Workshop page) lists 1.7.
+- If it does not, stop. FR-18 stays blocked.
+
+e.1. On both clients, set the mod list to Harmony (`brrainz.harmony`), Multiplayer (`rwmt.Multiplayer`), all DLC, then Quick Menu (`sixdd.QuickMenu`). Turn on Dev mode.
+- Expected: the game loads without red errors. The log has no `[QuickMenu]` error.
+
+e.2. Host: Multiplayer, Host, load a colony that has wood, steel and at least two kinds of stone blocks on the map (and an ideoligion with a special building, if you can). Client: join it.
+- Expected: both clients show the same colony, and the Multiplayer status shows no desync.
+
+e.3. Host: in the architect, Ctrl+click a wall, Mine, one fine floor tile entry inside its dropdown and (if present) an Ideology building, to pin them.
+- Expected: the "pinned" message and sound appear **on the host only**. The client sees nothing. No desync.
+
+e.4. Host: open Quick Menu, choose Wall, pick **granite blocks** in the material ring, and drag a 5-cell wall on the map.
+- Expected: the client sees 5 granite wall blueprints on the same cells. No desync.
+
+e.5. Host: from the menu, choose Mine and drag over rock.
+- Expected: the client sees the same mining designations.
+
+e.6. Host: from the menu, open the floor sub-ring, choose the fine tile entry, then the material if asked, and place a 3x3 floor.
+- Expected: the client sees the same floor blueprints with the same material. In the host's architect, that dropdown now shows the chosen entry as last used (local only).
+
+e.7. Host (if present): place the Ideology building from the menu.
+- Expected: the client sees the same building blueprint, with the same style.
+
+e.8. Client: pin a wall in its own architect, then repeat e.4 from the client with **steel**.
+- Expected: the host sees 5 steel wall blueprints. Pins on the two clients are separate (each has its own settings file).
+
+e.9. Let the game run at speed 3 for one in-game day while both players open and close the menu now and then.
+- Expected: no "Desynced" dialog and no Multiplayer desync report.
+
+e.10. Host: run the debug action "Quick Menu: self-test".
+- Expected: Multiplayer syncs debug actions, so the self-test block may appear in **both** logs. No desync and no error. This is expected and accepted (ADR 0006).
+
+e.11. Host: save the game (Multiplayer save). Search the save file for the mod: `grep -c QuickMenu <save file>.rws`.
+- Expected: `0`.
+
+e.12. Copy from both clients: the `[QuickMenu]` lines of the log and any Multiplayer desync or sync-error lines that mention `QuickMenu`, `Designator_Build` or `DesignatorManager`.
+
+**Pass**: e.4 to e.9 show identical blueprints and designations on both clients, no desync, no `[QuickMenu]` error, and e.11 gives 0. **Fail**: any desync or mismatch traced to a menu action becomes a bug task. A desync that also happens when the same thing is placed through the plain architect is a Multiplayer issue, not an FR-18 failure.

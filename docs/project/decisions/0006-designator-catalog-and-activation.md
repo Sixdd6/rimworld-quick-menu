@@ -61,3 +61,33 @@ UC-1 session on RimWorld 1.7.4982, Harmony mod v3.0.1.0 (library 3.0.0-rc.3). Fu
 - **S-5, dev-only rule:** no designator in either list is dev-only by type name (`DevNameHint`). `Designator_Build.Visible` returns true under god mode before its research/tech/prerequisite checks, so "visible only in god mode" does not mean dev-only: 243 god-only entries are explained by research, research prerequisites, place workers or tech level. Six god-only entries have no known cause (`build:terrain/Substructure`, `build:thing/HoldingSpot`, `dropdown:Floor_Tile_Metal`, `dropdown:Floor_Carpet`, `dropdown:Floor_Carpet_Fine`, `order:RimWorld.Designator_ZoneAdd_Fishing`); they are probably DLC or other gates, not dev tools. **Rule:** hide an entry from the picker (FR-7) as dev-only only when its designator type is clearly a debug type (type-name hint); every other god-only entry is "unavailable" and gets a composed reason.
 - **S-5, reasons:** `disabledReason` was never set on any entry, so `AvailabilityResolver` must compose every reason itself. Sources: `researchPrerequisites` / `IsResearchFinished` (research project labels), `buildingPrerequisites`, `PlaceWorkers`, and `minTechLevelToBuild`/`maxTechLevelToBuild`. Anything else falls back to the keyed "Not available right now" (U-4).
 - Catalog build 5.2 ms (718 entries: 5.3 ms), one build per session (P-11c, P-12 met).
+
+## Multiplayer audit (2026-10-19)
+
+T-68, FR-18, A-2. Read-only audit of `src/QuickMenu/**` (Core references no game assembly, so it cannot touch game state). Command used:
+
+```
+grep -rnE "Designate(SingleCell|MultiCell|Thing)|GenSpawn|GenConstruct|PlaceBlueprint|designationManager|AddDesignation|Rand\.|System\.Random|Time\.|TickManager|TicksGame|ProcessInput|SetStuffDef|SetActiveDesignator|DesignatorManager|Multiplayer|Scribe|GameComponent|MapComponent|WorldComponent|forcePause|Find\.Selector" --include=*.cs src/QuickMenu
+```
+
+**Result: no finding blocks FR-18.**
+
+| Check | Result |
+|---|---|
+| `Designate*`, `GenSpawn`, `GenConstruct`, blueprint placement, `designationManager` | **None.** Placement and designation happen later in the game's own `Designate*` methods, called by `DesignatorManager` when the player clicks the map. |
+| Multiplayer API, sync workers, `rwmt` references | **None.** |
+| Game state written by our code | Only three calls, all in `Activation/DesignatorActivator.cs`, all made by the architect itself: `Designator_Build.SetStuffDef` (the shared designator's chosen material), `Find.DesignatorManager.Select` (local selection), `Designator_Dropdown.SetActiveDesignator` (the dropdown's last-used element). The plain path calls `designator.ProcessInput(Event.current)`, which is exactly the architect's click. `CheckCanInteract` (tutor gate) is invoked through reflection and only reads. |
+| Save file | **Nothing written.** No `GameComponent`/`MapComponent`/`WorldComponent`. `Scribe` is used only in `QuickMenuSettings.ExposeData` (the per-player mod settings file). Pins therefore differ per player, which is correct for local UI. |
+| Randomness / time | No `Rand`, no `System.Random`. `Time.frameCount` and `Time.realtimeSinceStartup` feed only the pin-click deduper, the first-frame log, perf counters and the control-run window: local UI and diagnostics, never game logic. No tick or game-speed access; every window has `forcePause = false`. |
+| Reads of game state | `Find.CurrentMap`, `map.resourceCounter` (material ring), `Faction.OfPlayer` and its ideos (Ideology refresh, unavailable reasons), `DesignationCategoryDef` designator lists, `Current.Game`. Read-only. |
+| Pin prefix on `Designator.ProcessInput` returning `false` | Only on a modifier+left-click gesture, and then it skips the designator's own `ProcessInput` (selection or opening its float menu), which is local UI. It toggles a pin in the settings file, shows a non-historical `Messages.Message` and plays a sound: all local. Multiplayer does not patch `Designator.ProcessInput` (it syncs `Designate*`), so the two do not interact. The dropdown-entry postfix is the same: on the gesture it skips the entry's select action. |
+| Local feedback | `Messages.Message(..., historical: false)` and `PlayOneShotOnCamera` only, both client-local. |
+
+Multiplayer behaviour checked against its source (`rwmt/Multiplayer` default branch, commit `4a3be27`, 2026-04-29, About.xml lists 1.6 only, "Requires RimWorld >= 1.6.4491"):
+- It prefixes `Designator.DesignateSingleCell`/`DesignateMultiCell`/`DesignateThing` and sends the designator as a sync command. The `Designator_Build` sync worker writes `PlacingDef`, `placingRot`, `stuffDef` (for stuff builds) and `sourcePrecept`, and builds a **new** `Designator_Build` from them on every client. So the material we set with `SetStuffDef` travels with the placement, and the designator instance we hold in the catalog does not matter to the other clients.
+- It does not patch `ProcessInput`, `DesignatorManager.Select`, `SetStuffDef` or `SetActiveDesignator` for architect designators, so our local selection path needs nothing from it. (It does sync a lambda inside `Designator_MechControlGroup.ProcessInput`, a pawn-command designator that is not in our catalog. A modifier+click there pins it instead of opening its menu; that is local and unchanged by Multiplayer.)
+- It syncs **every dev-mode debug action** through its `DebugActionNode.Enter` patch. Our "Quick Menu" debug actions (self-test, catalog dump, perf measuring, perf report, control window) would then run on every client. They only log, measure or open a local window and change no game state, so this cannot desync, but other players would see the log output or window. Accepted (dev mode only); revisit if it annoys anyone.
+
+Installed: **not installed** on the user's machine. No workshop item under `~/.steam/steam/steamapps/workshop/content/294100` has packageId `rwmt.Multiplayer` (seven other mods only mention it in their load-order lists). Latest release v0.11.5 and the "Continuous" snapshot both target 1.6; there is no 1.7 build (checked on github.com/rwmt/Multiplayer/releases on 2026-10-19).
+
+Status: FR-18 is **blocked, not failed** (A-2). The in-game check is item FR-18 in `docs/project/test-checklist.md` (setup (e)), to run when Multiplayer lists 1.7. Residual risk: Multiplayer's 1.7 port could change how it identifies designators. The checklist steps cover stuff builds, a dropdown entry, an order and an Ideology building so that any such change shows up.
