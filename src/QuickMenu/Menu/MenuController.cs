@@ -3,6 +3,7 @@ using QuickMenu.Catalog;
 using QuickMenu.Core.Geometry;
 using QuickMenu.Core.Input;
 using QuickMenu.Core.Layout;
+using QuickMenu.Core.Pins;
 using QuickMenu.Core.Settings;
 using QuickMenu.Diagnostics;
 using QuickMenu.Pinning;
@@ -125,6 +126,7 @@ internal static class MenuController
             return null;
         }
 
+        using var scope = new MeasureScope(StatId.Rebuild);
         MenuContent content = BuildContent(mouse);
         _content = content;
         LastSlotCount = content.Model.SlotCount;
@@ -223,14 +225,15 @@ internal static class MenuController
     /// </summary>
     private static void Unpin(int slot)
     {
-        CatalogEntry? entry = _content != null && slot >= 0 && slot < _content.Entries.Length ? _content.Entries[slot] : null;
+        PinEntry? pin = _content != null && slot >= 0 && slot < _content.Pins.Length ? _content.Pins[slot] : null;
         QuickMenuWindow? window = _window;
-        if (entry == null || window == null)
+        if (pin == null || window == null)
         {
             return;
         }
 
-        PinService.Toggle(entry);
+        // The saved pin's own key, so a reserved (missing-mod) pin and a pin whose catalog entry has another key both unpin.
+        PinService.Toggle(pin.Key, pin.Label, pin.PackageId);
         window.Refresh();
     }
 

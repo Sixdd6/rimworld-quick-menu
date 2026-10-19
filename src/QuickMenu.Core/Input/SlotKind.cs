@@ -14,4 +14,7 @@ public enum SlotKind
 
     /// <summary>A pin that cannot be used now: reject sound and reason, the menu stays open (FR-14).</summary>
     Disabled,
+
+    /// <summary>A reserved pin whose target is missing (mod removed): drawn, hovered and clicked like <see cref="Empty"/>, but a pin-modifier+click still unpins it.</summary>
+    Reserved,
 }

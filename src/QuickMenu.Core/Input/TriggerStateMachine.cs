@@ -184,6 +184,7 @@ public sealed class TriggerStateMachine
                 switch (e.SlotKind)
                 {
                     case SlotKind.Empty:
+                    case SlotKind.Reserved:
                         return MenuCommand.None;
                     case SlotKind.Disabled:
                         return MenuCommand.Reject(e.Hit.Index);

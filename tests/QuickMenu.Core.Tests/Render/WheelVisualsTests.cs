@@ -37,6 +37,7 @@ public class WheelVisualsTests
     {
         Assert.Equal(SlotVisualState.Empty, WheelVisuals.Slot(2, SlotKind.Empty, Hit.Slot(2), Hit.Slot(2)));
         Assert.Equal(SlotVisualState.Empty, WheelVisuals.Slot(2, SlotKind.Empty, _none, _none));
+        Assert.Equal(SlotVisualState.Empty, WheelVisuals.Slot(2, SlotKind.Reserved, Hit.Slot(2), Hit.Slot(2)));
     }
 
     [Fact]

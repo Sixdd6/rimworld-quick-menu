@@ -28,6 +28,9 @@ internal enum StatId
 
     /// <summary>Sub-bucket of <see cref="Window"/>: the label plate (<c>Widgets.DrawAtlas</c> + <c>Widgets.Label</c>, game code).</summary>
     WindowPlate,
+
+    /// <summary>Rebuilding the wheel after an unpin; kept out of <see cref="Window"/> so P-9 allocations are not polluted.</summary>
+    Rebuild,
 }
 
 /// <summary>

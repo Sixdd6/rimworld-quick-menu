@@ -87,7 +87,7 @@ public static class WheelVisuals
     /// </summary>
     public static SlotVisualState Slot(int index, SlotKind kind, Hit hover, Hit pressed)
     {
-        if (kind == SlotKind.Empty)
+        if (kind is SlotKind.Empty or SlotKind.Reserved)
         {
             return SlotVisualState.Empty;
         }
@@ -130,7 +130,7 @@ public static class WheelVisuals
         {
             case HitKind.Slot:
                 int n = count < kinds.Length ? count : kinds.Length;
-                return hover.Index >= 0 && hover.Index < n && kinds[hover.Index] != SlotKind.Empty
+                return hover.Index >= 0 && hover.Index < n && kinds[hover.Index] is not (SlotKind.Empty or SlotKind.Reserved)
                     ? PlateContent.Slot
                     : PlateContent.None;
             case HitKind.HubEdit:

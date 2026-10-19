@@ -51,6 +51,25 @@ public class TriggerStateMachineHubAndUnpinTests
     }
 
     [Fact]
+    public void Modifier_click_on_a_reserved_slot_unpins_it_and_a_plain_click_does_nothing()
+    {
+        var m = Opened();
+        Assert.Equal(MenuCommand.None, Click(m, Hit.Slot(2), SlotKind.Reserved));
+        Assert.Equal(MenuState.Main, m.State);
+        Assert.Equal(MenuCommand.Unpin(2), Click(m, Hit.Slot(2), SlotKind.Reserved, modifier: true));
+        Assert.Equal(MenuState.Main, m.State);
+    }
+
+    [Fact]
+    public void Modifier_click_on_a_reserved_slot_in_edit_mode_unpins_it()
+    {
+        var m = Opened();
+        Click(m, Hit.HubEdit);
+        Assert.Equal(MenuCommand.Unpin(1), Click(m, Hit.Slot(1), SlotKind.Reserved, modifier: true));
+        Assert.Equal(MenuState.Edit, m.State);
+    }
+
+    [Fact]
     public void Modifier_click_needs_press_and_release_on_the_same_slot()
     {
         var m = Opened();

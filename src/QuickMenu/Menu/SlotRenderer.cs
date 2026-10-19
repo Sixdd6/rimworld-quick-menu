@@ -61,11 +61,11 @@ internal static class SlotRenderer
                 QuickMenu.Diagnostics.Log.LogOnce($"Menu.Icon.{type}", $"Drawing the icon of {type} failed, its icon is left blank: {ex.GetType().Name}: {ex.Message}");
                 model.BlankIcon(index);
             }
+        }
 
-            if (model.Kinds[index] == SlotKind.Disabled)
-            {
-                DrawUnavailable(model, layoutCentre, c, scale, transform);
-            }
+        if (model.Kinds[index] == SlotKind.Disabled)
+        {
+            DrawUnavailable(model, layoutCentre, c, scale, transform);
         }
     }
 

@@ -235,7 +235,7 @@ internal sealed class QuickMenuWindow : Window
         }
         catch (Exception ex)
         {
-            Log.LogOnce("Menu.Build", $"Refreshing the menu content failed, the menu is closed: {ex}");
+            Log.LogOnce("Menu.Refresh", $"Refreshing the menu content failed, the menu is closed: {ex}");
         }
 
         if (content == null)
@@ -253,7 +253,7 @@ internal sealed class QuickMenuWindow : Window
     {
         bool hoverEnabled = MenuController.HoverEnabled;
         MenuRenderer.Draw(model, hit, _pressHit, hoverEnabled);
-        int slot = hoverEnabled && hit.Kind == HitKind.Slot && model.Kinds[hit.Index] != SlotKind.Empty ? hit.Index : -1;
+        int slot = hoverEnabled && hit.Kind == HitKind.Slot && model.Kinds[hit.Index] is not (SlotKind.Empty or SlotKind.Reserved) ? hit.Index : -1;
         if (slot != _hoverSlot)
         {
             _hoverSlot = slot;

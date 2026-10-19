@@ -111,10 +111,10 @@ internal sealed class WheelModel
     /// </summary>
     internal void SetSlot(int index, Command? icon, SlotKind kind, string? label = null)
     {
-        if (icon == null || kind == SlotKind.Empty)
+        if (icon == null || kind == SlotKind.Empty || kind == SlotKind.Reserved)
         {
             _icons[index] = null;
-            _kinds[index] = SlotKind.Empty;
+            _kinds[index] = kind == SlotKind.Reserved ? SlotKind.Reserved : SlotKind.Empty;
             _labels[index] = string.Empty;
             return;
         }
