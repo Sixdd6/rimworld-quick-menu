@@ -894,7 +894,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-4 (user)
   - **Size**: S
 
-- [ ] **T-86**: Satellite underlay so the dimmed main menu does not show through satellites (M3 visual review, T-48 finding 4) · `parallel-ok`
+- [-] **T-86**: Satellite underlay so the dimmed main menu does not show through satellites (M3 visual review, T-48 finding 4) · `parallel-ok` (removed: user keeps the see-through satellite, 2026-10-19)
   - **Owner**: developer (visual-designer checks it in UC-4 / T-61)
   - **Requirements**: NFR-7, FR-11, FR-12 (design.md §2 `satelliteUnderlay`, S1 draw order, §8 UC-3 visual review)
   - **Depends on**: T-48

@@ -4,7 +4,7 @@
 - **Autonomy**: gated   <!-- gated | autonomous -->
 - **Specialists**: visual-designer (all-UI product), performance-engineer (NFR-1 per-frame budget)
 - **Current phase**: 5 Build
-- **Current milestone / task**: M3 — build done; UC-3 session (T-47)
+- **Current milestone / task**: M4 — starting (M3 approved 2026-10-19)
 - **Last updated**: 2026-10-19
 
 ## Phases
@@ -43,3 +43,4 @@ States: `not started` → `in progress` → `awaiting approval` → `done` (or `
 - 2026-10-19 — M1 approved by user; M2 started.
 - 2026-10-19 — M2 done: pin by click (vanilla + BAM, dropdowns and entries), styled wheel, binding + settings page, persistence; UC-2 + UC-2b passed. User decisions: picker removed (FR-7 Won't), centre = Edit button, Ctrl+click unpins on the wheel, unavailable pins always shown greyed, no hover delay, keep vanilla tooltip.
 - 2026-10-19 — M2 approved by user (test review PASS, security audit PASS with lows fixed); M3 started.
+- 2026-10-19 — M3 approved: sub-rings, material ring (fixed order, highlight), material-variant icons, Ideology refresh, edit mode shell; UC-3 passed; security + test reviews passed. T-86 (satellite underlay) declined by user.
