@@ -937,7 +937,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
 
 - [-] **T-64**: Hold mode in the window and the trigger-mode setting (removed: hold-and-release mode dropped by user 2026-10-19; the `TriggerMode` setting is removed in T-94)
 
-- [ ] **T-94**: Remove the partial hold-mode code and the trigger-mode setting · `parallel-ok`
+- [x] **T-94**: Remove the partial hold-mode code and the trigger-mode setting · `parallel-ok`
   - **Owner**: developer
   - **Requirements**: FR-2 (press-to-toggle only, no trigger-mode setting), FR-17, NFR-6, NFR-8 (spec FR-2 as revised 2026-10-19)
   - **Depends on**: — (T-21, T-81 done)
@@ -973,6 +973,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Depends on**: T-57, T-59
   - **Files**: `src/QuickMenu/Pinning/PinService.cs`, `src/QuickMenu/Menu/QuickMenuWindow.cs`, `mod/Languages/English/Keyed/QuickMenu.Menu.xml`
   - **Acceptance criteria**:
+    - [ ] Given a modifier+click on a designator that is not an architect designator (not in any DesignationCategoryDef, e.g. Designator_MechControlGroup on a pawn), then the pin prefix does not intercept it and the designator behaves normally (T-68 audit risk 2).
     - [ ] Given a pin whose def or type is not loaded, then Fixed reserves its slot (empty in use mode, "?" in edit mode with the S4 state 8 tooltip and mod name), Auto hides it, and the settings count includes it; no error is logged.
     - [ ] Given the mod is added back, then the pin returns in its place.
     - [ ] *(UC-5)* Journey 6 with the stress mod (or BAM-only designator): pin, remove the mod, restart, check, re-add, check.
@@ -994,7 +995,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-5 (user)
   - **Size**: M
 
-- [ ] **T-68**: Multiplayer readiness audit · `parallel-ok`
+- [x] **T-68**: Multiplayer readiness audit · `parallel-ok`
   - **Owner**: developer
   - **Requirements**: FR-18, NFR-2 (ADR 0006, A-2)
   - **Depends on**: T-41
