@@ -305,7 +305,7 @@ internal static class PinService
     {
         try
         {
-            TaggedString text = feedback.UsesLabel ? feedback.MessageKey.Translate(label) : feedback.MessageKey.Translate();
+            TaggedString text = feedback.UsesLabel ? feedback.MessageKey.Translate(PinFeedback.MessageLabel(label)) : feedback.MessageKey.Translate();
 
             // MessageTypeDefOf.RejectInput already carries the ClickReject sound, which Messages.Message plays, so a
             // reject result adds no sound of its own (it would play twice).

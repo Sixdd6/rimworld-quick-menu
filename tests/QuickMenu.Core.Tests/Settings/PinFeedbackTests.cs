@@ -47,4 +47,18 @@ public class PinFeedbackTests
         Assert.True(f.UsesLabel);
         Assert.Equal(PinFeedback.RejectedKey, f.MessageKey);
     }
+
+    // UC-6: the game's message log capitalises the word after "...", so "Paint floor..." read "Paint floor... To the quick menu".
+    [Theory]
+    [InlineData("paint floor...", "paint floor")]
+    [InlineData("morbid slab (medium)...", "morbid slab (medium)")]
+    [InlineData("fine tile\u2026", "fine tile")]
+    [InlineData("wall... ", "wall")]
+    [InlineData("wall", "wall")]
+    [InlineData("...", "...")]
+    [InlineData("", "")]
+    public void MessageLabel_drops_a_trailing_ellipsis(string label, string expected)
+    {
+        Assert.Equal(expected, PinFeedback.MessageLabel(label));
+    }
 }

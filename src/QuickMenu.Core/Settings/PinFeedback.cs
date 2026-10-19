@@ -26,4 +26,19 @@ public readonly record struct PinFeedback(string MessageKey, bool UsesLabel, boo
         PinResult.Full => new PinFeedback(FullKey, false, true, PinSound.ClickReject, false),
         _ => new PinFeedback(RejectedKey, true, true, PinSound.ClickReject, false),
     };
+
+    /// <summary>
+    /// The label as used inside a pin message: a trailing "..." or "\u2026" (the game's "has options" hint) is dropped,
+    /// because the message log capitalises the word after it ("Paint floor... To the quick menu"). A label that is only an
+    /// ellipsis is kept.
+    /// </summary>
+    public static string MessageLabel(string label)
+    {
+        string trimmed = label.TrimEnd();
+        string cut = trimmed.EndsWith("...", System.StringComparison.Ordinal) ? trimmed[..^3]
+            : trimmed.EndsWith('\u2026') ? trimmed[..^1]
+            : trimmed;
+        cut = cut.TrimEnd();
+        return cut.Length == 0 ? trimmed : cut;
+    }
 }
