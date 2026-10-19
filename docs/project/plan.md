@@ -1261,6 +1261,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Depends on**: T-76, T-77, T-78, T-79
   - **Files**: `mod/About/About.xml` (`modVersion`), `Directory.Build.props` (assembly version), `dist/` (gitignored)
   - **Acceptance criteria**:
+    - [ ] Steam Workshop upload is done **manually by the user through the game's built-in uploader** (user, 2026-10-19). T-80 prepares everything they need: the release folder/zip, `About/Preview.png`, the Workshop title and description text (T-78), and a short step-by-step upload note. No agent uploads to the Workshop.
     - [ ] Given the agreed version (Question 5), then About.xml and the assembly version match, `scripts/package.sh` produces `dist/QuickMenu-<version>.zip` with only mod content, CI is green on the release branch, and a **draft** GitHub release with the zip and CHANGELOG text is prepared but not published.
     - [ ] Publishing (GitHub release and Workshop upload) is left to Phase 7 and needs the user's explicit confirmation.
   - **Tests**: `unzip -l` of the zip matches the expected file list; CI run.
