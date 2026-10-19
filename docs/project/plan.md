@@ -1052,32 +1052,32 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
 ## Requirement traceability
 | Requirement | Tasks | Tests |
 |---|---|---|
-| FR-1 trigger binding, mouse 3–5, unbound, middle-mouse option | T-5, T-11, T-20, T-30, T-58, T-67 | `TriggerBindingTests`; UC-1 (input probe), UC-2 (binding items), UC-5 (first-run notice) |
-| FR-2 toggle / hold, hover-open in hold | T-17, T-21, T-31, T-32, T-63, T-64 | `TriggerStateMachineToggleTests`, `TriggerStateMachineHoldTests`, `HitTesterTests`; UC-2, UC-5 |
-| FR-3 centred on mouse, edge dodge, oversize centred | T-7, T-16, T-32, T-36 | `EdgeDodgerTests`, `MenuBoundsTests`, `SubMenuLayoutTests`; UC-2 (corners), UC-4 (UI scale 2.0) |
-| FR-4 wheel and grid with the same features | T-2, T-17, T-29, T-50, T-54, T-56, T-59 | `WheelLayoutTests`, `GridLayoutTests`, `HitTesterGridTests`; UC-4 FR-4 matrix |
+| FR-1 trigger binding, mouse 3–5, unbound, middle-mouse option | T-5, T-11, T-20, T-30, T-58, T-67 | `TriggerBindingTests`; UC-1 (input probe), UC-2 (binding items), UC-5 (first-run notice) · M1: UC-1 S-2 PASS (mouse 0-4 polled, 3=Mouse 4); skeleton poller only, no unit tests (binding logic is T-20) |
+| FR-2 toggle / hold, hover-open in hold | T-17, T-21, T-31, T-32, T-63, T-64 | `TriggerStateMachineToggleTests`, `TriggerStateMachineHoldTests`, `HitTesterTests`; UC-2, UC-5 · M1: none yet (skeleton toggle only, UC-1 S-6) |
+| FR-3 centred on mouse, edge dodge, oversize centred | T-7, T-16, T-32, T-36 | `EdgeDodgerTests`, `MenuBoundsTests`, `SubMenuLayoutTests`; UC-2 (corners), UC-4 (UI scale 2.0) · M1: none yet (skeleton centres on mouse, UC-1 S-6; no edge dodge until T-16) |
+| FR-4 wheel and grid with the same features | T-2, T-17, T-29, T-50, T-54, T-56, T-59 | `WheelLayoutTests`, `GridLayoutTests`, `HitTesterGridTests`; UC-4 FR-4 matrix · M1: `WheelLayoutTests`, `WheelLayoutExtremesTests`, `RingCapacityTests`, `WheelHitTestTests`, `WheelHitTestBoundaryTests` |
 | FR-5 Fixed / Auto sizing, full | T-18, T-25, T-32, T-51, T-52, T-56, T-57, T-59 | `PinBoardFixedTests`, `PinBoardAutoTests`, `CapacityTests`; UC-2 (full message), UC-4 |
-| FR-6 size settings used on next open | T-2, T-31, T-32, T-50, T-51, T-59 | `WheelLayoutTests`, `CapacityTests`; UC-2, UC-4 |
-| FR-7 searchable picker independent of architect UI; greyed; dev-only | T-6, T-9, T-38, T-40, T-44, T-45, T-65 | `SearchIndexTests`, `SearchPerfTests`, self-test round-trip; UC-1, UC-3 (setup b), UC-5 |
-| FR-8 modifier+click on any designator; Mint → Alt | T-8, T-20, T-26, T-27, T-31, T-67 | `ModifierPolicyTests`, `PinClickClassifierTests`; UC-1 (S-3 probe), UC-2 (a, b), UC-5 (c, d) |
+| FR-6 size settings used on next open | T-2, T-31, T-32, T-50, T-51, T-59 | `WheelLayoutTests`, `CapacityTests`; UC-2, UC-4 · M1: `WheelLayoutTests` (geometry only; setting not wired yet) |
+| FR-7 searchable picker independent of architect UI; greyed; dev-only | T-6, T-9, T-38, T-40, T-44, T-45, T-65 | `SearchIndexTests`, `SearchPerfTests`, self-test round-trip; UC-1, UC-3 (setup b), UC-5 · M1: `PinKeyFactoryTests`, `PinKeyRoundTripTests`; UC-1 S-4 (454 / 718 entries, 0 failures, 0 duplicates), S-5 (reasons must be composed) |
+| FR-8 modifier+click on any designator; Mint → Alt | T-8, T-20, T-26, T-27, T-31, T-67 | `ModifierPolicyTests`, `PinClickClassifierTests`; UC-1 (S-3 probe), UC-2 (a, b), UC-5 (c, d) · M1: UC-1 S-3 (idle 0 calls; modifiers via `Input`; dropdown entry needs T-27); patch count 8/0 failed |
 | FR-9 edit mode: picker, drag swap, right-click clear, insert cursor | T-17, T-18, T-21, T-44, T-52, T-55, T-57, T-63 | `PinBoardFixedTests`, `PinBoardAutoTests`, `TriggerStateMachine*Tests`; UC-3, UC-4 |
-| FR-10 pin a whole dropdown | T-3, T-6, T-9, T-26, T-27, T-37, T-40, T-42, T-43, T-45 | `PinKeyTests`, `PinKeyFactoryTests`, `ModDropdownMatcherTests`; UC-1 self-test, UC-2, UC-3 |
+| FR-10 pin a whole dropdown | T-3, T-6, T-9, T-26, T-27, T-37, T-40, T-42, T-43, T-45 | `PinKeyTests`, `PinKeyFactoryTests`, `ModDropdownMatcherTests`; UC-1 self-test, UC-2, UC-3 · M1: `PinKeyTests`, `PinKeyEdgeTests`, `PinKeyFactoryTests`, `PinKeyFactoryEdgeTests`, `PinKeyRoundTripTests`; UC-1 S-4 |
 | FR-11 dropdown expands as sub-ring / sub-grid | T-21, T-36, T-42, T-43, T-54, T-56, T-63 | `SubMenuLayoutTests`, `TriggerStateMachine*Tests`; UC-3, UC-4 |
 | FR-12 material sub-ring | T-36, T-37, T-41, T-42, T-43, T-56 | `StuffOrderingTests`, `SubMenuLayoutTests`; UC-3 (journey 4), UC-4 |
-| FR-13 activate exactly as the architect | T-6, T-7, T-29, T-32, T-41, T-43 | UC-1 (skeleton), UC-2, UC-3 |
-| FR-14 greyed with reason; missing-mod pins hidden but kept | T-9, T-18, T-19, T-37, T-40, T-42, T-52, T-55, T-57, T-59, T-65, T-66 | `PinBoardFixedTests`, `PinBoardAutoTests`, `PinSerializerTests`, `ModDropdownMatcherTests`; UC-1 (S-5 dump), UC-5 (journey 6, greyed) |
-| FR-15 no duplicates (toggle) | T-3, T-18, T-25, T-26, T-45, T-52 | `PinBoardFixedTests` (toggle), `PinKeyTests`; UC-2, UC-3 |
+| FR-13 activate exactly as the architect | T-6, T-7, T-29, T-32, T-41, T-43 | UC-1 (skeleton), UC-2, UC-3 · M1: UC-1 S-6 (Mine activates, Wall opens vanilla material list) |
+| FR-14 greyed with reason; missing-mod pins hidden but kept | T-9, T-18, T-19, T-37, T-40, T-42, T-52, T-55, T-57, T-59, T-65, T-66 | `PinBoardFixedTests`, `PinBoardAutoTests`, `PinSerializerTests`, `ModDropdownMatcherTests`; UC-1 (S-5 dump), UC-5 (journey 6, greyed) · M1: UC-1 S-5 only (no unit tests for availability yet) |
+| FR-15 no duplicates (toggle) | T-3, T-18, T-25, T-26, T-45, T-52 | `PinBoardFixedTests` (toggle), `PinKeyTests`; UC-2, UC-3 · M1: `PinKeyTests` (canonical equality) only; toggle is T-18 |
 | FR-16 empty-menu hint | T-55, T-58 | UC-4 (journey 1) |
-| FR-17 global settings, nothing in saves | T-3, T-9, T-19, T-25, T-32, T-66, T-72 | `PinSerializerTests`; grep for Game/World/MapComponent (T-25); UC-2 (second save, restart), UC-5 (remove mod from save) |
+| FR-17 global settings, nothing in saves | T-3, T-9, T-19, T-25, T-32, T-66, T-72 | `PinSerializerTests`; grep for Game/World/MapComponent (T-25); UC-2 (second save, restart), UC-5 (remove mod from save) · M1: nothing persisted yet; `PinKeyTests` / `PinKeyRoundTripTests` cover key stability |
 | FR-18 Multiplayer-safe | T-32, T-41, T-68 | Source audit (T-68); UC-6 setup (e) when Multiplayer supports 1.7, else blocked per A-2 |
-| NFR-1 no per-frame cost closed; open in one frame; index < 200 ms | T-5, T-7, T-8, T-10, T-15, T-24, T-35, T-39, T-40, T-46, T-49, T-53, T-62, T-71, T-76 | `ZeroAllocTests`, `LayoutTimingTests`, `PinBoardPerfTests`, `SerializerPerfTests`, `SearchPerfTests`; in-game P-rows at every UC |
-| NFR-2 vanilla / BAM / Mint / DLC | T-6, T-8, T-9, T-13, T-26, T-40, T-45, T-67, T-68, T-75 | Self-test on (a), (b), (R); UC-2 (a, b), UC-3 (a, b), UC-5 (c, d), UC-6 (all) |
-| NFR-3 Harmony only dependency | T-1, T-5, T-13, T-74, T-80 | About.xml review and zip listing (T-74, T-80); UC-1 and UC-6 load with Harmony + Quick Menu only |
-| NFR-4 every string Keyed | T-5, T-25, T-30, T-31, T-45, T-55, T-58, T-59, T-65, T-67, T-73 | `scripts/check-strings.sh` in CI (T-73) |
-| NFR-5 button size; UI scale | T-2, T-12, T-16, T-28, T-29, T-31, T-32, T-51, T-59, T-61 | `WheelLayoutTests` (all B), `CapacityTests` (960 × 540); UC-1 texture probe, UC-4 screenshots at 1.0 and 2.0 |
-| NFR-6 failures never break the game; log once | T-5, T-19, T-25, T-26, T-65, T-66, T-72 | `PinSerializerTests` (bad lines); fault-injection action in UC-6; UC-5 missing-mod test |
-| NFR-7 clean-room | T-4, T-22, T-23, T-28, T-74, T-77 | Mint string diff and asset audit (T-74); visual reviews |
-| NFR-8 layout and pins unit-tested | T-2, T-3, T-16, T-17, T-18, T-19, T-20, T-21, T-36, T-37, T-38, T-50, T-51, T-52, T-63 | Whole Core suite, `scripts/test.sh` with ≥ 90 % line coverage in CI |
+| NFR-1 no per-frame cost closed; open in one frame; index < 200 ms | T-5, T-7, T-8, T-10, T-15, T-24, T-35, T-39, T-40, T-46, T-49, T-53, T-62, T-71, T-76 | `ZeroAllocTests`, `LayoutTimingTests`, `PinBoardPerfTests`, `SerializerPerfTests`, `SearchPerfTests`; in-game P-rows at every UC · M1: UC-1 P-1, P-2, P-4, P-6, P-7a, P-8, P-9, P-11c, P-12, P-18 all PASS; `MeasureStatsTests`, `SampleRingTests`; 2 Perf-trait tests |
+| NFR-2 vanilla / BAM / Mint / DLC | T-6, T-8, T-9, T-13, T-26, T-40, T-45, T-67, T-68, T-75 | Self-test on (a), (b), (R); UC-2 (a, b), UC-3 (a, b), UC-5 (c, d), UC-6 (all) · M1: UC-1 S-1/S-4 on (a) and (b); (c) Mint, (d), (R) not run |
+| NFR-3 Harmony only dependency | T-1, T-5, T-13, T-74, T-80 | About.xml review and zip listing (T-74, T-80); UC-1 and UC-6 load with Harmony + Quick Menu only · M1: UC-1 loads with Harmony + Quick Menu; `mod/1.7/Assemblies` holds only QuickMenu.dll and QuickMenu.Core.dll; CI green |
+| NFR-4 every string Keyed | T-5, T-25, T-30, T-31, T-45, T-55, T-58, T-59, T-65, T-67, T-73 | `scripts/check-strings.sh` in CI (T-73) · M1: none (only dev-mode diagnostic strings exist) |
+| NFR-5 button size; UI scale | T-2, T-12, T-16, T-28, T-29, T-31, T-32, T-51, T-59, T-61 | `WheelLayoutTests` (all B), `CapacityTests` (960 × 540); UC-1 texture probe, UC-4 screenshots at 1.0 and 2.0 · M1: `WheelLayoutTests`, `WheelLayoutExtremesTests` (all B); UC-1 S-7 screenshots at 1.0 and 1.5 (2.0 refused at 2560x1440) |
+| NFR-6 failures never break the game; log once | T-5, T-19, T-25, T-26, T-65, T-66, T-72 | `PinSerializerTests` (bad lines); fault-injection action in UC-6; UC-5 missing-mod test · M1: `PatchGuard`/`PatchSite` verified by build only; UC-1 no errors logged; fault injection is T-72 |
+| NFR-7 clean-room | T-4, T-22, T-23, T-28, T-74, T-77 | Mint string diff and asset audit (T-74); visual reviews · M1: `MaskRasterizerTests`, `MaskRasterizerEdgeTests`, `PngWriterTests` (own assets); audit is T-74 |
+| NFR-8 layout and pins unit-tested | T-2, T-3, T-16, T-17, T-18, T-19, T-20, T-21, T-36, T-37, T-38, T-50, T-51, T-52, T-63 | Whole Core suite, `scripts/test.sh` with ≥ 90 % line coverage in CI · M1: 322 tests, Core line coverage 99.4 %; `CoreIsolationTests` (Core references only the BCL) |
 
 All FR-1 … FR-18 and NFR-1 … NFR-8 have at least one task and one test. Gaps found and fixed while planning: FR-16 had no owner beyond the renderer (added T-58); FR-17 "removing the mod from a save" had no check (added to UC-5 via T-69); NFR-3 had no load test (added to UC-1 and UC-6); FR-18 had no verification path (added T-68 with the A-2 blocked status); NFR-4 had only "review grep" (made a CI script, T-73).
 
