@@ -53,6 +53,11 @@ internal static class TriggerPoller
 
     private static bool CanOpen()
     {
+        if (InputProbe.Running)
+        {
+            return false; // spike-only (S-2); remove in T-14
+        }
+
         if (Current.ProgramState != ProgramState.Playing || Find.CurrentMap == null || WorldRendererUtility.WorldRendered)
         {
             return false;

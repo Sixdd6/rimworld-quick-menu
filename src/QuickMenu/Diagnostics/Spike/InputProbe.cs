@@ -46,7 +46,7 @@ internal sealed class InputProbe : Window
 
     public override Vector2 InitialSize => new(420f, 220f);
 
-    internal static bool Running { get; private set; }
+    internal static bool Running => Find.WindowStack.WindowOfType<InputProbe>() != null;
 
     [DebugAction("Quick Menu", "input probe (15 s)", allowedGameStates = AllowedGameStates.Playing)]
     private static void Start()
@@ -56,7 +56,6 @@ internal sealed class InputProbe : Window
             return;
         }
 
-        Running = true;
         Find.WindowStack.Add(new InputProbe());
     }
 
@@ -194,7 +193,6 @@ internal sealed class InputProbe : Window
         }
 
         _reported = true;
-        Running = false;
         var sb = new StringBuilder();
         sb.AppendLine(Log.Prefix + "BEGIN input probe");
         sb.AppendLine("frames " + _startFrame + ".." + Time.frameCount);
