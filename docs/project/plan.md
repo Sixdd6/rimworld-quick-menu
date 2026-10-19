@@ -738,7 +738,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: screenshot review.
   - **Size**: S
 
-- [ ] **T-49**: M3 performance record · `parallel-ok`
+- [x] **T-49**: M3 performance record · `parallel-ok`
   - **Owner**: performance-engineer
   - **Requirements**: NFR-1 (P-7c, P-8 with sub-ring, P-11c, P-12)
   - **Depends on**: T-47
@@ -885,6 +885,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Depends on**: T-56, T-57, T-58, T-59
   - **Files**: `docs/project/test-checklist.md` (M4, UC-4), `docs/project/test-reports/uc-4.md`
   - **Acceptance criteria**:
+    - [ ] *(UC-4)* Carry-over perf re-measures from M3 (T-49): P-7c Ideology refresh time on a colony with an ideoligion; P-9 control run in the stress setup; sub-ring per-frame cost with a satellite open; satellite rim rebuild (3.1 ms, watch item vs 5 ms).
     - [ ] Items for every M4 criterion, the FR-4 matrix (each feature × wheel/grid), UI scale 1.0 and 2.0 screenshots of every S4 state in both layouts, edit-session write counter, and the perf steps for P-8 (grid, max size) and P-9.
     - [ ] *(UC-4)* Results recorded; failures become bug tasks.
   - **Tests**: the session itself.
