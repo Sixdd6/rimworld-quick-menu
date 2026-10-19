@@ -68,6 +68,12 @@ public static class StyleTokens
     public const float DimmedMenuAlpha = 0.45f;
 
     /// <summary>
+    /// Greyed slot (S4 state 5): a <c>slotBg</c> veil of this alpha over the icon. <c>Command.DrawIcon</c> sets its own
+    /// colour, so <see cref="UnavailableIcon"/> cannot be multiplied in; the veil gives the same dim, desaturated look.
+    /// </summary>
+    public const float UnavailableVeilAlpha = 0.6f;
+
+    /// <summary>
     /// The <c>danger</c> rule of design.md §2: use the game's red (<c>ColorLibrary.RedReadable</c>) for consistency
     /// only when it is "within 3:1" of our value, read as a luminance contrast between the two reds of at most 3:1,
     /// <b>and</b> it meets the WCAG text minimum (4.5:1) on every background danger text can sit on:

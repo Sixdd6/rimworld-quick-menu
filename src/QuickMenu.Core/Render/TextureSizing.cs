@@ -19,7 +19,7 @@ public enum SizedGroups
     /// <summary>The disc rim at the disc diameter 2 D.</summary>
     Rim = 4,
 
-    /// <summary>Badge and hub-icon glyphs at their drawn sizes.</summary>
+    /// <summary>Badge and hub-icon glyphs and the material dot at their drawn sizes.</summary>
     Glyphs = 8,
 
     /// <summary>Every group.</summary>
@@ -103,6 +103,12 @@ public readonly record struct TextureSizing(float ButtonSize, int RingsInUse, fl
 
     /// <summary>Geometry of the disc rim texture.</summary>
     public RoundTextureGeometry Rim => RoundTextureGeometry.For(DiscDiameter, UiScale);
+
+    /// <summary>
+    /// Geometry of the material dot (design.md S4 state 13, 0.18 B), a filled circle rasterized at its drawn size so it
+    /// stays round at 7–17 px. Part of the <see cref="SizedGroups.Glyphs"/> group (it depends only on B and UI scale).
+    /// </summary>
+    public RoundTextureGeometry MaterialDot => RoundTextureGeometry.For(WheelVisuals.MaterialDotSize(ButtonSize), UiScale);
 
     /// <summary>
     /// Geometry of the rim of a satellite (sub-menu or material ring) with <paramref name="rings"/> rings around a

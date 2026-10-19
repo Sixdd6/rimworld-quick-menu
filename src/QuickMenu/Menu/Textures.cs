@@ -75,8 +75,8 @@ internal static class Textures
 
     private const int GlyphCount = MaskId.IconAdd - MaskId.SubMenuBadge + 1;
 
-    // Slot rings 1/2/3/dashed, hub rings 1/2, glyphs, main rim.
-    private const int SizedCount = 4 + 2 + GlyphCount + 1;
+    // Slot rings 1/2/3/dashed, hub rings 1/2, glyphs, material dot, main rim.
+    private const int SizedCount = 4 + 2 + GlyphCount + 1 + 1;
 
     private static readonly Texture2D?[] _masks = new Texture2D?[MaskSet.Count];
     private static readonly SizedTexture[] _glyphs = new SizedTexture[MaskSet.Count];
@@ -93,6 +93,7 @@ internal static class Textures
     private static SizedTexture _hubRing2;
     private static SizedTexture _hubRing3;
     private static SizedTexture _discRim;
+    private static SizedTexture _materialDot;
     private static SizedTexture _satelliteRim;
     private static RoundTextureGeometry? _satelliteRimGeometry;
 
@@ -163,6 +164,9 @@ internal static class Textures
     /// satellite use <see cref="EnsureSatelliteRim"/>.
     /// </summary>
     internal static SizedTexture DiscRim => _discRim;
+
+    /// <summary>The material dot (S4 state 13): a filled circle of 0.18 B rasterized at its drawn size, tinted at draw time.</summary>
+    internal static SizedTexture MaterialDot => _materialDot;
 
     /// <summary>A badge or hub-icon glyph at its drawn size (design.md §2 badges, S4a).</summary>
     internal static SizedTexture Glyph(MaskId id) => _glyphs[(int)id];
@@ -246,6 +250,10 @@ internal static class Textures
                     Glyphs.Render(id, n, Scratch(n * n));
                     _glyphs[(int)id] = Replace(_glyphs[(int)id], new SizedTexture(UploadMask(n, n, MaskSet.Spec(id).Name), next.GlyphDrawSize(id)));
                 }
+
+                RoundTextureGeometry dot = next.MaterialDot;
+                MaskRasterizer.Circle(dot.TextureSize, Scratch(dot.TextureSize * dot.TextureSize));
+                _materialDot = Replace(_materialDot, new SizedTexture(UploadMask(dot.TextureSize, dot.TextureSize, "MaterialDot"), dot.DrawSize));
             }
 
             _sizing = next;

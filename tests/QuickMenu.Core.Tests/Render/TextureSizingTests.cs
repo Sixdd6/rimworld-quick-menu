@@ -252,6 +252,15 @@ public class TextureSizingTests
     }
 
     [Fact]
+    public void MaterialDot_IsRasterizedAt018BInScreenPixels()
+    {
+        // S4 state 13: a dot of 0.18 B; at B 56 that is 10.08 UI px, so 11 texels plus the 1-texel padding per side.
+        RoundTextureGeometry g = TextureSizing.Create(56f, 1, 1f).MaterialDot;
+        Assert.Equal(13, g.TextureSize);
+        Assert.Equal(RoundTextureGeometry.For(0.18f * 56f, 1.5f), TextureSizing.Create(56f, 1, 1.5f).MaterialDot);
+    }
+
+    [Fact]
     public void GlyphTexels_AreTheDrawnSizeInScreenPixels_AtLeastMinSize()
     {
         Assert.Equal(14, TextureSizing.Create(56f, 1, 1f).GlyphTexels(MaskId.Lock));

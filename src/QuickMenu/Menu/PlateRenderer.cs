@@ -39,7 +39,7 @@ internal static class PlateRenderer
         Rect rect = MenuRenderer.ToRect(transform.Rect(WheelVisuals.PlateRect(model.Center, model.DiscRadius, width, model.PlateHeight)));
         if (Textures.Ready)
         {
-            GUI.color = QMStyle.Plate;
+            MenuRenderer.Tint(QMStyle.Plate);
             Widgets.DrawAtlas(rect, Textures.Mask(MaskId.Plate));
         }
 
@@ -49,7 +49,7 @@ internal static class PlateRenderer
         {
             Text.Font = GameFont.Small;
             Text.Anchor = TextAnchor.MiddleCenter;
-            GUI.color = QMStyle.Text;
+            MenuRenderer.Tint(QMStyle.Text);
             Widgets.Label(rect, label);
         }
         finally

@@ -47,6 +47,58 @@ public enum PlateContent
 }
 
 /// <summary>
+/// Decorations of a slot that combine with its base state (design.md S4 states 4, 12, 13, 14). Set once per open;
+/// the greyed state (5) comes from <see cref="SlotKind.Disabled"/>.
+/// </summary>
+[System.Flags]
+public enum SlotDecor
+{
+    /// <summary>No decoration.</summary>
+    None = 0,
+
+    /// <summary>State 12: the slot opens a sub-menu; dropdown corner badge at 1:30.</summary>
+    SubMenu = 1,
+
+    /// <summary>State 13: the slot opens the material ring; dot at 4:30 in the last-used stuff colour.</summary>
+    Material = 2,
+
+    /// <summary>State 4: the last-used material in a material ring; 3 px <c>accent</c> ring.</summary>
+    LastUsed = 4,
+
+    /// <summary>State 14: the parent of the open satellite; 2 px <c>accent</c> ring at full opacity.</summary>
+    OpenParent = 8,
+}
+
+/// <summary>Which ring a slot draws (design.md §2 ring widths).</summary>
+public enum SlotRing
+{
+    /// <summary>1 px <c>slotBorder</c>: normal.</summary>
+    Border1 = 0,
+
+    /// <summary>1 px <c>slotBorder</c> at 70 %: empty and reserved (use mode).</summary>
+    EmptyBorder1,
+
+    /// <summary>2 px <c>accent</c>: hover, pressed, open parent.</summary>
+    Accent2,
+
+    /// <summary>3 px <c>accent</c>: last-used material.</summary>
+    Accent3,
+}
+
+/// <summary>Slot badges, each on its own 45° diagonal at radius B/2 (design.md S4).</summary>
+public enum SlotBadge
+{
+    /// <summary>1:30, <c>SubMenuBadge</c> glyph, 0.22 B.</summary>
+    SubMenu = 0,
+
+    /// <summary>4:30, material dot, 0.18 B.</summary>
+    Material,
+
+    /// <summary>7:30, <c>Lock</c> glyph, 0.25 B.</summary>
+    Lock,
+}
+
+/// <summary>
 /// Maps model coordinates (the layout, centred on <see cref="ModelCenter"/>) to screen coordinates: the model centre
 /// lands on <see cref="Origin"/> and every length is multiplied by <see cref="Scale"/>. The open menu uses
 /// <see cref="Identity"/>; the settings preview (T-59) draws the same model at 50 % (design.md §6 technical need 7).
@@ -79,6 +131,115 @@ public static class WheelVisuals
 
     /// <summary>Plate width = text width + 12 (§1.1).</summary>
     public const float PlatePadding = 12f;
+
+    /// <summary>Material dot diameter relative to B (design.md §2 badges).</summary>
+    public const float MaterialDotFraction = 0.18f;
+
+    private const float Diagonal = 0.70710678f;
+
+    /// <summary>
+    /// The ring of a slot. Empty slots keep their faint ring whatever they are decorated with. The last-used material
+    /// keeps its 3 px ring when hovered or pressed (the fill shows the hover); the open parent always has 2 px.
+    /// </summary>
+    public static SlotRing Ring(SlotVisualState state, SlotDecor decor)
+    {
+        if (state == SlotVisualState.Empty)
+        {
+            return SlotRing.EmptyBorder1;
+        }
+
+        if ((decor & SlotDecor.LastUsed) != 0)
+        {
+            return SlotRing.Accent3;
+        }
+
+        if ((decor & SlotDecor.OpenParent) != 0 || state is SlotVisualState.Hover or SlotVisualState.Pressed)
+        {
+            return SlotRing.Accent2;
+        }
+
+        return SlotRing.Border1;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="badge"/> is drawn. Badges 12 and 13 combine with states 1–5 (also greyed); the lock
+    /// marks greyed slots (state 5). Empty and reserved slots draw no badge.
+    /// </summary>
+    public static bool ShowsBadge(SlotBadge badge, SlotKind kind, SlotDecor decor)
+    {
+        if (kind is SlotKind.Empty or SlotKind.Reserved)
+        {
+            return false;
+        }
+
+        return badge switch
+        {
+            SlotBadge.SubMenu => (decor & SlotDecor.SubMenu) != 0,
+            SlotBadge.Material => (decor & SlotDecor.Material) != 0,
+            _ => kind == SlotKind.Disabled,
+        };
+    }
+
+    /// <summary>Badge centre: on its 45° diagonal (1:30, 4:30, 7:30) at radius B/2 from the slot centre (y down).</summary>
+    public static Vec2 BadgeCentre(SlotBadge badge, Vec2 slotCenter, float buttonSize)
+    {
+        float d = buttonSize / 2f * Diagonal;
+        return badge switch
+        {
+            SlotBadge.SubMenu => new Vec2(slotCenter.X + d, slotCenter.Y - d),
+            SlotBadge.Material => new Vec2(slotCenter.X + d, slotCenter.Y + d),
+            _ => new Vec2(slotCenter.X - d, slotCenter.Y + d),
+        };
+    }
+
+    /// <summary>Material dot diameter in UI px: 0.18 B.</summary>
+    public static float MaterialDotSize(float buttonSize) => MaterialDotFraction * buttonSize;
+
+    /// <summary>
+    /// Material dot colour (state 13): the last-used stuff colour, opaque, or <c>textMuted</c> when there is none.
+    /// Call once per open, not per frame.
+    /// </summary>
+    public static Rgba32 MaterialDotColor(Rgba32? lastUsedStuff) =>
+        lastUsedStuff is { } c ? new Rgba32(c.R, c.G, c.B, 255) : StyleTokens.TextMuted;
+
+    /// <summary>
+    /// Scale for a badge outline (<c>rimOutline</c>, design.md §3): the same mask drawn 1 px larger on each side under
+    /// the tinted badge. <paramref name="drawSize"/> is the badge's drawn size in UI px.
+    /// </summary>
+    public static float OutlineScale(float drawSize) => drawSize > 0f ? (drawSize + 2f) / drawSize : 1f;
+
+    /// <summary>Alpha of the main menu: <c>dimmedMenu</c> (45 %) while a satellite is open, else opaque (S1).</summary>
+    public static float MenuAlpha(bool dimmed) => dimmed ? StyleTokens.DimmedMenuAlpha : 1f;
+
+    /// <summary>The dimmed main menu does not react to the mouse (S1): its hover and press hits are ignored.</summary>
+    public static Hit Interactive(Hit hit, bool dimmed) => dimmed ? Hit.Outside : hit;
+
+    /// <summary>
+    /// Alpha of the <c>slotBg</c> veil drawn over a slot's icon. <c>Command.DrawIcon</c> sets its own colour, so the
+    /// icon cannot be tinted or faded through <c>GUI.color</c>: a greyed icon (state 5) is veiled at
+    /// <see cref="StyleTokens.UnavailableVeilAlpha"/>, and in a dimmed menu the icon keeps 45 % of its strength.
+    /// </summary>
+    public static float IconVeilAlpha(SlotKind kind, bool dimmed)
+    {
+        float keep = kind == SlotKind.Disabled ? 1f - StyleTokens.UnavailableVeilAlpha : 1f;
+        if (dimmed)
+        {
+            keep *= StyleTokens.DimmedMenuAlpha;
+        }
+
+        return 1f - keep;
+    }
+
+    /// <summary>
+    /// State of a satellite's hub, which is the parent slot redrawn on top (S3, state 14): it hovers and presses like
+    /// a slot; the hub hit is <see cref="HitKind.HubEdit"/> in the satellite's hit layout.
+    /// </summary>
+    public static SlotVisualState SatelliteHub(Hit hover, Hit pressed) => Hub(hover, pressed) switch
+    {
+        HubPartState.Hover => SlotVisualState.Hover,
+        HubPartState.Pressed => SlotVisualState.Pressed,
+        _ => SlotVisualState.Normal,
+    };
 
     /// <summary>
     /// Slot state. <paramref name="pressed"/> is where the current press began (<see cref="Hit.Outside"/> when no

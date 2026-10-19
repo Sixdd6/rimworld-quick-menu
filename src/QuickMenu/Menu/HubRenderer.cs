@@ -18,29 +18,29 @@ internal static class HubRenderer
         Vec2 c = transform.Point(model.Center);
         if (Textures.Ready)
         {
-            GUI.color = state switch
+            MenuRenderer.Tint(state switch
             {
                 HubPartState.Hover => QMStyle.SlotBgHover,
                 HubPartState.Pressed => QMStyle.SlotBgPressed,
                 _ => QMStyle.SlotBg,
-            };
+            });
             MenuRenderer.DrawMask(MaskId.Circle, c, model.HubCircleDrawSize * scale);
             if (state == HubPartState.Hover)
             {
-                GUI.color = QMStyle.HoverOverlay;
+                MenuRenderer.Tint(QMStyle.HoverOverlay);
                 MenuRenderer.DrawMask(MaskId.Circle, c, model.HubCircleDrawSize * scale);
             }
 
             if (model.Editing)
             {
-                GUI.color = QMStyle.EditTint;
+                MenuRenderer.Tint(QMStyle.EditTint);
                 MenuRenderer.DrawMask(MaskId.Circle, c, model.HubCircleDrawSize * scale);
             }
         }
 
-        GUI.color = QMStyle.Accent;
+        MenuRenderer.Tint(QMStyle.Accent);
         MenuRenderer.DrawSized(Ring(HubStyle.RingWidth(state, model.Editing)), c, scale);
-        GUI.color = QMStyle.Text;
+        MenuRenderer.Tint(QMStyle.Text);
         MenuRenderer.DrawSized(Textures.Glyph(model.HubGlyph), c, scale);
     }
 

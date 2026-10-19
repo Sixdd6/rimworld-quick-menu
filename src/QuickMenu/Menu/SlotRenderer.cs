@@ -7,85 +7,139 @@ using Verse;
 namespace QuickMenu.Menu;
 
 /// <summary>
-/// One slot (design.md S4) in its base states: Normal (1), Hover (2), Pressed (3), Empty (6). Fill <c>Circle</c> at B,
-/// ring rasterized at B, then the designator icon through <c>Command.DrawIcon</c> in a 0.75 B square. Badges and the
-/// other states come with their tasks (T-41, T-43, T-65, edit mode).
+/// One slot (design.md S4), one routine for every layout. Base states Normal (1), Hover (2), Pressed (3), Empty (6),
+/// combined with the decorations of T-42: last-used material (4, 3 px <c>accent</c>), greyed with lock (5), sub-menu
+/// badge (12, 1:30), material dot (13, 4:30) and open parent (14, 2 px <c>accent</c>).
 /// </summary>
+/// <remarks>
+/// Order: fill <c>Circle</c> at B (+ hover overlay), the icon (<c>Command.DrawIcon</c> in a 0.75 B square, or a
+/// material option's stuff icon in its own colour through <c>Widgets.DefIcon</c>), the icon veil (greyed and/or
+/// dimmed), the ring rasterized at B, then the badges, each with a 1 px <c>rimOutline</c> under it. Every colour goes
+/// through <see cref="MenuRenderer.Tint"/>, so a dimmed menu draws at 45 %. <c>Command.DrawIcon</c> sets its own colour,
+/// so icons are faded by the <c>slotBg</c> veil instead (<see cref="WheelVisuals.IconVeilAlpha"/>).
+/// </remarks>
 internal static class SlotRenderer
 {
-    internal static void Draw(WheelModel model, int index, SlotVisualState state, in RenderTransform transform)
+    /// <summary>Draws slot <paramref name="index"/> of <paramref name="model"/> at its layout position.</summary>
+    internal static void Draw(WheelModel model, int index, SlotVisualState state, in RenderTransform transform) =>
+        DrawAt(model, index, model.Slots[index].Center, state, model.Decor(index), transform);
+
+    /// <summary>
+    /// Draws slot <paramref name="index"/> of <paramref name="model"/> centred on <paramref name="layoutCentre"/>
+    /// (in the coordinates of <paramref name="transform"/>) with <paramref name="decor"/>. The satellite hub uses this
+    /// to redraw the parent slot at the satellite centre with <see cref="SlotDecor.OpenParent"/>.
+    /// </summary>
+    internal static void DrawAt(WheelModel model, int index, Vec2 layoutCentre, SlotVisualState state, SlotDecor decor, in RenderTransform transform)
     {
-        Vec2 layoutCentre = model.Slots[index].Center;
         Vec2 c = transform.Point(layoutCentre);
         float scale = transform.Scale;
+        float circle = model.CircleDrawSize * scale;
+        SlotKind kind = model.Kinds[index];
         if (Textures.Ready)
         {
-            GUI.color = Fill(state);
-            MenuRenderer.DrawMask(MaskId.Circle, c, model.CircleDrawSize * scale);
+            MenuRenderer.Tint(Fill(state));
+            MenuRenderer.DrawMask(MaskId.Circle, c, circle);
             if (state == SlotVisualState.Hover)
             {
-                GUI.color = QMStyle.HoverOverlay;
-                MenuRenderer.DrawMask(MaskId.Circle, c, model.CircleDrawSize * scale);
+                MenuRenderer.Tint(QMStyle.HoverOverlay);
+                MenuRenderer.DrawMask(MaskId.Circle, c, circle);
             }
         }
 
-        switch (state)
+        if (state != SlotVisualState.Empty)
         {
-            case SlotVisualState.Hover:
-            case SlotVisualState.Pressed:
-                GUI.color = QMStyle.Accent;
-                MenuRenderer.DrawSized(Textures.SlotRing2, c, scale);
-                break;
-            case SlotVisualState.Empty:
-                GUI.color = QMStyle.SlotBorderEmpty;
-                MenuRenderer.DrawSized(Textures.SlotRing1, c, scale);
-                return;
-            default:
-                GUI.color = QMStyle.SlotBorder;
-                MenuRenderer.DrawSized(Textures.SlotRing1, c, scale);
-                break;
-        }
-
-        Command? icon = model.Icon(index);
-        if (icon != null)
-        {
-            GUI.color = QMStyle.White;
-            try
+            DrawIcon(model, index, layoutCentre, transform);
+            float veil = WheelVisuals.IconVeilAlpha(kind, MenuRenderer.Dimmed);
+            if (veil > 0f && Textures.Ready)
             {
-                icon.DrawIcon(MenuRenderer.ToRect(transform.Rect(WheelVisuals.IconRect(layoutCentre, model.ButtonSize))), null, default);
-            }
-            catch (System.Exception ex)
-            {
-                // A foreign designator's icon code is not ours to disable the menu for: blank this slot's icon and carry on.
-                string type = icon.GetType().FullName ?? icon.GetType().Name;
-                QuickMenu.Diagnostics.Log.LogOnce($"Menu.Icon.{type}", $"Drawing the icon of {type} failed, its icon is left blank: {ex.GetType().Name}: {ex.Message}");
-                model.BlankIcon(index);
+                // Not through Tint: the veil alpha already includes the dimming.
+                GUI.color = new Color(QMStyle.SlotBg.r, QMStyle.SlotBg.g, QMStyle.SlotBg.b, veil);
+                MenuRenderer.DrawMask(MaskId.Circle, c, circle);
             }
         }
 
-        if (model.Kinds[index] == SlotKind.Disabled)
+        DrawRing(WheelVisuals.Ring(state, decor), c, scale);
+        if (WheelVisuals.ShowsBadge(SlotBadge.SubMenu, kind, decor))
         {
-            DrawUnavailable(model, layoutCentre, c, scale, transform);
+            DrawBadge(Textures.Glyph(MaskId.SubMenuBadge), QMStyle.TextMuted, WheelVisuals.BadgeCentre(SlotBadge.SubMenu, layoutCentre, model.ButtonSize), transform);
+        }
+
+        if (WheelVisuals.ShowsBadge(SlotBadge.Material, kind, decor))
+        {
+            DrawBadge(Textures.MaterialDot, model.MaterialDotColor(index), WheelVisuals.BadgeCentre(SlotBadge.Material, layoutCentre, model.ButtonSize), transform);
+        }
+
+        if (WheelVisuals.ShowsBadge(SlotBadge.Lock, kind, decor))
+        {
+            DrawBadge(Textures.Glyph(MaskId.Lock), QMStyle.TextMuted, WheelVisuals.BadgeCentre(SlotBadge.Lock, layoutCentre, model.ButtonSize), transform);
         }
     }
 
-    // Greyed with reason (S4 state 5): the icon is dimmed under a slotBg veil, and the lock badge sits at 7:30, radius B/2.
-    private static void DrawUnavailable(WheelModel model, Vec2 layoutCentre, Vec2 c, float scale, in RenderTransform transform)
+    private static void DrawIcon(WheelModel model, int index, Vec2 layoutCentre, in RenderTransform transform)
     {
-        if (!Textures.Ready)
+        Command? icon = model.Icon(index);
+        ThingDef? stuff = model.StuffIcon(index);
+        if (icon == null && stuff == null)
         {
             return;
         }
 
-        GUI.color = QMStyle.UnavailableVeil;
-        MenuRenderer.DrawMask(MaskId.Circle, c, model.CircleDrawSize * scale);
-        const float diagonal = 0.70710678f;
-        float r = model.ButtonSize / 2f;
-        Vec2 badge = new Vec2(layoutCentre.X - (r * diagonal), layoutCentre.Y + (r * diagonal));
-        GUI.color = QMStyle.RimOutline;
-        MenuRenderer.DrawSized(Textures.Glyph(MaskId.Lock), transform.Point(badge), scale * 1.15f);
-        GUI.color = QMStyle.TextMuted;
-        MenuRenderer.DrawSized(Textures.Glyph(MaskId.Lock), transform.Point(badge), scale);
+        Rect rect = MenuRenderer.ToRect(transform.Rect(WheelVisuals.IconRect(layoutCentre, model.ButtonSize)));
+        GUI.color = QMStyle.White;
+        try
+        {
+            if (icon != null)
+            {
+                icon.DrawIcon(rect, null, default);
+            }
+            else
+            {
+                // The stuff's own icon and colour, as the game's resource readout and stuff menus draw it.
+                Widgets.DefIcon(rect, stuff);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            // A foreign designator's or def's icon code is not ours to disable the menu for: blank this slot's icon and carry on.
+            System.Type t = icon != null ? icon.GetType() : typeof(ThingDef);
+            string name = t.FullName ?? t.Name;
+            QuickMenu.Diagnostics.Log.LogOnce($"Menu.Icon.{name}", $"Drawing the icon of {name} failed, its icon is left blank: {ex.GetType().Name}: {ex.Message}");
+            model.BlankIcon(index);
+        }
+    }
+
+    private static void DrawRing(SlotRing ring, Vec2 c, float scale)
+    {
+        switch (ring)
+        {
+            case SlotRing.Accent3:
+                MenuRenderer.Tint(QMStyle.Accent);
+                MenuRenderer.DrawSized(Textures.SlotRing3, c, scale);
+                break;
+            case SlotRing.Accent2:
+                MenuRenderer.Tint(QMStyle.Accent);
+                MenuRenderer.DrawSized(Textures.SlotRing2, c, scale);
+                break;
+            case SlotRing.EmptyBorder1:
+                MenuRenderer.Tint(QMStyle.SlotBorderEmpty);
+                MenuRenderer.DrawSized(Textures.SlotRing1, c, scale);
+                break;
+            default:
+                MenuRenderer.Tint(QMStyle.SlotBorder);
+                MenuRenderer.DrawSized(Textures.SlotRing1, c, scale);
+                break;
+        }
+    }
+
+    // A badge: the same mask tinted rimOutline, 1 px larger on each side, under the tinted mask (design.md §3).
+    private static void DrawBadge(in SizedTexture texture, Color color, Vec2 layoutCentre, in RenderTransform transform)
+    {
+        Vec2 p = transform.Point(layoutCentre);
+        float scale = transform.Scale;
+        MenuRenderer.Tint(QMStyle.RimOutline);
+        MenuRenderer.DrawSized(texture, p, scale * WheelVisuals.OutlineScale(texture.DrawSize));
+        MenuRenderer.Tint(color);
+        MenuRenderer.DrawSized(texture, p, scale);
     }
 
     private static Color Fill(SlotVisualState state) => state switch

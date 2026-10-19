@@ -148,6 +148,13 @@ The slot is a circle of diameter B. The icon is drawn with `Command.DrawIcon` in
 
 States 12 and 13 combine with 1–5, and 11 combines with 12 and 13. Numbers 7 and 10 are kept free so references stay stable.
 
+**Implementation notes (T-42, visual-designer).** The pure rules are in `Core.Render.WheelVisuals` (`Ring`, `ShowsBadge`, `BadgeCentre`, `MaterialDotColor`, `IconVeilAlpha`, `MenuAlpha`, `SatelliteHub`):
+- Draw order per slot: fill (+ hover overlay), icon, icon veil, ring, badges (1:30, 4:30, 7:30). The ring is drawn after the veil so it stays crisp on greyed slots.
+- Ring priority: empty → faint 1 px; last-used material → 3 px `accent`, also when hovered or pressed (the fill shows the hover); open parent, hover, pressed → 2 px `accent`; otherwise 1 px `slotBorder`.
+- The sub-menu badge is tinted `textMuted` (the mockup's #C8CDD2 is not a token), like the lock. Every badge has a `rimOutline` copy 1 px larger on each side under it. The material dot is its own size-dependent texture (`Textures.MaterialDot`, a circle rasterized at 0.18 B in screen px, rebuilt with the glyphs), so it stays round at 7–17 px; its colour is the last-used stuff colour made opaque, or `textMuted`.
+- `Command.DrawIcon` sets its own colour, so an icon cannot be faded through `GUI.color`. Greyed icons (5) get a `slotBg` veil at 60 % (`StyleTokens.UnavailableVeilAlpha`). In the dimmed main menu the veil leaves the icon 45 % of its strength (greyed and dimmed multiply: 0.4 × 0.45). Fills, rings, badges, hub, disc and rim are drawn at α × 0.45. Because the veil is opaque `slotBg` over the icon area, a dimmed slot reads a little darker than a true 45 % copy of the slot; check this in UC-3.
+- Material options draw the stuff's own icon in its colour with `Widgets.DefIcon` (as the game's resource readout and stuff menus do).
+
 #### S4a. Hub: the Edit button (user decision 2026-10-19, after UC-2)
 The centre of the wheel or grid is **one button: Edit** (pencil). In edit mode the same button is **Done** (check mark). It **never closes the menu**; the menu closes with Esc, a click outside, right-click or the trigger (close and cancel rules below). This supersedes the earlier close/edit hub (× main area plus a small pencil sub-button) and the hub's Add sub-button. There is no Add anywhere in the menu (user decision 2026-10-19): pins are added only by modifier+click in the architect menu (FR-8).
 The mockups ([wheel states](design/mockup-wheel-states.png), [edit](design/mockup-subring-grid-edit.png)) predate this decision and still show the old hub; where they differ, this section wins.
