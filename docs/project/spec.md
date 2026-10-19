@@ -30,7 +30,7 @@ A standalone RimWorld mod that provides a radial "quick menu" for architect desi
 2. **Pin from the architect menu**: Ctrl+clicks a mod's chair dropdown button in the architect menu (vanilla or BAM) → it fills the first free slot as a whole sub-menu. (The in-menu picker was removed by user decision, 2026-10-19.)
 3. **Pin by click**: while browsing the architect menu (vanilla or BAM), Ctrl+clicks (Alt+click if Mint is installed) a designator → it is pinned (a message confirms; or says the menu is full).
 4. **Use**: presses trigger → menu opens centred on the mouse → clicks the chair slot → sub-ring fans out → clicks an armchair → material sub-ring appears → picks wood → the designator is selected ready to place → menu closes.
-5. **Edit**: in edit mode drags slots to swap them, right-clicks to clear one, changes layout to grid in settings.
+5. **Edit**: in edit mode drags slots to swap them, Ctrl+clicks a slot to unpin it, changes layout to grid in settings.
 6. **Mod removed**: player removes a mod whose items were pinned → those slots are hidden but kept; re-adding the mod brings them back.
 
 ## 5. Functional requirements

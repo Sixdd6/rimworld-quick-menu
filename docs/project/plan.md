@@ -1,30 +1,31 @@
 # Implementation Plan: rimworld-quick-menu (Quick Menu)
 
-- **Status**: approved (2026-10-19)
+- **Status**: approved (2026-10-19); revised 2026-10-19 after UC-2 (user decision: the in-menu picker, the "+"/Add slots and the edit-mode insert cursor are removed, FR-7 → Won't; UC-2b added to M2)
 - **Spec**: [spec.md](spec.md) · **Architecture**: [architecture.md](architecture.md) · **ADRs**: [decisions/](decisions/) · **Design**: [design.md](design.md) · **Performance**: [performance.md](performance.md) · **Environment**: [environment.md](environment.md)
 
 ## Planning notes
 
-- **Agents cannot run the game.** Every in-game check is done by the user in a few grouped **user sessions** (UC-1 … UC-6), one at the end of each milestone. A task that needs the game says **In-game check: UC-n (user)**. Its acceptance criteria marked *(UC-n)* are ticked only after the user reports back. Everything else is verified by `scripts/test.sh`, `scripts/perf.sh`, `dotnet build` and `dotnet format --verify-no-changes`.
+- **Agents cannot run the game.** Every in-game check is done by the user in a few grouped **user sessions** (UC-1 … UC-6, plus the short follow-up UC-2b), one at the end of each milestone. A task that needs the game says **In-game check: UC-n (user)**. Its acceptance criteria marked *(UC-n)* are ticked only after the user reports back. Everything else is verified by `scripts/test.sh`, `scripts/perf.sh`, `dotnet build` and `dotnet format --verify-no-changes`.
 - **Each user session has a guide** (written by the test-engineer in `docs/project/test-checklist.md`, section per session). It gives exact steps, the setups to use, what to look at, and what to send back. Every in-game output the session needs is written to the game log between `[QuickMenu] BEGIN <name>` and `[QuickMenu] END <name>` markers, so the user can copy blocks without reading them.
 - **Setups** (architecture §9): (a) vanilla + all DLC; (b) + Better Architect Menu; (c) + Dubs Mint Menus; (d) + BAM + Mint; (e) + Multiplayer when it supports 1.7 (A-2); (R) the user's real mod list that loads on 1.7.
 - **Done for every task**: tests written first; `scripts/test.sh` (Core ≥ 90 % lines) and `scripts/perf.sh` pass; build has 0 warnings; format check passes; every new player-facing string is Keyed (NFR-4); every patch body and OnGUI entry is wrapped by `PatchGuard` (NFR-6) once T-5 exists; no LINQ, string building or closures in per-frame paths.
-- **Keyed files**: strings go in `mod/Languages/English/Keyed/`, split per area (`QuickMenu.Menu.xml`, `QuickMenu.Settings.xml`, `QuickMenu.Picker.xml`, `QuickMenu.Messages.xml`, `QuickMenu.Notices.xml`, `QuickMenu.Debug.xml`) so parallel tasks do not edit the same file. The game loads every file in the folder. Keys stay prefixed `QuickMenu.` (architecture §6 names one file; see Question 6).
+- **Keyed files**: strings go in `mod/Languages/English/Keyed/`, split per area (`QuickMenu.Menu.xml`, `QuickMenu.Settings.xml`, `QuickMenu.Messages.xml`, `QuickMenu.Notices.xml`, `QuickMenu.Debug.xml`) so parallel tasks do not edit the same file. The game loads every file in the folder. Keys stay prefixed `QuickMenu.` (architecture §6 names one file; see Question 6).
 - **`parallel-ok`** on a task means it has no file overlap with the other `parallel-ok` tasks of the same milestone, and it can start as soon as its listed dependencies are done.
 - **Gated mode**: each milestone ends with its user session and the user's approval before the next milestone starts.
+- **Scope change (user, 2026-10-19, after UC-2)**: pins are added only by modifier+click in the architect menu (vanilla or BAM, FR-8). There is no picker window, no search index or search UI, no "+"/Add slot and no insert cursor; empty slots stay empty. New pins go into the first free slot (Fixed) or at the end (Auto); the user rearranges by dragging in edit mode. Edit mode stays (centre button = Edit/Done; drag to swap; modifier+click on a slot unpins, also in use mode; right-click and click-outside close). The designator catalog stays (it resolves pins), including its Ideology part (T-40). Removed tasks keep their IDs and are marked `[-]`; nothing was renumbered.
 
 ## Milestones
 | ID | Milestone | Goal / demoable outcome | Tasks | Count |
 |---|---|---|---|---|
 | M1 | Walking skeleton + spike build | The mod loads on 1.7.4982 with Harmony 3. Mouse 4 on a colony map opens a crude wheel with two hard-coded pins (Mine, Wall); clicking one selects the designator. A dev-mode spike build answers S-1 … S-7 in one user session (UC-1); results go into the ADRs. CI is green on GitHub | T-1 … T-15 | 15 |
-| M2 | Pin by click, use the wheel | Ctrl+click any designator in vanilla or BAM pins it (message; full; toggle). The bindable trigger opens the styled Fixed wheel centred on the mouse, dodging edges; clicking a slot activates it like the architect. Pins and settings persist across saves and restarts | T-16 … T-35 | 20 |
-| M3 | Sub-menus, materials, picker | Whole dropdowns pin and fan out as a sub-ring; stuff builds open a material ring (last-used first); edit mode shell (the centre Edit button enters it and shows Done; "+" slots open a searchable picker of every architect designator, independent of the architect UI) | T-36 … T-49 | 14 |
-| M4 | Edit mode, grid, Auto sizing | Drag to swap, pin-modifier+click (Ctrl) to unpin, insert cursor, help panel, full state; grid layout with sub-grids; Auto sizing; full layout settings with live preview; empty-menu hint | T-50 … T-62 | 13 |
-| M5 | Hold mode, availability, compatibility | Hold-and-release with 150 ms hover-open; greyed slots with the game's (or composed) reason; missing-mod pins kept and restored; Mint detection with Alt default and notices; first-run notice; Multiplayer-safe audit | T-63 … T-71 | 9 |
+| M2 | Pin by click, use the wheel | Ctrl+click any designator in vanilla or BAM pins it (message; full; toggle). The bindable trigger opens the styled Fixed wheel centred on the mouse, dodging edges; clicking a slot activates it like the architect. Unavailable pins (e.g. Ideology morbid slabs) always show greyed with the reason. The centre is the Edit button (it does nothing until M3 and never closes the menu); modifier+click on a slot unpins it. Pins and settings persist across saves and restarts. A short follow-up session (UC-2b) checks the post-UC-2 fixes and re-measures settings load, texture prewarm and window allocations | T-16 … T-35, T-81, T-82 | 22 |
+| M3 | Sub-menus, materials, edit mode shell | Whole dropdowns pinned from the architect fan out as a sub-ring; stuff builds open a material ring (last-used first); Ideology designators resolve and refresh; edit mode shell (the centre Edit button enters it and shows Done; Done/Esc leave; modifier+click unpins; plain clicks do nothing); design, performance and architecture documents aligned with the picker removal | T-36, T-37, T-40 … T-44, T-46 … T-49, T-83 … T-85 | 14 |
+| M4 | Edit mode, grid, Auto sizing | Drag to swap (Fixed: onto an empty slot moves the pin there), help panel, full state, one settings write per edit session; grid layout with sub-grids; Auto sizing (new pins at the end); full layout settings with live preview; empty-menu hint | T-50 … T-62 | 13 |
+| M5 | Hold mode, availability, compatibility | Hold-and-release with 150 ms hover-open; greyed slots with the game's (or composed) reason for every cause; missing-mod pins kept and restored; Mint detection with Alt default and notices; first-run notice; Multiplayer-safe audit | T-63 … T-71 | 9 |
 | M6 | Hardening and release prep | Fault isolation verified, string and clean-room audits, final performance pass, final regression on all setups, Preview.png, README, CHANGELOG, Workshop description, release package (publishing is the separate gated Phase 7) | T-72 … T-80 | 9 |
-| | | | **Total** | **80** |
+| | | | **Total** | **82** active (85 IDs; T-38, T-39, T-45 removed) |
 
-**Critical path** (milestone gates included): T-3 → T-6 → T-7 / T-9 → T-13 **[UC-1]** → T-14 → T-28 → T-29 → T-32 → T-33 **[UC-2]** → T-41 → T-43 → T-47 **[UC-3]** → T-56 → T-57 → T-60 **[UC-4]** → T-64 → T-69 **[UC-5]** → T-72 → T-75 **[UC-6]** → T-77 → T-80. Each user session sits on the path, so how soon you can run a session decides the schedule more than agent work does.
+**Critical path** (milestone gates included): T-3 → T-6 → T-7 / T-9 → T-13 **[UC-1]** → T-14 → T-28 → T-29 → T-32 → T-33 **[UC-2]** → T-34 → T-81 → T-82 **[UC-2b]** → T-41 → T-43 → T-47 **[UC-3]** → T-56 → T-57 → T-60 **[UC-4]** → T-64 → T-69 **[UC-5]** → T-72 → T-75 **[UC-6]** → T-77 → T-80. Each user session sits on the path, so how soon you can run a session decides the schedule more than agent work does.
 
 ## User in-game sessions
 
@@ -32,14 +33,15 @@
 |---|---|---|---|---|
 | **UC-1** Spike session | End of M1 (T-13) | (a), then (b) or (R) | Load the spike build, run 5 dev-mode debug actions, try the skeleton wheel, take 4 screenshots, paste the log blocks back. About 45–60 min | T-14, T-15 (ADRs 0001/0003/0005/0006/0007, design.md §6, performance.md §5) |
 | **UC-2** | End of M2 (T-33) | (a), (b) | Bind the trigger, pin by Ctrl+click in vanilla and BAM, use the wheel, edge-dodge at corners, restart and load a second save, measurement actions, screenshots | T-34, T-35 |
-| **UC-3** | End of M3 (T-47) | (a), (b), (R), stress mod | Sub-rings, material rings, picker search and pinning, Ideology designators, measurement actions | T-48, T-49 |
-| **UC-4** | End of M4 (T-60) | (a) | Edit mode, grid, Auto, settings preview, UI scale 1.0 and 2.0 screenshots | T-61, T-62 |
+| **UC-2b** | End of M2 (T-82), after T-81 | (a) with Ideology; (b) for one step | Short follow-up (about 15–20 min): the centred Edit button (does nothing, never closes), modifier+click unpin on the wheel, greyed unavailable pins (morbid slabs, a research-locked build), one screenshot of a mostly empty wheel, and the T-35 re-measure (settings load breakdown, texture prewarm at first open, P-9 window allocation sub-buckets) | T-35, T-81 (visual check) |
+| **UC-3** | End of M3 (T-47) | (a), (b), (R), stress mod | Sub-rings and material rings from pins made in the architect (vanilla and BAM chair dropdown), Ideology designators and refresh, edit mode shell (enter, Done, Esc, modifier+click unpin, plain click does nothing), self-test on (R) and the stress mod, measurement actions | T-48, T-49 |
+| **UC-4** | End of M4 (T-60) | (a) | Edit mode drag swap (wheel and grid, Fixed and Auto), help panel and full, grid, Auto, settings preview, empty-menu hint, UI scale 1.0 and 2.0 screenshots | T-61, T-62 |
 | **UC-5** | End of M5 (T-69) | (a), (c), (d); remove-mod test | Hold mode, greyed slots, missing-mod pins, Mint Alt default and notices, first-run notice, removing the mod from a save | T-70, T-71 |
-| **UC-6** | M6 (T-75) | (a)–(d), (R), (e) if available | Full regression checklist, fault-injection action, final measurements, Preview screenshots | T-76, T-77, release |
+| **UC-6** | M6 (T-75) | (a)–(d), (R), (e) if available | Full regression checklist, fault-injection action, final measurements, Preview screenshots (wheel with a sub-ring, grid, edit mode) | T-76, T-77, release |
 
 ## Tasks
 
-Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
+Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `[-]` removed (kept for traceability; never built)
 
 ### M1: Walking skeleton + spike build
 
@@ -508,32 +510,96 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Tests**: screenshot review.
   - **Size**: S
 
-- [ ] **T-81**: Visual fixes from the M2 review; the hub becomes the centred Edit button · `parallel-ok`
-  - **Owner**: developer (visual-designer checks the result in T-48)
-  - **Requirements**: FR-4, FR-9 (centre = Edit button, never closes), NFR-5 (design.md §1.1 hub, S4 state 6, S4a, close and cancel rules, §8 UC-2 review rows 6 and 7; user decision 2026-10-19 after UC-2)
+- [x] **T-81**: Visual fixes from the M2 review; the hub becomes the centred Edit button; modifier+click on a slot unpins · `parallel-ok`
+  - **Owner**: developer (visual-designer checks the result in UC-2b, T-82)
+  - **Requirements**: FR-4, FR-9 (centre = Edit button, never closes; modifier+click on a slot unpins), FR-15, NFR-5 (design.md §1.1 hub, S4 state 6, S4a, close and cancel rules, §8 UC-2 review rows 6 and 7; user decisions 2026-10-19 after UC-2)
   - **Depends on**: T-34
-  - **Files**: `src/QuickMenu.Core/Layout/{Hit,HitTester,LayoutConstants}.cs`, `src/QuickMenu.Core/Input/TriggerStateMachine.cs`, `src/QuickMenu.Core/Render/{TextureSizing,Glyphs,MaskSet}.cs`, `src/QuickMenu/Menu/{SlotRenderer,HubRenderer,PlateRenderer,WheelVisuals,QMStyle,MenuController}.cs`, `src/QuickMenu.Core/Render/StyleTokens.cs` (if alphas are tokens there), `mod/Languages/English/Keyed/QuickMenu.Menu.xml`, and the matching tests under `tests/QuickMenu.Core.Tests/{Layout,Input,Render}/`
+  - **Files**: `src/QuickMenu.Core/Layout/{Hit,HitTester,LayoutConstants}.cs`, `src/QuickMenu.Core/Input/TriggerStateMachine.cs`, `src/QuickMenu.Core/Render/{TextureSizing,Glyphs,MaskSet}.cs`, `src/QuickMenu/Menu/{SlotRenderer,HubRenderer,PlateRenderer,WheelVisuals,QMStyle,MenuController,QuickMenuWindow}.cs`, `src/QuickMenu/Pinning/PinService.cs`, `src/QuickMenu.Core/Render/StyleTokens.cs` (if alphas are tokens there), `mod/Languages/English/Keyed/QuickMenu.Menu.xml`, and the matching tests under `tests/QuickMenu.Core.Tests/{Layout,Input,Render}/`
   - **Acceptance criteria**:
     - [ ] Given an empty Fixed slot in use mode, then it is drawn with `slotBg` at 50 % and a 1 px `slotBorder` ring at 70 % (both as named tokens, no literals); edit-mode empty and reserved slots keep `emptyBorder`.
     - [ ] Given a point in the hub area (wheel: distance ≤ P/2; grid: the centre cell), then `HitTester` returns `HubEdit`; `HitKind.HubClose`, `HasHubSub`, `HubSubDiameter`/`HubSubOffset` (`e`, `ey`) are removed with their tests; new constants `HubDiameter(B) = round(0.64·B)` and `HubGlyphSize(B) = round(0.5·HubDiameter)` are unit-tested (rounding half away from zero: B 36 → 23/12, B 56 → 36/18, B 96 → 61/31).
     - [ ] Given the main level, when the hub gets a deliberate click (down and up on it), then the state machine returns `None` while `EditEnabled` is false (the default until T-44) and the menu stays open; it never returns `Close` for a hub click. Given hold mode, when the trigger is released over the hub, then `Close` (cancel). Given a satellite, a click on its centre still gives `Back`. Given edit mode (tests drive `EditEnabled = true`), then a hub click gives `ExitEdit` and a right-click gives `CloseFromEdit` (no longer `None`). The T-21 tests are updated to these rows.
     - [ ] Given use mode, then the hub is drawn per S4a: a circle of diameter `H` at `(cx, cy)` in `slotBg` with a 1 px `accent` ring and the pencil (`IconEdit`) at `Hg` in `text`, centred at `(cx, cy)`; hover (after ≥ 4 px of movement, and never while a hold trigger is held) = `slotBgHover` + 8 % white + 2 px `accent`, plate "Edit"; pressed = `slotBgPressed` + 2 px `accent`. Hub rings are rasterized at `H` (`TextureSizing.HubRing` uses `H`, not `e`). No × is drawn; `IconClose` is removed from the mask set and its tests. No tooltip yet.
     - [ ] Keyed: `QuickMenu.Menu.Close` is removed (no other use); `QuickMenu.Menu.Edit` ("Edit") stays as the hub plate label.
-    - [ ] *(UC-3)* A screenshot of a mostly empty Fixed wheel shows the filled and greyed slots reading stronger than the empty ones, and the centre reads as a pencil button; clicking it does nothing and the menu stays open; the user confirms.
-  - **Tests**: `HitTesterTests`/`WheelHitTestTests` (hub rows), `LayoutConstants` tests, `TriggerStateMachineToggleTests` (hub and edit rows), mask-set tests; build; visual check in T-48.
-  - **Size**: S
+    - [ ] Given use mode, when the user holds the effective pin modifier (`ModifierPolicy`; read from the menu window's own click `Event`, which is not pre-used here) and left-clicks an occupied or greyed slot, then the pin is removed through `PinService` (`Tick_Low`, the `QuickMenu.Pin.Unpinned` message, settings written once), the designator is **not** activated, and in Fixed the slot becomes empty in place while the other slots keep their place. A modifier+click on an empty slot or the hub does nothing extra. Right-click never unpins. (Whether the menu stays open after an unpin: Question 8; until answered, it stays open.)
+    - [ ] Given a pin was unpinned on the wheel, when the user Ctrl+clicks a designator in the architect, then it goes into the first free slot (Fixed; existing `PinBoard.Toggle`).
+    - [ ] *(UC-2b)* A screenshot of a mostly empty Fixed wheel shows the filled and greyed slots reading stronger than the empty ones, and the centre reads as a pencil button; clicking it does nothing and the menu stays open; Ctrl+click on a slot unpins it with the message; the user confirms.
+  - **Tests**: `HitTesterTests`/`WheelHitTestTests` (hub rows), `LayoutConstants` tests, `TriggerStateMachineToggleTests` (hub, edit and modifier-click rows), `PinBoardFixedTests` (unpin in place), mask-set tests; build; in-game UC-2b (T-82).
+  - **In-game check**: UC-2b (user)
+  - **Size**: M
 
-- [ ] **T-35**: M2 performance record · `parallel-ok`
-  - **Owner**: performance-engineer
-  - **Requirements**: NFR-1 (P-1, P-2, P-5, P-6, P-7a, P-8, P-9 with control run)
-  - **Depends on**: T-33
-  - **Files**: `docs/project/performance.md` §5
+- [ ] **T-82**: UC-2b follow-up in-game check: guide and run
+  - **Owner**: test-engineer (visual-designer checks the screenshot; performance-engineer reads the perf blocks in T-35)
+  - **Requirements**: FR-9 (centre Edit button, modifier+click unpin), FR-14 (greyed, never empty), FR-15, NFR-1 (P-9, P-16, P-18, texture rebuild), NFR-5
+  - **Depends on**: T-81 (and the T-35 instrumentation changes already in the tree: settings breakdown, `Textures.Prewarm`, P-9 sub-buckets)
+  - **Files**: `docs/project/test-checklist.md` (section UC-2b), `docs/project/test-reports/uc-2b.md`, `docs/project/design/screens/m2/*` (the new screenshot)
   - **Acceptance criteria**:
-    - [ ] Given UC-2 numbers, then each metric has a row and a pass/fail at 50 % of budget; any failure becomes a `perf:` task in M3.
-  - **Tests**: none (measurement record).
+    - [ ] Given the guide, then it lists the steps below with the expected result for each and the log blocks to copy, and the agent has built Release and checked `mod/1.7/Assemblies` holds only `QuickMenu.dll` and `QuickMenu.Core.dll`.
+    - [ ] *(UC-2b)* Given the user's results, then pass/fail per step is recorded in `uc-2b.md`, the perf blocks are handed to T-35, the screenshot is stored and checked by the visual-designer against design.md S4 state 6 and S4a, and every failure has a bug task in this plan.
+  - **Tests**: the session itself.
+  - **In-game check**: UC-2b (user). Steps for the user (setup a with Ideology, dev mode on; about 15–20 min):
+    1. Start the game cold (fresh launch), load a colony whose ideoligion does not allow morbid slabs; keep the two morbid slab pins from UC-2 (re-pin them in Architect → Ideology if they are gone).
+    2. Open the wheel. The centre shows a pencil. Move the mouse onto it: the plate says "Edit". Click it: nothing happens and the menu stays open. Then close with Esc, right-click, a click outside and the trigger, one at a time.
+    3. Morbid slab slots and one research-locked build (e.g. an unresearched power building): each is greyed with a lock, the tooltip gives the reason; clicking plays the reject sound, shows the reason, and selects nothing. No slot is empty where a pin exists.
+    4. Ctrl+click a pinned slot (e.g. Wall): "unpinned" message and tick, no wall tool; the slot is empty, other slots did not move. Ctrl+click an empty slot and the centre: nothing. Ctrl+click Wall in the architect: it comes back in the first free slot.
+    5. Screenshot a mostly empty wheel with the mouse over a filled slot, and one with the mouse over the centre.
+    6. Debug actions → Quick Menu → **self-test**, then **perf report** (copy the "settings breakdown" and "Textures …" lines).
+    7. Open the wheel once (first open after start: no "Textures rebuilt" line expected). Change Button size in settings, open again (one rebuild line with the create/upload split).
+    8. Open the wheel, sweep the mouse across all slots for 30 s, close; run **perf report** again (window stat with the hover-sound, `TipRegion` and label-plate sub-buckets).
+    9. Optional (setup b): repeat step 4 once with a BAM-only pin.
+    10. Copy every `[QuickMenu] BEGIN … END` block and send it back with the screenshots.
   - **Size**: S
 
-### M3: Sub-menus, materials, picker
+- [ ] **T-35**: M2 performance record and the UC-2 follow-up fixes · `parallel-ok`
+  - **Owner**: performance-engineer
+  - **Requirements**: NFR-1 (P-1, P-2, P-5, P-6, P-7a, P-8, P-9 with control run, P-16, P-18, texture rebuild)
+  - **Depends on**: T-33, T-82
+  - **Files**: `docs/project/performance.md` §5; the instrumentation and fixes (already in the tree before UC-2b): `src/QuickMenu/Settings/QuickMenuSettings.cs`, `src/QuickMenu/Menu/Textures.cs`, `src/QuickMenu/Diagnostics/{PerfCounters,SelfTest}.cs`
+  - **Acceptance criteria**:
+    - [ ] Given the UC-2 numbers, then each metric has a row and a pass/fail at 50 % of budget.
+    - [ ] Given the UC-2 failures (P-16 92.6 ms, texture rebuild 6.46 ms, P-9 p99 1,912 B), then: the settings load is split ("settings breakdown": `GetSettings` total, scribe pass, our `PostLoad`, our code after, JIT ms and methods); the per-value-type generic helpers in `QuickMenuSettings` are replaced by non-generic ones; sized textures are prewarmed at startup from the saved settings (`Textures.Prewarm`) and a later rebuild logs its create/upload share; the window stat has dev-only sub-buckets (hover sound, `TipRegion`, label plate). Build, `scripts/test.sh` and `scripts/perf.sh` pass; nothing allocates per frame when dev mode is off.
+    - [ ] *(UC-2b)* Given the re-measure, then P-16 is judged on our part (PostLoad + after) against 10 ms, the first open after start rebuilds no textures when the sizes match, the settings-change rebuild time is recorded, and the P-9 p99 is attributed to a sub-bucket. Any metric that still fails becomes a `perf:` task in M3 or a documented user decision.
+  - **Tests**: `scripts/perf.sh`; in-game UC-2b numbers.
+  - **In-game check**: UC-2b (user, via T-82)
+  - **Size**: M
+
+### M3: Sub-menus, materials, edit mode shell
+
+- [x] **T-83**: Align design.md with the picker and insert-cursor removal · `parallel-ok`
+  - **Owner**: visual-designer
+  - **Requirements**: FR-7 (Won't), FR-9, FR-16, NFR-4 (user decision 2026-10-19 after UC-2; spec FR-7/FR-9 and §7)
+  - **Depends on**: —
+  - **Files**: `docs/project/design.md`
+  - **Acceptance criteria**:
+    - [ ] Given design.md, then S6 (picker window), S4 state 7 (Empty/Add "+"), state 10 (insert cursor), the S5 Add rows, "Add placement" and the picker status line, the flow-diagram edges to the picker, the "Click to add here." tooltip, the "Add" plate, the picker row component, the caret badge (10:30) and the picker keyboard sentence are removed or replaced by one dated removal note; the mockup reference to the picker half is marked obsolete.
+    - [ ] Given edit mode, then S5 says: new pins come only from the architect menu and go into the first free slot (Fixed) or at the end (Auto); the user rearranges by dragging (Fixed: dropping on an empty slot moves the pin there); a plain click on a slot does nothing; empty slots in edit mode use `emptyBorder` with no glyph; the help-panel texts for Fixed and Auto are written out (with the modifier as {0}); the Done/Edit tooltip text drops "add".
+    - [ ] Given use mode, then the "Use mode and the modifier" rule and the input table row say modifier+click on a slot unpins it (T-81), and the empty-menu hint (FR-16) explains Ctrl/Alt+click in the architect.
+    - [ ] `grep -niE 'picker|insert cursor|IconAdd|"\+" slot' docs/project/design.md` matches only the removal note.
+  - **Tests**: the grep check; read-through by the orchestrator.
+  - **Size**: S
+
+- [x] **T-84**: Retire the picker and search budgets in performance.md · `parallel-ok`
+  - **Owner**: performance-engineer
+  - **Requirements**: NFR-1 (P-11a, P-11b, P-11c, P-13, P-14, P-15)
+  - **Depends on**: —
+  - **Files**: `docs/project/performance.md`, `tests/Shared/SyntheticCatalog.cs` (doc comment only: the search catalog generator will not be added)
+  - **Acceptance criteria**:
+    - [ ] Given §1, then P-11a, P-11b (Core search index build), P-13 (catalog plus index memory), P-14 (search per keystroke) and P-15 (picker draw) are marked "Retired 2026-10-19: picker removed by the user" (rows kept, not deleted), and P-11c is redefined as the in-game catalog build only (no index) with its 200 ms NFR limit and the UC-1 baseline unchanged.
+    - [ ] Given §2–§4 and the risks, then W-1x, scenario S-6 (picker queries), the search zero-alloc gate, R-8 and the open review items about the index (T-2, T-5, T-7) are closed with the same note; nothing else changes.
+  - **Tests**: read-through; `scripts/perf.sh` still passes (no gate depended on the index).
+  - **Size**: S
+
+- [ ] **T-85**: Align architecture.md and the ADRs with the picker removal · `parallel-ok`
+  - **Owner**: architect
+  - **Requirements**: FR-7 (Won't), FR-9, FR-14, NFR-1, NFR-8
+  - **Depends on**: —
+  - **Files**: `docs/project/architecture.md`, `docs/project/decisions/0006-designator-catalog-and-activation.md` (dated note only), any other ADR that names the picker (dated note only)
+  - **Acceptance criteria**:
+    - [ ] Given architecture.md, then `Core.Search.SearchIndex`, `UI.PickerWindow`, `PinBoard.SetCursor`/insert cursor, the index build in the startup sequence and §7, the 20k-entry index perf gate, the `SearchEntry` synthetic data line and the "picker via + slots" wording in the window row and traceability are removed; FR-7 is listed as Won't; FR-9 names centre Edit/Done, drag swap and modifier+click unpin (use and edit mode).
+    - [ ] Given the S-1 risk row ("the picker always works as a fallback"), then the mitigation is rewritten: there is no fallback, so the self-test patch count and the per-method failure log are the safety net, and an unpatched override is reported as a known limit (see Risks in this plan).
+    - [ ] ADRs keep their decisions; each one that mentions the picker gets a dated note pointing to the spec change.
+  - **Tests**: `grep -niE 'picker|SearchIndex|insert cursor' docs/project/architecture.md` matches only the removal notes.
+  - **Size**: S
 
 - [ ] **T-36**: Core `SubMenuLayout` (satellite and sub-grid) · `parallel-ok`
   - **Owner**: developer
@@ -558,41 +624,23 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Tests**: unit tests above.
   - **Size**: S
 
-- [ ] **T-38**: Core `SearchIndex` · `parallel-ok`
-  - **Owner**: developer
-  - **Requirements**: FR-7, NFR-1, NFR-8
-  - **Depends on**: —
-  - **Files**: `src/QuickMenu.Core/Search/{SearchEntry,SearchIndex}.cs`, `tests/QuickMenu.Core.Tests/Search/SearchIndexTests.cs`
-  - **Acceptance criteria**:
-    - [ ] Given entries, when `Query(text, results)` runs, then matching is case-insensitive per token on label, category and mod name (all tokens must match), in stable index order, into the caller's list (cleared first).
-    - [ ] Given `includeDev` false, then `DevOnly` entries are excluded; children carry `ParentId`.
-    - [ ] Given an empty query, then all non-filtered entries are returned.
-  - **Tests**: unit `SearchIndexTests` (non-ASCII, punctuation, multiple tokens, mod-name-only match).
-  - **Size**: M
+- [-] **T-38**: Core `SearchIndex` (removed: picker dropped by user 2026-10-19)
 
-- [ ] **T-39**: Synthetic catalog, search perf gates and benchmarks
-  - **Owner**: performance-engineer
-  - **Requirements**: NFR-1 (P-11a, P-11b, P-13, P-14, scaling)
-  - **Depends on**: T-38
-  - **Files**: `tests/Shared/SyntheticCatalog.cs`, `tests/QuickMenu.Core.Tests/Perf/SearchPerfTests.cs`, `tests/QuickMenu.Core.Benchmarks/SearchBenchmarks.cs`
-  - **Acceptance criteria**:
-    - [ ] Given `Generate(seed, mods, designators)`, then W-1 (1, 500, 2000) and W-1x (1, 2000, 20000) are reproducible per performance.md §2 rules.
-    - [ ] Gates: W-1x build median of 5 fails > 200 ms (warn > 100 ms); W-1 fails > 30 ms; W-1 retained memory fails > 5 MB; query with a reused list allocates 0 bytes; W-1x/W-1 ratio fails > 15.
-  - **Tests**: `scripts/perf.sh`.
-  - **Size**: M
+- [-] **T-39**: Synthetic catalog, search perf gates and benchmarks for P-11a, P-11b, P-13, P-14 (removed: picker dropped by user 2026-10-19; budgets retired in T-84)
 
-- [ ] **T-40**: Catalog v2: search entries, dev-only flag, Ideology refresh, mod-dropdown resolve
+- [ ] **T-40**: Catalog v2: Ideology part and refresh, mod-dropdown resolve
   - **Owner**: developer
-  - **Requirements**: FR-7, FR-10, FR-14, NFR-1 (P-7c, P-11c), NFR-2 (ADR 0006)
-  - **Depends on**: T-14, T-37, T-38
-  - **Files**: `src/QuickMenu/Catalog/{DesignatorCatalog,CatalogEntry,IdeoSignature}.cs`, `src/QuickMenu/Diagnostics/SelfTest.cs`
+  - **Requirements**: FR-10, FR-14, NFR-1 (P-7c, P-11c), NFR-2 (ADR 0006)
+  - **Depends on**: T-14, T-37
+  - **Files**: `src/QuickMenu/Catalog/{DesignatorCatalog,CatalogEntry,IdeoSignature}.cs`, `src/QuickMenu/Pinning/PinService.cs`, `src/QuickMenu/Diagnostics/SelfTest.cs`
   - **Acceptance criteria**:
+    - [ ] Given a loaded game with Ideology, then the catalog adds the Ideology category's designators (excluded in T-6) with their keys, so a pinned Ideology build (e.g. morbid slabs) resolves to its catalog entry; the T-32 ad-hoc fallback stays only for designators the game does not offer.
     - [ ] Given the Ideology part of the catalog is refreshed (or the catalog is rebuilt), then `PinService` re-resolves stored pins, so an Ideology pin resolved as missing at startup becomes available once the game with that ideoligion loads (T-25 review M1).
-    - [ ] Given the startup build, then each entry gets label, category label, mod name, `ParentId`, and `DevOnly` by the rule from T-14 (S-5), and `SearchIndex.Build` runs once in the same pass; the self-test reports total ms.
-    - [ ] Given a menu or picker open, then the signature (game, primary ideo, precept count) is compared in O(1) and the Ideology entries are rebuilt only when it changed.
+    - [ ] Given a menu open, then the signature (game, primary ideo, precept count) is compared in O(1) and the Ideology entries are rebuilt only when it changed.
     - [ ] Given a `moddrop:` key with no exact match, then `ModDropdownMatcher` resolves it; the stored key is not rewritten.
+    - [ ] Given the startup build, then the self-test reports its total ms and the number of Ideology rebuilds; no search index or dev-only flag is built.
     - [ ] *(UC-3)* The self-test on (R) and the stress mod shows build ≤ 100 ms (50 % of 200 ms) and 1 build per session.
-  - **Tests**: Core tests (T-37, T-38); in-game UC-3 self-test.
+  - **Tests**: Core tests (T-37); in-game UC-3 self-test.
   - **In-game check**: UC-3 (user)
   - **Size**: M
 
@@ -638,34 +686,22 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **In-game check**: UC-3 (user)
   - **Size**: M
 
-- [ ] **T-44**: Edit mode shell: enter, Done, Esc, Add via "+" slots
+- [ ] **T-44**: Edit mode shell: enter, Done, Esc, modifier+click unpin
   - **Owner**: developer
-  - **Requirements**: FR-9 (enter/exit, add), FR-7 (entry point) (design.md S4, state 7; S4a; S5)
-  - **Depends on**: T-32, T-81
-  - **Files**: `src/QuickMenu/Menu/{EditModeController,QuickMenuWindow,HubRenderer,SlotRenderer}.cs`, `mod/Languages/English/Keyed/QuickMenu.Menu.xml`
+  - **Requirements**: FR-9 (enter/exit, unpin in edit mode) (design.md S4a; S5 as revised by T-83)
+  - **Depends on**: T-32, T-81, T-83
+  - **Files**: `src/QuickMenu/Menu/{EditModeController,QuickMenuWindow,HubRenderer,SlotRenderer}.cs`, `src/QuickMenu.Core/Input/TriggerStateMachine.cs` (only if a row is missing), `mod/Languages/English/Keyed/QuickMenu.Menu.xml`
   - **Acceptance criteria**:
     - [ ] `EditEnabled` is set to true. Given use mode, when the hub gets a deliberate click (down and up on it), then edit mode starts and the hub shows Done per S4a (`slotBg` + 22 % `accent` tint, 2 px `accent` ring, `IconDone` at `Hg`; hover/pressed 3 px ring), plate "Done"; a hold-mode release over the hub never enters edit mode; satellites do not open in edit mode.
     - [ ] Given edit mode, then Done or the first Esc leaves it (settings written once if dirty), a second Esc closes, right-click or the trigger closes, a left-click outside does nothing.
-    - [ ] Given edit mode, then Fixed empty slots and the Auto append slot draw as "+" (state 7: dashed `emptyBorder` ring, `IconAdd` at 0.3 B in `textMuted`, hover `text` + 2 px `accent`, plate "Add"); a plain click on one opens `PickerWindow` above the menu (the menu stays open) and sets the insert cursor per S5 (Fixed: that slot; Auto append: cursor cleared). Given Auto, a plain click on an occupied slot sets the cursor in front of it and opens the picker. If the picker is open, a click only moves the cursor. (Stub picker until T-45 if needed.)
-    - [ ] Keyed strings added: `QuickMenu.Menu.Done` "Done"; `QuickMenu.Menu.EditTip` "Edit the quick menu: add, move and remove pins."; `QuickMenu.Menu.DoneTip` "Finish editing (Esc)"; `QuickMenu.Menu.Add` "Add"; `QuickMenu.Menu.AddTip` "Click to add here.". Hub tooltips use the vanilla delay.
-  - **Tests**: `TriggerStateMachineToggleTests` (edit rows with `EditEnabled`); in-game UC-3.
+    - [ ] Given edit mode, then a plain click on any slot does nothing (no activation, no sub-menu, no cursor); empty slots draw with `emptyBorder` and no glyph; there is no "+" and no Add target anywhere.
+    - [ ] Given edit mode, when the user modifier+clicks an occupied or reserved slot, then it is unpinned by the same path as T-81 (Fixed: the slot is empty in place; Auto, where later pins move up, is wired in T-56/T-57); on an empty slot or the hub nothing extra happens; right-click never unpins.
+    - [ ] Keyed strings added: `QuickMenu.Menu.Done` "Done"; `QuickMenu.Menu.EditTip` "Edit the quick menu: move and remove pins."; `QuickMenu.Menu.DoneTip` "Finish editing (Esc)". Hub tooltips use the vanilla delay. No `QuickMenu.Menu.Add`/`AddTip` keys exist.
+  - **Tests**: `TriggerStateMachineToggleTests` (edit rows with `EditEnabled`, modifier-click rows); in-game UC-3.
   - **In-game check**: UC-3 (user)
   - **Size**: S
 
-- [ ] **T-45**: Picker window
-  - **Owner**: developer
-  - **Requirements**: FR-7, FR-10, FR-15, NFR-1 (P-15), NFR-2, NFR-4 (design.md S6)
-  - **Depends on**: T-40, T-44
-  - **Files**: `src/QuickMenu/Menu/{PickerWindow,PickerRow}.cs`, `mod/Languages/English/Keyed/QuickMenu.Picker.xml`
-  - **Acceptance criteria**:
-    - [ ] Given the picker, then it is a 540 × 680 dialog (clamped), non-pausing, with `QuickSearchWidget` focused, a status line, rows grouped by category, only visible rows drawn, and a footer.
-    - [ ] Given a search, then results match label, category and mod name (Core `SearchIndex`); Enter pins when exactly one row matches; no results shows "Nothing matches “{0}”."
-    - [ ] Given a row click, then pin or unpin (`Tick_High`/`Tick_Low`), the "Pinned" pill updates, the window stays open; dropdown rows pin the whole dropdown and their disclosure shows children that pin singly.
-    - [ ] Given a locked item, then it is greyed with its reason (disabled reason now; composed reasons in T-65) and can still be pinned; dev-only items appear under "DEV MODE ONLY" only in dev mode; full shows "The menu is full." in `danger`.
-    - [ ] *(UC-3)* Journey 2 with BAM installed: search "chair", pin the chair dropdown; it fills a slot as a whole sub-menu.
-  - **Tests**: `SearchIndexTests`; in-game UC-3.
-  - **In-game check**: UC-3 (user)
-  - **Size**: M
+- [-] **T-45**: Picker window (removed: picker dropped by user 2026-10-19)
 
 - [ ] **T-46**: In-game stress mod generator · `parallel-ok`
   - **Owner**: performance-engineer
@@ -679,11 +715,11 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
 
 - [ ] **T-47**: UC-3 checklist, session guide and run
   - **Owner**: test-engineer
-  - **Requirements**: FR-7, FR-10, FR-11, FR-12, FR-13, NFR-2
-  - **Depends on**: T-40, T-43, T-45, T-46
+  - **Requirements**: FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, NFR-2
+  - **Depends on**: T-40, T-43, T-44, T-46
   - **Files**: `docs/project/test-checklist.md` (M3 items, section UC-3), `docs/project/test-reports/uc-3.md`
   - **Acceptance criteria**:
-    - [ ] Checklist items cover every M3 acceptance criterion on (a) and (b), journey 2 and 4, an Ideology designator (setup a with Ideology), the self-test on (R) and on the stress mod (2,000 and 8,000 defs), and picker scrolling for P-15.
+    - [ ] Checklist items cover every M3 acceptance criterion on (a) and (b); journey 2 (Ctrl+click the chair dropdown in the architect with BAM, it fills the first free slot as a whole sub-menu) and journey 4; an Ideology designator pinned before and after loading a game whose ideoligion allows it (refresh, setup a with Ideology); the edit mode shell (enter, Done, Esc twice, right-click closes, plain click does nothing, modifier+click unpins); the self-test on (R) and on the stress mod (2,000 and 8,000 defs); and the measurement actions for P-7c, P-8 with a sub-ring, P-11c and P-12.
     - [ ] *(UC-3)* Results recorded; failures become bug tasks.
   - **Tests**: the session itself.
   - **In-game check**: UC-3 (user)
@@ -695,14 +731,14 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Depends on**: T-47
   - **Files**: `docs/project/design/screens/m3/*`, `docs/project/design.md`
   - **Acceptance criteria**:
-    - [ ] States 4, 5, 12, 13, 14, satellites, material ring and picker rows match design.md and the mockups; the user confirms.
-    - [ ] Carried over from T-34: pressed (3), hub hover, edge-dodge corners, the rim over snow or ice, and the T-81 changes are captured and checked.
+    - [ ] States 4, 5, 12, 13, 14, satellites, the material ring and the edit-mode hub (Done) match design.md and the mockups; the user confirms.
+    - [ ] Carried over from T-34: pressed (3), hub hover, edge-dodge corners and the rim over snow or ice are captured and checked (the T-81 look was checked in UC-2b, T-82).
   - **Tests**: screenshot review.
   - **Size**: S
 
 - [ ] **T-49**: M3 performance record · `parallel-ok`
   - **Owner**: performance-engineer
-  - **Requirements**: NFR-1 (P-7c, P-8 with sub-ring, P-11c, P-12, P-13 in game, P-15)
+  - **Requirements**: NFR-1 (P-7c, P-8 with sub-ring, P-11c, P-12)
   - **Depends on**: T-47
   - **Files**: `docs/project/performance.md` §5
   - **Acceptance criteria**:
@@ -730,19 +766,21 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Files**: `src/QuickMenu.Core/Layout/Capacity.cs`, `src/QuickMenu.Core/Layout/WheelLayout.cs` (Auto mode), `tests/QuickMenu.Core.Tests/Layout/CapacityTests.cs`
   - **Acceptance criteria**:
     - [ ] Given `PinService.IsReady` is false (catalog not built, empty or failed), then the missing-pin count and the "Forget missing pins" button are disabled; and given it is true, then a pin counts as missing (`PinService.IsMissing`/`CountMissing`/`ForgetMissing`) only when it is unresolved and (a build pin's def is absent from the DefDatabase, or its stored packageId is not an active mod), so an unresolved but present pin (main menu, no game) is never forgotten (T-25 review M2, round 2).
-    - [ ] Given Auto wheel with count c, then the smallest m with Σ cap ≥ c is used, inner rings full, outer ring spread evenly; c = 0 draws ring-1 geometry; edit mode adds one append slot.
+    - [ ] Given Auto wheel with count c, then the smallest m with Σ cap ≥ c is used, inner rings full, outer ring spread evenly; c = 0 draws ring-1 geometry; edit mode adds no extra slot (there is no append/Add slot).
     - [ ] Given Auto wheel, then full when count = Σ cap(m) and m + 1 rings do not fit the screen minus margins, or m = 8. Given Auto grid, rows = smallest odd with rows·cols − 1 ≥ count; full when rows + 2 do not fit or rows = 9.
     - [ ] Given Fixed, then capacity = rings or rows·cols − 1.
   - **Tests**: unit `CapacityTests` (UI screen 1920 × 1080 and 960 × 540).
   - **Size**: M
 
-- [ ] **T-52**: Core `PinBoard` Auto semantics, insert cursor, mode conversion, forget missing · `parallel-ok`
+- [ ] **T-52**: Core `PinBoard` Auto semantics, mode conversion, forget missing; remove the insert cursor · `parallel-ok`
   - **Owner**: developer
   - **Requirements**: FR-5, FR-9, FR-14, FR-15, NFR-8 (architecture §4, U-2)
   - **Depends on**: T-18
-  - **Files**: `src/QuickMenu.Core/Pins/PinBoard.cs`, `tests/QuickMenu.Core.Tests/Pins/PinBoardAutoTests.cs`
+  - **Files**: `src/QuickMenu.Core/Pins/PinBoard.cs`, `tests/QuickMenu.Core.Tests/Pins/{PinBoardAutoTests,PinBoardFixedTests}.cs`
   - **Acceptance criteria**:
-    - [ ] Given Auto, then pins are an ordered list, unresolved ones are hidden but keep their order, and pins go in front of the cursor (Fixed: into the cursor slot; occupied cursor in Fixed still reports full).
+    - [ ] Given Auto, then pins are an ordered list, unresolved ones are hidden but keep their order, a new pin is appended at the end, and `Clear(i)` moves later pins up. Given Fixed, a new pin goes into the first free slot (unchanged from T-18).
+    - [ ] Given the insert cursor was dropped (user, 2026-10-19), then `PinBoard.Cursor` and `SetCursor` and every cursor branch in `Toggle` are removed with their tests; no caller remains (build and `scripts/test.sh` green, coverage ≥ 90 %).
+    - [ ] Given `Swap(a, b)` in Auto (drag in edit mode), then the two pins exchange places in the list and the others keep their order; given `Swap(a, b)` in Fixed with b empty, then the pin moves to b and a becomes empty.
     - [ ] Given Fixed ↔ Auto conversion, then order is preserved and no pin is lost.
     - [ ] Given `CountUnresolved` and `ForgetUnresolved`, then only unresolved pins are counted and removed.
   - **Tests**: unit `PinBoardAutoTests`.
@@ -769,15 +807,16 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **In-game check**: UC-4 (user)
   - **Size**: M
 
-- [ ] **T-55**: Edit-mode states, help panel and hint plate renderer · `parallel-ok`
+- [ ] **T-55**: Edit-mode states, help panel and hint plate renderer; drop the Add and caret glyphs · `parallel-ok`
   - **Owner**: visual-designer
-  - **Requirements**: FR-9, FR-14, FR-16 (look) (design.md S4 states 7–11, S5)
-  - **Depends on**: T-29
-  - **Files**: `src/QuickMenu/Menu/{EditStateRenderer,HelpPanelRenderer}.cs`, `mod/Languages/English/Keyed/QuickMenu.Menu.xml`
+  - **Requirements**: FR-9, FR-14, FR-16 (look) (design.md S4 states 8, 9, 11, S5, as revised by T-83)
+  - **Depends on**: T-29, T-81, T-83
+  - **Files**: `src/QuickMenu/Menu/{EditStateRenderer,HelpPanelRenderer,Textures}.cs`, `src/QuickMenu.Core/Render/{Glyphs,MaskSet,TextureSizing}.cs`, `tests/QuickMenu.Core.Tests/Render/{GlyphsTests,MaskSetTests}.cs`, `mod/Languages/English/Keyed/QuickMenu.Menu.xml`
   - **Acceptance criteria**:
-    - [ ] States 7 ("+" Add slot, drawn since T-44), 8 (reserved-missing "?", tooltip ending "{modifier}+click to remove."), 9 (drag source ghost and dragged icon at 0.9 B, 80 %, offset +16), 10 (insert cursor with caret) and 11 (drop target) are drawn per S4.
+    - [ ] States 8 (reserved-missing "?", tooltip ending "{modifier}+click to remove."), 9 (drag source ghost and dragged icon at 0.9 B, 80 %, offset +16) and 11 (drop target, an empty Fixed slot included) are drawn per S4. There is no state 7 ("+") and no state 10 (insert cursor).
+    - [ ] Given the "+" and the insert cursor are gone, then `MaskId.IconAdd` and `MaskId.Caret` are removed from the mask set, `Glyphs`, `TextureSizing` and `Textures` with their tests; the glyph range checks still cover the remaining glyphs; the T-28 texture budget tests stay green.
     - [ ] The help panel is at top centre (60 px down, max 520 wide) with the Fixed or Auto text and the capacity line (`danger` when full); the hint plate wraps at 360.
-    - [ ] Keyed strings (design.md §1.4, S4, Tooltips): `QuickMenu.Menu.EditHelpFixed`, `QuickMenu.Menu.EditHelpAuto` (both take the modifier name as {0}, no right-click wording), `QuickMenu.Menu.EditSlotTip` "Drag to move. {0}+click to remove.", `QuickMenu.Menu.MissingTip` (state 8, label {0}, mod {1}, modifier {2}), `QuickMenu.Menu.CapacityFixed` "{0} of {1} slots used", `QuickMenu.Menu.CapacityAuto` "{0} pinned", `QuickMenu.Menu.Full` "The menu is full.".
+    - [ ] Keyed strings (design.md §1.4, S4, Tooltips, texts per T-83): `QuickMenu.Menu.EditHelpFixed`, `QuickMenu.Menu.EditHelpAuto` (both take the modifier name as {0}, say that new pins come from the architect menu and go into the first free slot or at the end, no right-click and no "add" wording), `QuickMenu.Menu.EditSlotTip` "Drag to move. {0}+click to remove.", `QuickMenu.Menu.MissingTip` (state 8, label {0}, mod {1}, modifier {2}), `QuickMenu.Menu.CapacityFixed` "{0} of {1} slots used", `QuickMenu.Menu.CapacityAuto` "{0} pinned", `QuickMenu.Menu.Full` "The menu is full.".
   - **Tests**: build; visual review T-61.
   - **In-game check**: UC-4 (user)
   - **Size**: M
@@ -795,18 +834,19 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **In-game check**: UC-4 (user)
   - **Size**: M
 
-- [ ] **T-57**: Edit interactions: drag swap, modifier+click unpin, insert cursor, help panel, full
+- [ ] **T-57**: Edit interactions: drag swap, help panel, full, one write per session (wheel and grid, Fixed and Auto)
   - **Owner**: developer
-  - **Requirements**: FR-9, FR-5, FR-14, NFR-1 (P-17 write count)
+  - **Requirements**: FR-9, FR-5, FR-4, FR-14, NFR-1 (P-17 write count)
   - **Depends on**: T-44, T-52, T-55, T-56
   - **Files**: `src/QuickMenu/Menu/{EditModeController,QuickMenuWindow}.cs`, `src/QuickMenu/Pinning/PinService.cs`
   - **Acceptance criteria**:
-    - [ ] Given edit mode, when slot A is dragged (start after 6 px) onto slot B, then they swap with `Tick_Tiny`; less than 6 px is a click that sets or clears the insert cursor.
-    - [ ] Given a pin-modifier+click (the effective modifier from `ModifierPolicy`: Ctrl by default, Alt with Mint, or the user's choice; read from the menu window's own click `Event`) on an occupied or reserved slot, then it is unpinned (`Tick_Low`, message `QuickMenu.Pin.Unpinned`; Fixed: the slot shows "+", Auto: later slots move up); on an empty slot or the hub, nothing extra happens. Given a right-click, then it never unpins: it cancels a drag in progress, otherwise closes the menu. Given use mode, a modifier+click on a slot acts as a plain click.
-    - [ ] Given Fixed, a plain click on an occupied slot does nothing; clicking the slot that holds the cursor clears it and the picker stays open.
-    - [ ] Given the help panel, then it shows the right text and capacity line; when full, pinning from the picker or by click plays `ClickReject` with the full message.
+    - [ ] Given edit mode, when slot A (occupied or reserved) is dragged (start after 6 px) onto slot B, then `PinBoard.Swap(A, B)` runs with `Tick_Tiny` (Fixed: B may be empty, so the pin moves there; Auto: the two pins exchange places); a press and release under 6 px does nothing; dropping on the hub or outside cancels the drag.
+    - [ ] Given a right-click, then it never unpins: it cancels a drag in progress, otherwise closes the menu.
+    - [ ] Given modifier+click on a slot (T-81 in use mode, T-44 in edit mode), then it also works in the grid and in Auto (Auto: later pins move up).
+    - [ ] Given the help panel, then it shows the right text and capacity line; when full, pinning by Ctrl/Alt+click in the architect plays `ClickReject` with the full message (T-26 path, unchanged).
+    - [ ] Given pins made in the architect while the menu is closed, then they appear in the first free slot (Fixed) or at the end (Auto) on the next open.
     - [ ] Given an edit session, then settings are written once at edit end or menu close if dirty, never per drag step (counter in the self-test).
-    - [ ] *(UC-4)* Journey 5 in wheel and grid.
+    - [ ] *(UC-4)* Journey 5 in wheel and grid (with modifier+click to clear a slot, per FR-9; see Question 9).
   - **Tests**: `PinBoardFixedTests`, `PinBoardAutoTests`; in-game UC-4.
   - **In-game check**: UC-4 (user)
   - **Size**: M
@@ -898,14 +938,14 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
 
 - [ ] **T-65**: `AvailabilityResolver` and greyed slots
   - **Owner**: developer
-  - **Requirements**: FR-14, FR-7 (greyed items), NFR-4, NFR-6 (ADR 0006, U-4)
-  - **Depends on**: T-14, T-42, T-45
-  - **Files**: `src/QuickMenu/Catalog/AvailabilityResolver.cs`, `src/QuickMenu/Menu/{QuickMenuWindow,PickerRow}.cs`, `mod/Languages/English/Keyed/QuickMenu.Menu.xml`
+  - **Requirements**: FR-14, NFR-4, NFR-6 (ADR 0006, U-4)
+  - **Depends on**: T-14, T-40, T-42
+  - **Files**: `src/QuickMenu/Catalog/AvailabilityResolver.cs`, `src/QuickMenu/Menu/{QuickMenuWindow,UnavailableReasons}.cs`, `mod/Languages/English/Keyed/QuickMenu.Menu.xml`
   - **Acceptance criteria**:
     - [ ] *(partly done in T-32 UC-2 fix: use-mode slot, research / building / tech-level reasons)* Given a `Disabled` designator, then the reason is `disabledReason`; given `Visible == false`, then the reason is composed from the causes found in S-5 (research with the project label, tech level, required building, monolith, grav engine) using game strings where they exist, else "Not available right now."
     - [ ] Known gap from T-7: Disabled designators must never be activated (the skeleton does not check), and activation fires on mouse-up over the same slot.
     - [ ] Given a greyed slot, then the tooltip adds the reason in `danger`; clicking it plays `ClickReject` and shows the reason as a `RejectInput` message; availability is evaluated on open and on hover only.
-    - [ ] Given the picker, then greyed rows show the same reason in the sub-line.
+    - [ ] Given an Ideology build gated by a precept or ideoligion building, or a Biotech mechanitor item, then the slot is greyed with the matching reason (the causes T-32 left open: monolith, grav engine, Biotech, precept).
     - [ ] *(UC-5)* An unresearched build (e.g. a tier-2 power building on a new colony) shows the research reason; a Biotech mechanitor item without a mechanitor is greyed.
   - **Tests**: in-game UC-5.
   - **In-game check**: UC-5 (user)
@@ -1024,7 +1064,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Depends on**: T-72, T-73, T-74
   - **Files**: `docs/project/test-checklist.md` (UC-6 = full checklist), `docs/project/test-reports/uc-6.md`
   - **Acceptance criteria**:
-    - [ ] The guide covers the whole checklist on (a)–(d) and (R), (e) if Multiplayer supports 1.7, the fault-injection action, the NFR-3 load test (only Harmony + Quick Menu), final measurement actions, and 3–5 clean screenshots for the Preview (wheel with a sub-ring, grid, picker) on an attractive colony.
+    - [ ] The guide covers the whole checklist on (a)–(d) and (R), (e) if Multiplayer supports 1.7, the fault-injection action, the NFR-3 load test (only Harmony + Quick Menu), final measurement actions, and 3–5 clean screenshots for the Preview (wheel with a sub-ring, material ring, grid, edit mode) on an attractive colony.
     - [ ] *(UC-6)* Every Must item passes, or the user accepts a documented exception.
   - **Tests**: the session itself.
   - **In-game check**: UC-6 (user)
@@ -1056,7 +1096,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Depends on**: T-75
   - **Files**: `README.md`, `docs/workshop-description.txt` (Steam BBCode), `mod/About/About.xml` (`description`)
   - **Acceptance criteria**:
-    - [ ] README covers what it does, install (Harmony required), default trigger and the middle-mouse fallback, pinning (picker and Ctrl/Alt+click), wheel/grid, settings, compatibility notes (BAM, Mint, Multiplayer status), building from source, license MIT, and the optional attribution line from assets.md.
+    - [ ] README covers what it does, install (Harmony required), default trigger and the middle-mouse fallback, pinning (Ctrl/Alt+click in the architect menu, vanilla or BAM; modifier+click on a slot to unpin; edit mode to rearrange), wheel/grid, settings, compatibility notes (BAM, Mint, Multiplayer status), building from source, license MIT, and the optional attribution line from assets.md.
     - [ ] The Workshop description says the same in BBCode, under Steam's length limit, and states the 1.7 beta status.
   - **Tests**: link check and a read-through by the user.
   - **Size**: S
@@ -1088,31 +1128,31 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
 | FR-1 trigger binding, mouse 3–5, unbound, middle-mouse option | T-5, T-11, T-20, T-30, T-58, T-67 | `TriggerBindingTests`; UC-1 (input probe), UC-2 (binding items), UC-5 (first-run notice) · M1: UC-1 S-2 PASS (mouse 0-4 polled, 3=Mouse 4); skeleton poller only, no unit tests (binding logic is T-20) |
 | FR-2 toggle / hold, hover-open in hold | T-17, T-21, T-31, T-32, T-63, T-64 | `TriggerStateMachineToggleTests`, `TriggerStateMachineHoldTests`, `HitTesterTests`; UC-2, UC-5 · M1: none yet (skeleton toggle only, UC-1 S-6) |
 | FR-3 centred on mouse, edge dodge, oversize centred | T-7, T-16, T-32, T-36 | `EdgeDodgerTests`, `MenuBoundsTests`, `SubMenuLayoutTests`; UC-2 (corners), UC-4 (UI scale 2.0) · M1: none yet (skeleton centres on mouse, UC-1 S-6; no edge dodge until T-16) |
-| FR-4 wheel and grid with the same features | T-2, T-17, T-29, T-50, T-54, T-56, T-59 | `WheelLayoutTests`, `GridLayoutTests`, `HitTesterGridTests`; UC-4 FR-4 matrix · M1: `WheelLayoutTests`, `WheelLayoutExtremesTests`, `RingCapacityTests`, `WheelHitTestTests`, `WheelHitTestBoundaryTests` |
+| FR-4 wheel and grid with the same features | T-2, T-17, T-29, T-81, T-50, T-54, T-56, T-57, T-59 | `WheelLayoutTests`, `GridLayoutTests`, `HitTesterGridTests`; UC-4 FR-4 matrix · M1: `WheelLayoutTests`, `WheelLayoutExtremesTests`, `RingCapacityTests`, `WheelHitTestTests`, `WheelHitTestBoundaryTests` |
 | FR-5 Fixed / Auto sizing, full | T-18, T-25, T-32, T-51, T-52, T-56, T-57, T-59 | `PinBoardFixedTests`, `PinBoardAutoTests`, `CapacityTests`; UC-2 (full message), UC-4 |
 | FR-6 size settings used on next open | T-2, T-31, T-32, T-50, T-51, T-59 | `WheelLayoutTests`, `CapacityTests`; UC-2, UC-4 · M1: `WheelLayoutTests` (geometry only; setting not wired yet) |
-| FR-7 searchable picker independent of architect UI; greyed; dev-only | T-6, T-9, T-38, T-40, T-44, T-45, T-65 | `SearchIndexTests`, `SearchPerfTests`, self-test round-trip; UC-1, UC-3 (setup b), UC-5 · M1: `PinKeyFactoryTests`, `PinKeyRoundTripTests`; UC-1 S-4 (454 / 718 entries, 0 failures, 0 duplicates), S-5 (reasons must be composed) |
+| FR-7 ~~searchable picker~~ — **Won't** (removed by the user 2026-10-19, after UC-2) | — (T-38, T-39, T-45 removed; T-83, T-84, T-85 remove it from design, performance and architecture docs) | — (no test: nothing to build). The catalog work done under FR-7 in M1 (T-6, T-9, T-14) now serves FR-8, FR-10 and FR-14 |
 | FR-8 modifier+click on any designator; Mint → Alt | T-8, T-20, T-26, T-27, T-31, T-67 | `ModifierPolicyTests`, `PinClickClassifierTests`; UC-1 (S-3 probe), UC-2 (a, b), UC-5 (c, d) · M1: UC-1 S-3 (idle 0 calls; modifiers via `Input`; dropdown entry needs T-27); patch count 8/0 failed |
-| FR-9 edit mode: centre Edit button, picker via "+" slots, drag swap, modifier+click unpin, insert cursor | T-17, T-18, T-21, T-81, T-44, T-52, T-55, T-57, T-63 | `PinBoardFixedTests`, `PinBoardAutoTests`, `TriggerStateMachine*Tests`; UC-3, UC-4 |
-| FR-10 pin a whole dropdown | T-3, T-6, T-9, T-26, T-27, T-37, T-40, T-42, T-43, T-45 | `PinKeyTests`, `PinKeyFactoryTests`, `ModDropdownMatcherTests`; UC-1 self-test, UC-2, UC-3 · M1: `PinKeyTests`, `PinKeyEdgeTests`, `PinKeyFactoryTests`, `PinKeyFactoryEdgeTests`, `PinKeyRoundTripTests`; UC-1 S-4 |
+| FR-9 edit mode: centre Edit/Done button, drag swap, modifier+click unpin (use and edit mode), new pins in the first free slot (Fixed) or at the end (Auto); no "+", no insert cursor | T-17, T-18, T-21, T-81, T-82, T-83, T-44, T-52, T-55, T-57, T-63 | `PinBoardFixedTests`, `PinBoardAutoTests`, `HitTesterTests`, `TriggerStateMachine*Tests`; UC-2b (centre button, unpin on the wheel), UC-3 (edit shell), UC-4 (drag, journey 5) |
+| FR-10 pin a whole dropdown | T-3, T-6, T-9, T-26, T-27, T-37, T-40, T-42, T-43 | `PinKeyTests`, `PinKeyFactoryTests`, `ModDropdownMatcherTests`; UC-1 self-test, UC-2, UC-3 · M1: `PinKeyTests`, `PinKeyEdgeTests`, `PinKeyFactoryTests`, `PinKeyFactoryEdgeTests`, `PinKeyRoundTripTests`; UC-1 S-4 |
 | FR-11 dropdown expands as sub-ring / sub-grid | T-21, T-36, T-42, T-43, T-54, T-56, T-63 | `SubMenuLayoutTests`, `TriggerStateMachine*Tests`; UC-3, UC-4 |
 | FR-12 material sub-ring | T-36, T-37, T-41, T-42, T-43, T-56 | `StuffOrderingTests`, `SubMenuLayoutTests`; UC-3 (journey 4), UC-4 |
 | FR-13 activate exactly as the architect | T-6, T-7, T-29, T-32, T-41, T-43 | UC-1 (skeleton), UC-2, UC-3 · M1: UC-1 S-6 (Mine activates, Wall opens vanilla material list) |
-| FR-14 greyed with reason; missing-mod pins hidden but kept | T-9, T-18, T-19, T-37, T-40, T-42, T-52, T-55, T-57, T-59, T-65, T-66 | `PinBoardFixedTests`, `PinBoardAutoTests`, `PinSerializerTests`, `ModDropdownMatcherTests`; UC-1 (S-5 dump), UC-5 (journey 6, greyed) · M1: UC-1 S-5 only (no unit tests for availability yet) |
-| FR-15 no duplicates (toggle) | T-3, T-18, T-25, T-26, T-45, T-52 | `PinBoardFixedTests` (toggle), `PinKeyTests`; UC-2, UC-3 · M1: `PinKeyTests` (canonical equality) only; toggle is T-18 |
+| FR-14 unavailable pins always greyed with reason (never hidden or empty); missing-mod pins hidden but kept | T-9, T-18, T-19, T-32, T-37, T-40, T-42, T-52, T-55, T-57, T-59, T-65, T-66, T-82 | `PinBoardFixedTests`, `PinBoardAutoTests`, `PinSerializerTests`, `ModDropdownMatcherTests`, `UnavailableReasonTests`; UC-1 (S-5 dump), UC-2b (morbid slabs, research-locked build), UC-3 (Ideology refresh), UC-5 (journey 6, greyed) · M1: UC-1 S-5 only (no unit tests for availability yet) |
+| FR-15 no duplicates (toggle) | T-3, T-18, T-25, T-26, T-52, T-81 | `PinBoardFixedTests` (toggle), `PinKeyTests`; UC-2, UC-3 · M1: `PinKeyTests` (canonical equality) only; toggle is T-18 |
 | FR-16 empty-menu hint | T-55, T-58 | UC-4 (journey 1) |
 | FR-17 global settings, nothing in saves | T-3, T-9, T-19, T-25, T-32, T-66, T-72 | `PinSerializerTests`; grep for Game/World/MapComponent (T-25); UC-2 (second save, restart), UC-5 (remove mod from save) · M1: nothing persisted yet; `PinKeyTests` / `PinKeyRoundTripTests` cover key stability |
 | FR-18 Multiplayer-safe | T-32, T-41, T-68 | Source audit (T-68); UC-6 setup (e) when Multiplayer supports 1.7, else blocked per A-2 |
-| NFR-1 no per-frame cost closed; open in one frame; index < 200 ms | T-5, T-7, T-8, T-10, T-15, T-24, T-35, T-39, T-40, T-46, T-49, T-53, T-62, T-71, T-76 | `ZeroAllocTests`, `LayoutTimingTests`, `PinBoardPerfTests`, `SerializerPerfTests`, `SearchPerfTests`; in-game P-rows at every UC · M1: UC-1 P-1, P-2, P-4, P-6, P-7a, P-8, P-9, P-11c, P-12, P-18 all PASS; `MeasureStatsTests`, `SampleRingTests`; 2 Perf-trait tests |
-| NFR-2 vanilla / BAM / Mint / DLC | T-6, T-8, T-9, T-13, T-26, T-40, T-45, T-67, T-68, T-75 | Self-test on (a), (b), (R); UC-2 (a, b), UC-3 (a, b), UC-5 (c, d), UC-6 (all) · M1: UC-1 S-1/S-4 on (a) and (b); (c) Mint, (d), (R) not run |
+| NFR-1 no per-frame cost closed; open in one frame; catalog built once < 200 ms | T-5, T-7, T-8, T-10, T-15, T-24, T-35, T-40, T-46, T-49, T-53, T-62, T-71, T-76, T-82, T-84 | `ZeroAllocTests`, `LayoutTimingTests`, `PinBoardPerfTests`, `SerializerPerfTests`, `TextureRebuildPerfTests`; in-game P-rows at every UC (UC-2b: P-16 breakdown, texture prewarm, P-9 sub-buckets; P-11c catalog build on (R) and the stress mod in UC-3) · M1: UC-1 P-1, P-2, P-4, P-6, P-7a, P-8, P-9, P-11c, P-12, P-18 all PASS; `MeasureStatsTests`, `SampleRingTests`; 2 Perf-trait tests |
+| NFR-2 vanilla / BAM / Mint / DLC | T-6, T-8, T-9, T-13, T-26, T-40, T-47, T-67, T-68, T-75 | Self-test on (a), (b), (R); UC-2 (a, b), UC-3 (a, b), UC-5 (c, d), UC-6 (all) · M1: UC-1 S-1/S-4 on (a) and (b); (c) Mint, (d), (R) not run |
 | NFR-3 Harmony only dependency | T-1, T-5, T-13, T-74, T-80 | About.xml review and zip listing (T-74, T-80); UC-1 and UC-6 load with Harmony + Quick Menu only · M1: UC-1 loads with Harmony + Quick Menu; `mod/1.7/Assemblies` holds only QuickMenu.dll and QuickMenu.Core.dll; CI green |
-| NFR-4 every string Keyed | T-5, T-25, T-30, T-31, T-45, T-55, T-58, T-59, T-65, T-67, T-73 | `scripts/check-strings.sh` in CI (T-73) · M1: none (only dev-mode diagnostic strings exist) |
-| NFR-5 button size; UI scale | T-2, T-12, T-16, T-28, T-29, T-31, T-32, T-51, T-59, T-61 | `WheelLayoutTests` (all B), `CapacityTests` (960 × 540); UC-1 texture probe, UC-4 screenshots at 1.0 and 2.0 · M1: `WheelLayoutTests`, `WheelLayoutExtremesTests` (all B); UC-1 S-7 screenshots at 1.0 and 1.5 (2.0 refused at 2560x1440) |
+| NFR-4 every string Keyed | T-5, T-25, T-30, T-31, T-44, T-55, T-58, T-59, T-65, T-67, T-73 | `scripts/check-strings.sh` in CI (T-73) · M1: none (only dev-mode diagnostic strings exist) |
+| NFR-5 button size; UI scale | T-2, T-12, T-16, T-28, T-29, T-31, T-32, T-81, T-82, T-51, T-59, T-61 | `WheelLayoutTests` (all B), `CapacityTests` (960 × 540); UC-1 texture probe, UC-4 screenshots at 1.0 and 2.0 · M1: `WheelLayoutTests`, `WheelLayoutExtremesTests` (all B); UC-1 S-7 screenshots at 1.0 and 1.5 (2.0 refused at 2560x1440) |
 | NFR-6 failures never break the game; log once | T-5, T-19, T-25, T-26, T-65, T-66, T-72 | `PinSerializerTests` (bad lines); fault-injection action in UC-6; UC-5 missing-mod test · M1: `PatchGuard`/`PatchSite` verified by build only; UC-1 no errors logged; fault injection is T-72 |
 | NFR-7 clean-room | T-4, T-22, T-23, T-28, T-74, T-77 | Mint string diff and asset audit (T-74); visual reviews · M1: `MaskRasterizerTests`, `MaskRasterizerEdgeTests`, `PngWriterTests` (own assets); audit is T-74 |
-| NFR-8 layout and pins unit-tested | T-2, T-3, T-16, T-17, T-18, T-19, T-20, T-21, T-36, T-37, T-38, T-50, T-51, T-52, T-63 | Whole Core suite, `scripts/test.sh` with ≥ 90 % line coverage in CI · M1: 322 tests, Core line coverage 99.4 %; `CoreIsolationTests` (Core references only the BCL) |
+| NFR-8 layout and pins unit-tested | T-2, T-3, T-16, T-17, T-18, T-19, T-20, T-21, T-81, T-36, T-37, T-50, T-51, T-52, T-63 | Whole Core suite, `scripts/test.sh` with ≥ 90 % line coverage in CI · M1: 322 tests, Core line coverage 99.4 %; `CoreIsolationTests` (Core references only the BCL) |
 
-All FR-1 … FR-18 and NFR-1 … NFR-8 have at least one task and one test. Gaps found and fixed while planning: FR-16 had no owner beyond the renderer (added T-58); FR-17 "removing the mod from a save" had no check (added to UC-5 via T-69); NFR-3 had no load test (added to UC-1 and UC-6); FR-18 had no verification path (added T-68 with the A-2 blocked status); NFR-4 had only "review grep" (made a CI script, T-73).
+All FR-1 … FR-18 (except FR-7, Won't) and NFR-1 … NFR-8 have at least one task and one test. Revision 2026-10-19 (picker removal): FR-7 now has no task or test by design; T-38/T-39/T-45 were removed from FR-7, FR-10, FR-15, NFR-1, NFR-2, NFR-4 and NFR-8, and each of those rows still has other tasks and tests; FR-9's use-mode unpin had no task (added to T-81) and the centre-button and greyed-pin fixes had no in-game check after UC-2 (added UC-2b, T-82); the leftover insert-cursor code (`PinBoard.SetCursor`, from T-18) and the `IconAdd`/`Caret` glyphs (from T-23) had no removal task (added to T-52 and T-55). Gaps found and fixed while planning: FR-16 had no owner beyond the renderer (added T-58); FR-17 "removing the mod from a save" had no check (added to UC-5 via T-69); NFR-3 had no load test (added to UC-1 and UC-6); FR-18 had no verification path (added T-68 with the A-2 blocked status); NFR-4 had only "review grep" (made a CI script, T-73).
 
 ## Risks and spikes
 
@@ -1132,8 +1172,9 @@ Each spike is time-boxed to one session of agent work; the UC-1 session is about
 ### Risks
 | Risk | Likelihood | Impact | Mitigation in this plan |
 |---|---|---|---|
-| UC-1 shows a blocker (Harmony cannot patch, runtime textures fail, window cannot absorb clicks) | Medium | High (rework of M2) | All spikes run before any dependent M2 task; T-14 records the fallback (picker-only for unpatched designators; PNG then baker textures; alternative window layer) and amends T-26/T-28/T-32 before they start |
-| In-game verification depends on the user's time | High | Medium (milestones wait) | Six grouped sessions only; guides with exact steps and log markers; Core logic is test-covered so sessions check integration, not logic |
+| UC-1 shows a blocker (Harmony cannot patch, runtime textures fail, window cannot absorb clicks) | Medium | High (rework of M2) | All spikes run before any dependent M2 task; T-14 recorded the results (all spikes passed in UC-1) |
+| With the picker removed, a designator whose `ProcessInput` override cannot be patched (or a mod architect UI that bypasses `ProcessInput`) cannot be pinned at all | Low (S-1: 8 of 8 patched, 0 failed; BAM works in UC-2) | Medium (some mod designators unpinnable) | Self-test patch count and per-method failure log (T-9); checked on (R) in UC-3 and on all setups in UC-6; any failure is reported as a known limit in the CHANGELOG (T-79) and the user is asked (T-85 rewrites the architecture risk row) |
+| In-game verification depends on the user's time | High | Medium (milestones wait) | Six grouped sessions plus the short UC-2b follow-up; guides with exact steps and log markers; Core logic is test-covered so sessions check integration, not logic |
 | RimWorld 1.7 or Harmony rc updates break the build or patches mid-project | High | Medium | Pinned references; rerun self-test at every UC; record build number in every result |
 | BAM or Multiplayer have no 1.7 build | High | Medium | Their checks are recorded as blocked, not failed (A-2); no code depends on them |
 | S-3 shows `ProcessInput` is called outside clicks (P-4 ≠ 0) | Low | Medium | T-15/T-71 reopen R-1; the classifier fast path is already zero-alloc and gated (T-24) |
@@ -1150,3 +1191,10 @@ Each spike is time-boxed to one session of agent work; the UC-1 session is about
 5. **Release version**: **0.9.0** until RimWorld 1.7 and Harmony 3 are final.
 6. **Keyed files split per area**: accepted.
 7. **Frame Profiler overhead**: measured in UC-1 (T-15).
+8. **Picker removed (after UC-2)**: no picker, no search, no "+"/Add, no insert cursor; FR-7 is Won't. Pins come only from modifier+click in the architect menu; modifier+click on a wheel slot unpins.
+
+## Open questions (revision 2026-10-19)
+
+- **Question 8**: resolved — the menu stays open after an unpin (implemented in T-81, 00f1671).
+- **Question 9**: resolved — spec journey 5 now says Ctrl+click unpins (FR-9).
+- **Question 10**: resolved — design.md (099d1c0) now says modifier+click in use mode unpins (user decision).
