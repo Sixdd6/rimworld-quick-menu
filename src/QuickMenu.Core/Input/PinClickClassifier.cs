@@ -7,7 +7,17 @@ public static class PinClickClassifier
     {
         if (input.IsKeyEvent
             || input.Button != 0
-            || (input.RawType != RawEventType.MouseDown && input.RawType != RawEventType.MouseUp))
+            || input.RawType == RawEventType.KeyDown
+            || input.RawType == RawEventType.KeyUp)
+        {
+            return PinClickAction.PassThrough;
+        }
+
+        bool click = input.LeftDownThisFrame
+            || input.LeftUpThisFrame
+            || input.RawType == RawEventType.MouseDown
+            || input.RawType == RawEventType.MouseUp;
+        if (!click)
         {
             return PinClickAction.PassThrough;
         }
