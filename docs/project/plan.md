@@ -382,6 +382,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Depends on**: T-8, T-14, T-25
   - **Files**: `src/QuickMenu/Pinning/PinClickPatch.cs`, `src/QuickMenu/QuickMenuMod.cs` (cached effective modifier)
   - **Acceptance criteria**:
+    - [ ] Given `PinBoard.Toggle` returns `PinResult.Rejected` (key too large to save), then a Keyed message explains the item cannot be pinned and nothing changes (T-18/T-19 fix follow-up).
     - [ ] Given a click, then the prefix calls the classifier, then `PinClickDeduper`; on a suppressed (duplicate) frame of a pinned click it still returns `false` so the designator does not activate after being pinned (M2 Core review finding 2).
     - [ ] Given the prefix, then it follows the patch-guard convention: `if (Site.Disabled || MenuActivation.Depth > 0) return true; try { … } catch (Exception ex) { Site.Fail(ex); } return true;`, plus the re-entrancy guard for overrides that call `base.ProcessInput` (M1 security review L-4).
     - [ ] Given the effective modifier is cached at startup and on settings change, when the prefix runs, then it reads only the cached value and the event (fields chosen in T-14), never `ModsConfig`.
