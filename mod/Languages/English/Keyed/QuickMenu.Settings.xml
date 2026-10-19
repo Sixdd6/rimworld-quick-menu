@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <QuickMenu.Binding.Unbound>Unbound</QuickMenu.Binding.Unbound>
+  <QuickMenu.Binding.MiddleMouse>Middle mouse</QuickMenu.Binding.MiddleMouse>
+  <QuickMenu.Binding.Mouse4>Mouse 4</QuickMenu.Binding.Mouse4>
+  <QuickMenu.Binding.Mouse5>Mouse 5</QuickMenu.Binding.Mouse5>
+  <QuickMenu.Settings.OpenWith>Open menu with</QuickMenu.Settings.OpenWith>
+  <QuickMenu.Settings.Clear>Clear</QuickMenu.Settings.Clear>
+  <QuickMenu.Settings.UseMiddleMouse>Use middle mouse instead</QuickMenu.Settings.UseMiddleMouse>
+  <QuickMenu.Settings.BindingNote>Mice do not report their side buttons. If Mouse 4 does nothing, use the middle mouse button or bind a key. Middle mouse also drags the camera while held.</QuickMenu.Settings.BindingNote>
+  <QuickMenu.Settings.KeyConflict>{0} is also used for: {1}.</QuickMenu.Settings.KeyConflict>
+  <QuickMenu.Capture.Title>Set the menu button</QuickMenu.Capture.Title>
+  <QuickMenu.Capture.Body>Press a key or a middle or side mouse button.\nEsc cancels.</QuickMenu.Capture.Body>
+  <QuickMenu.Capture.Rejected>Left and right click can't open the menu.</QuickMenu.Capture.Rejected>
+  <QuickMenu.Capture.Cancel>Cancel</QuickMenu.Capture.Cancel>
+</LanguageData>

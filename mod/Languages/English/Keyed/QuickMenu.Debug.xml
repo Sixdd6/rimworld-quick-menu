@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
   <!-- Dev-mode strings (NFR-4). -->
-  <QuickMenu.Debug.TriggerCycled>Quick Menu skeleton trigger: {0}</QuickMenu.Debug.TriggerCycled>
 </LanguageData>

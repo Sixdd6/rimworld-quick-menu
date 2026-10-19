@@ -1,7 +1,7 @@
 using System;
+using QuickMenu.Core.Input;
 using QuickMenu.Diagnostics;
 using QuickMenu.Pinning;
-using QuickMenu.Skeleton;
 using RimWorld;
 using RimWorld.Planet;
 using UnityEngine;
@@ -40,7 +40,7 @@ internal static class TriggerPoller
                 PinClickPatch.LastLeftDownFrame = Time.frameCount; // for the pin click deduper (T-26)
             }
 
-            if (!UnityEngine.Input.GetMouseButtonDown(SkeletonTrigger.MouseIndex))
+            if (!TriggerPressed())
             {
                 return;
             }
@@ -51,6 +51,18 @@ internal static class TriggerPoller
         {
             Site.Fail(ex);
         }
+    }
+
+    // One cached struct read of the settings binding and one Input call; no allocation. None returns without any Input call.
+    private static bool TriggerPressed()
+    {
+        TriggerBinding binding = QuickMenuMod.Settings.Trigger;
+        return binding.Kind switch
+        {
+            TriggerBindingKind.Mouse => UnityEngine.Input.GetMouseButtonDown(binding.Code),
+            TriggerBindingKind.Key => UnityEngine.Input.GetKeyDown((KeyCode)binding.Code),
+            _ => false,
+        };
     }
 
     private static void Poll()
