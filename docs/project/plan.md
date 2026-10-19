@@ -382,6 +382,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Depends on**: T-8, T-14, T-25
   - **Files**: `src/QuickMenu/Pinning/PinClickPatch.cs`, `src/QuickMenu/QuickMenuMod.cs` (cached effective modifier)
   - **Acceptance criteria**:
+    - [ ] Given a click, then the prefix calls the classifier, then `PinClickDeduper`; on a suppressed (duplicate) frame of a pinned click it still returns `false` so the designator does not activate after being pinned (M2 Core review finding 2).
     - [ ] Given the prefix, then it follows the patch-guard convention: `if (Site.Disabled || MenuActivation.Depth > 0) return true; try { … } catch (Exception ex) { Site.Fail(ex); } return true;`, plus the re-entrancy guard for overrides that call `base.ProcessInput` (M1 security review L-4).
     - [ ] Given the effective modifier is cached at startup and on settings change, when the prefix runs, then it reads only the cached value and the event (fields chosen in T-14), never `ModsConfig`.
     - [ ] Given a left click with the modifier held on any designator (button of a dropdown included), when the prefix runs, then `PinService.Toggle(key of __instance)` runs and the prefix returns `false` (no float menu, no selection). A re-entrancy guard stops a base call from toggling twice.
@@ -398,6 +399,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Depends on**: T-26
   - **Files**: `src/QuickMenu/Pinning/DropdownEntryPatch.cs`, `docs/project/architecture.md` §6 (third patch site)
   - **Acceptance criteria**:
+    - [ ] Given the `GetDesignatorSelectAction` postfix replaces an entry's action, then a modifier+click on an entry inside an open dropdown never also reaches the dropdown's `ProcessInput` prefix, so only the entry is toggled, never the dropdown too (M2 Core review finding 11).
     - [ ] S-3 (2026-10-19) showed that entry clicks reach `Designator_Dropdown.ProcessInput` with the dropdown as instance and `ev.control=False`, so this patch is required. Given a postfix on `RimWorld.Designator_Dropdown.GetDesignatorSelectAction`, when the user holds the modifier and clicks an entry, then the entry's own key is toggled and the original action does not run; without the modifier, the action is unchanged. The modifier is read from `UnityEngine.Input.GetKey`, not from the event.
     - [ ] Given a quick-menu activation with a modifier held, then the pin prefix does not intercept it (`MenuActivation.Depth > 0`).
     - [ ] *(UC-2)* Ctrl+click on an entry in an open dropdown pins only that entry; Ctrl+click on the dropdown button pins the whole dropdown.
@@ -411,6 +413,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Depends on**: T-14, T-22, T-23
   - **Files**: `src/QuickMenu/Menu/{Textures,QMStyle}.cs`; only if S-7 chose the PNG level: `scripts/export-masks.sh`, `mod/Textures/QuickMenu/UI/*.png`, `docs/project/assets.md`
   - **Acceptance criteria**:
+    - [ ] Given the disc rim must be 2 px (design §2) at any disc size, then the rim is rasterized at the actual disc diameter via `MaskRasterizer.Ring(size, stroke)` and rebuilt with the layout cache on button-size, ring-count or UI-scale change; the stretched 128 px `Ring2` is not used for the disc rim (M2 Core review finding 5; update design.md's mask table row).
     - [ ] Given startup, then every mask is uploaded once at the level chosen in T-14 (bilinear, no mipmaps, clamp), and rebuilt only when button size or UI scale changes (≤ 5 ms), never per frame.
     - [ ] Given `QMStyle`, then every colour token of design.md §2 exists with its exact value, and `danger` uses `ColorLibrary.RedReadable` only under the stated 3:1 rule. No drawing code uses colour literals.
     - [ ] If the PNG level was chosen: the PNGs are exported by our rasterizer, committed, and each has an assets.md row (MIT, made by the project).
@@ -467,6 +470,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Depends on**: T-21, T-25, T-29, T-31
   - **Files**: `src/QuickMenu/Menu/{MenuController,QuickMenuWindow}.cs`, `src/QuickMenu/Activation/DesignatorActivator.cs`, `mod/Languages/English/Keyed/QuickMenu.Menu.xml`; delete `SkeletonPins`
   - **Acceptance criteria**:
+    - [ ] Given the state machine returns `Close` from Edit (trigger press or map lost), then the controller saves settings once, the same as on `ExitEdit` (M2 Core review finding 9).
     - [ ] Given open, then the layout comes from a cache rebuilt only on settings or UI screen size change, is edge-dodged, and the window is added in the trigger frame.
     - [ ] Given input, then every IMGUI event is mapped to a `TriggerEvent`, hit-tested by Core, and the `MenuCommand` is executed; the window holds no menu logic of its own.
     - [ ] Given `Activate(i)` on a plain designator (order or build), then `DesignatorActivator` calls `ProcessInput(Event.current)` and the window closes (stuff builds and dropdowns use the vanilla menus until T-41/T-43).
