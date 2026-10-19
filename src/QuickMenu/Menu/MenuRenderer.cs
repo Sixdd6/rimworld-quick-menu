@@ -1,4 +1,5 @@
 using QuickMenu.Core.Geometry;
+using QuickMenu.Core.Input;
 using QuickMenu.Core.Layout;
 using QuickMenu.Core.Render;
 using UnityEngine;
@@ -91,7 +92,15 @@ internal static class MenuRenderer
         HubRenderer.Draw(model, transform, EditVisuals.Hub(hover, pressed, drag));
         if (openParent < 0)
         {
-            PlateRenderer.Draw(model, transform, EditVisuals.Plate(hover, model.Kinds, model.SlotCount, drag), hover.Index);
+            if (!model.Editing && HasNoPins(model))
+            {
+                HelpPanelRenderer.DrawHint(model, transform);
+            }
+            else
+            {
+                PlateRenderer.Draw(model, transform, EditVisuals.Plate(hover, model.Kinds, model.SlotCount, drag), hover.Index);
+            }
+
             if (drag.Active)
             {
                 EditStateRenderer.DrawDragged(model, drag, transform);
@@ -103,6 +112,21 @@ internal static class MenuRenderer
             SetDimmed(false);
             SlotRenderer.DrawAt(model, openParent, model.Slots[openParent].Center, SlotVisualState.Normal, model.Decor(openParent) | SlotDecor.OpenParent, transform);
         }
+    }
+
+    /// <summary>True when every slot is <see cref="SlotKind.Empty"/> (FR-16: the empty-menu hint replaces the label plate).</summary>
+    private static bool HasNoPins(WheelModel model)
+    {
+        SlotKind[] kinds = model.Kinds;
+        for (int i = 0; i < model.SlotCount; i++)
+        {
+            if (kinds[i] != SlotKind.Empty)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>True while the main menu is drawn dimmed (a satellite is open).</summary>
