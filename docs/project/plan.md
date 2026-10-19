@@ -1022,7 +1022,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-5 (user)
   - **Size**: S
 
-- [ ] **T-70**: M5 visual review · `parallel-ok`
+- [x] **T-70**: M5 visual review · `parallel-ok`
   - **Owner**: visual-designer
   - **Requirements**: NFR-5, NFR-7
   - **Depends on**: T-69
@@ -1032,6 +1032,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: screenshot review.
   - **Size**: S
 
+  - **Result (2026-10-19)**: no new menu visuals in M5 beyond the greyed reasons, the first-run notice window and the settings polish; the preview rim bug found in UC-5 was fixed (729d7cc) and confirmed by the user. Screenshots of the first-run notice, the polished settings page and the greyed-with-reason tooltip are carried to UC-6/T-77.
 - [x] **T-71**: M5 performance record · `parallel-ok`
   - **Owner**: performance-engineer
   - **Requirements**: NFR-1 (P-3, P-4 with BAM and Mint, P-5 in game)
@@ -1204,6 +1205,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Depends on**: T-72, T-73, T-74, T-88, T-91, T-92
   - **Files**: `docs/project/test-checklist.md` (UC-6 = full checklist), `docs/project/test-reports/uc-6.md`
   - **Acceptance criteria**:
+    - [ ] *(UC-6)* Carry-over M5 checks (M5 test review): Forget missing pins (confirmation, single write); Auto "menu is full" message; removing Quick Menu from a save and loading it (no errors); Alt/Ctrl+click inside Mint's own architect window with BAM; slider rebuild at UI 1.5 with 5 rings; P-3/P-4/P-5 with BAM and Mint; screenshots of the first-run notice, settings page and a greyed tooltip (T-70); Ideology precept reason if a precept-gated build is available.
     - [ ] The guide covers the whole checklist on (a)–(d) and (R), (e) if Multiplayer supports 1.7, the fault-injection action, the NFR-3 load test (only Harmony + Quick Menu), final measurement actions, and 3–5 clean screenshots for the Preview (wheel with a sub-ring, material ring, grid, edit mode) on an attractive colony.
     - [ ] The guide has an FR-19 section: with the architect menu open, the marker is on pinned buttons in vanilla (a), BAM (b) and Mint's architect (c or d), on a dropdown button whose whole dropdown is pinned, and on a pinned single entry in an open dropdown list (vanilla and BAM); after a modifier+click unpin it is gone on the next frame and after a pin it appears; one screenshot at UI scale 1.0 and one at 2.0; the fault-injection action for both marker sites; and the P-19 measurement ("perf report" after 600 frames with the architect open on the largest category, and again with a colonist selected so its command bar is drawn).
     - [ ] *(UC-6)* Every Must item passes, or the user accepts a documented exception.
