@@ -42,9 +42,8 @@ Notes: `scripts/link-mod.sh` is the ADR 0008 / architecture `link-mod.sh`. The c
 | Server | Purpose | Transport | Secrets needed |
 |---|---|---|---|
 | context7 | Current docs for .NET, Harmony, xUnit, BenchmarkDotNet | stdio, `npx -y @upstash/context7-mcp` | none (optional API key for higher limits) |
-| playwright | Browser automation | stdio, `npx -y @playwright/mcp@latest` | none |
 
-Recommendation: keep context7, remove playwright (a game mod has no browser UI). Both need Node/npx, which is not installed on this machine, so both fail to start until `sudo dnf install nodejs` (provides npx), or until playwright is removed. `.mcp.json` was left unchanged pending the orchestrator's decision. No credentialed servers proposed. Optional (needs a GitHub token, so approval needed): GitHub MCP for PR/release work, not required because `gh` CLI covers it.
+Decision (2026-10-19, user): keep context7, playwright removed (a game mod has no browser UI). context7 needs Node/npx: run `sudo dnf install nodejs`, then restart the session. No credentialed servers proposed. Optional (needs a GitHub token, so approval needed): GitHub MCP for PR/release work, not required because `gh` CLI covers it.
 
 ## Secrets and configuration
 No secrets. Names only:
