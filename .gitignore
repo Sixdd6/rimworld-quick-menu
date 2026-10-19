@@ -1,0 +1,25 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Agent team local state
+.claude/settings.local.json
+.claude/.publish-approved
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Logs
+*.log
+
+# The environment-engineer appends stack-specific ignores below
+
+# Third-party reference material (Dubs Mint Menus) — not ours to redistribute
+/reference/
