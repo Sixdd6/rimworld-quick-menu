@@ -885,6 +885,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Depends on**: T-56, T-57, T-58, T-59
   - **Files**: `docs/project/test-checklist.md` (M4, UC-4), `docs/project/test-reports/uc-4.md`
   - **Acceptance criteria**:
+    - [ ] *(UC-4)* Carry-over M3 checks (M3 test review): material ring with 1 material skips the ring, 0 materials → greyed with "no materials"; journey 4 (chair dropdown → armchair → wood → ready to place) if a stuff dropdown exists; satellites at UI scale 2.0 (or the max allowed); grid sub-grid and material ring; pressed state, hub hover, edge-dodge corners, rim over snow (T-34 carry-over).
     - [ ] *(UC-4)* Carry-over perf re-measures from M3 (T-49): P-7c Ideology refresh time on a colony with an ideoligion; P-9 control run in the stress setup; sub-ring per-frame cost with a satellite open; satellite rim rebuild (3.1 ms, watch item vs 5 ms).
     - [ ] Items for every M4 criterion, the FR-4 matrix (each feature × wheel/grid), UI scale 1.0 and 2.0 screenshots of every S4 state in both layouts, edit-session write counter, and the perf steps for P-8 (grid, max size) and P-9.
     - [ ] *(UC-4)* Results recorded; failures become bug tasks.
@@ -998,6 +999,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Depends on**: T-64, T-65, T-66, T-67, T-68
   - **Files**: `docs/project/test-checklist.md` (M5, UC-5), `docs/project/test-reports/uc-5.md`
   - **Acceptance criteria**:
+    - [ ] *(UC-5)* Carry-over M3 checks: an Ideology-gated pin resolves live after loading a game whose ideoligion allows it and after a precept change (rebuild count +1 only on change); moddrop pin with BAM resolves; carpets keep their own icons in their sub-ring.
     - [ ] Items for every M5 criterion on (a), (c), (d), journey 6, removing Quick Menu from a save and loading it (FR-17: no errors), and Ctrl/Alt+click in Mint's own architect window and BAM with Mint.
     - [ ] *(UC-5)* Results recorded; failures become bug tasks.
   - **Tests**: the session itself.
