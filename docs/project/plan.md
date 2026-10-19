@@ -634,6 +634,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Depends on**: T-14, T-37
   - **Files**: `src/QuickMenu/Catalog/{DesignatorCatalog,CatalogEntry,IdeoSignature}.cs`, `src/QuickMenu/Pinning/PinService.cs`, `src/QuickMenu/Diagnostics/SelfTest.cs`
   - **Acceptance criteria**:
+    - [ ] Given the player's ideoligion changes during play (e.g. reform adopts a precept), then the Ideology refresh calls `DesignatorCatalog.NotifyChanged()` so forced-unavailable (greyed) pins re-resolve without reloading the save (T-81 review finding 4).
     - [ ] Given a loaded game with Ideology, then the catalog adds the Ideology category's designators (excluded in T-6) with their keys, so a pinned Ideology build (e.g. morbid slabs) resolves to its catalog entry; the T-32 ad-hoc fallback stays only for designators the game does not offer.
     - [ ] Given the Ideology part of the catalog is refreshed (or the catalog is rebuilt), then `PinService` re-resolves stored pins, so an Ideology pin resolved as missing at startup becomes available once the game with that ideoligion loads (T-25 review M1).
     - [ ] Given a menu open, then the signature (game, primary ideo, precept count) is compared in O(1) and the Ideology entries are rebuilt only when it changed.
