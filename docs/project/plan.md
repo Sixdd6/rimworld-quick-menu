@@ -295,6 +295,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Depends on**: T-3
   - **Files**: `src/QuickMenu.Core/Pins/PinSerializer.cs`, `tests/QuickMenu.Core.Tests/Pins/PinSerializerTests.cs`
   - **Acceptance criteria**:
+    - [ ] Given a crafted or corrupted settings file, then each pin line longer than 4 KB or a moddrop key with more than 256 children is skipped (logged once) rather than loaded, and one bad entry never fails the whole load (M1 security review).
     - [ ] Given a board, when `ToLines` then `FromLines` runs, then slot, key, packageId and label round-trip, with `|` and `\` escaped.
     - [ ] Given a line with an unknown key prefix, then it is kept verbatim and written back unchanged. Given a malformed line, then it is skipped and reported once (count returned), never thrown.
   - **Tests**: unit `PinSerializerTests`.
@@ -380,6 +381,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Depends on**: T-8, T-14, T-25
   - **Files**: `src/QuickMenu/Pinning/PinClickPatch.cs`, `src/QuickMenu/QuickMenuMod.cs` (cached effective modifier)
   - **Acceptance criteria**:
+    - [ ] Given the prefix, then it follows the patch-guard convention: `if (Site.Disabled || MenuActivation.Depth > 0) return true; try { … } catch (Exception ex) { Site.Fail(ex); } return true;`, plus the re-entrancy guard for overrides that call `base.ProcessInput` (M1 security review L-4).
     - [ ] Given the effective modifier is cached at startup and on settings change, when the prefix runs, then it reads only the cached value and the event (fields chosen in T-14), never `ModsConfig`.
     - [ ] Given a left click with the modifier held on any designator (button of a dropdown included), when the prefix runs, then `PinService.Toggle(key of __instance)` runs and the prefix returns `false` (no float menu, no selection). A re-entrancy guard stops a base call from toggling twice.
     - [ ] Given a hotkey (key event) or a click without the modifier, then the original runs unchanged.
