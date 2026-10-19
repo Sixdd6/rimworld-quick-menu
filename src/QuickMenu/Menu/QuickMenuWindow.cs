@@ -91,6 +91,7 @@ internal sealed class QuickMenuWindow : Window
     {
         try
         {
+            using var scope = new MeasureScope(PerfCounters.WindowUpdate);
             base.WindowUpdate();
             if (!ReferenceEquals(Find.CurrentMap, _map) || WorldRendererUtility.WorldRendered)
             {
@@ -139,6 +140,7 @@ internal sealed class QuickMenuWindow : Window
                 }
             }
 
+            using var scope = new MeasureScope(PerfCounters.Draw);
             Draw();
         }
         catch (Exception ex)

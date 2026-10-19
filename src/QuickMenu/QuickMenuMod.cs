@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using HarmonyLib;
 using QuickMenu.Diagnostics;
@@ -18,6 +19,7 @@ public sealed class QuickMenuMod : Mod
     public QuickMenuMod(ModContentPack content)
         : base(content)
     {
+        long started = Stopwatch.GetTimestamp();
         try
         {
             ApplyPatches();
@@ -26,6 +28,10 @@ public sealed class QuickMenuMod : Mod
         {
             Diagnostics.Log.LogOnce("Harmony.Bootstrap", $"Harmony is unavailable, Quick Menu patches were not applied: {ex}");
         }
+
+        // Settings load and Mint/BAM/MP detection are not implemented yet; the ctor time is currently all patching (P-18).
+        long end = Stopwatch.GetTimestamp();
+        PerfCounters.NoteStartup(end - started, end - started);
     }
 
     // Isolated and not inlined so a missing 0Harmony assembly fails here, inside the caller's try block.

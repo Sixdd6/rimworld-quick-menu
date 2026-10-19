@@ -33,6 +33,7 @@ internal static class MenuController
                 return;
             }
 
+            using var scope = new MeasureScope(PerfCounters.OpenPath);
             Find.WindowStack.Add(_window = new QuickMenuWindow(UnityEngine.Time.frameCount));
         }
         catch (System.Exception ex)

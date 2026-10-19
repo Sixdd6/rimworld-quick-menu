@@ -28,6 +28,8 @@ internal static class SelfTest
         Section(sb, "patches", Patches);
         Section(sb, "keys", RoundTrip);
         Section(sb, "S-5 dev-only and reasons", DevOnlyAndReasons);
+        Section(sb, "startup (P-18)", PerfCounters.AppendStartup);
+        Section(sb, "perf counters", PerfCounters.AppendCounters);
         sb.AppendLine(Log.Prefix + "END self-test");
         return sb.ToString();
     }
