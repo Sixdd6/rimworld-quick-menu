@@ -75,34 +75,8 @@ public static class SubMenuLayout
     public static void ComputeSatelliteSlots(int count, float buttonSize, Vec2 center, Span<SlotPlacement> destination)
     {
         ValidateSize(buttonSize);
-        var rings = RingsFor(count);
-        if (destination.Length < count)
-        {
-            throw new ArgumentException("Destination is too small.", nameof(destination));
-        }
-
-        var pitch = LayoutConstants.Pitch(buttonSize);
-        var index = 0;
-        for (var k = 1; k <= rings; k++)
-        {
-            var onRing = Math.Min(RingCapacity.Of(k), count - index);
-            var radius = k * pitch;
-            var ringStart = index;
-            for (var i = 0; i < onRing; i++)
-            {
-                var degrees = -90.0 + (i * 360.0 / onRing);
-                var rad = degrees * Math.PI / 180.0;
-                destination[ringStart + i] = new SlotPlacement(
-                    ringStart + i,
-                    k,
-                    new Vec2(center.X + (float)(radius * Math.Cos(rad)), center.Y + (float)(radius * Math.Sin(rad))),
-                    radius,
-                    (float)degrees,
-                    pitch / 2f);
-            }
-
-            index += onRing;
-        }
+        RingsFor(count);
+        WheelLayout.ComputeSpread(count, buttonSize, center, destination);
     }
 
     /// <summary>
