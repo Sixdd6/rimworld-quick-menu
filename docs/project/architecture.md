@@ -280,7 +280,7 @@ rimworld-quick-menu/
 │   └── Textures/QuickMenu/UI/        # fallback PNG masks (only if S-7 needs them), listed in assets.md
 ├── src/
 │   ├── QuickMenu.Core/               # pure logic, net10.0, no game references, nullable enabled
-│   └── QuickMenu/                    # game adapter: Mod, Settings, Input, Catalog, Activation, Pinning, UI, Diagnostics
+│   └── QuickMenu/                    # game adapter: Mod, Settings, Input, Catalog, Activation, Pinning, Menu (not `UI`: `QuickMenu.UI` would shadow `Verse.UI`), Diagnostics
 ├── tests/
 │   ├── QuickMenu.Core.Tests/         # xUnit v3: functional tests + Perf-trait gates
 │   ├── QuickMenu.Core.Benchmarks/    # BenchmarkDotNet console app (net10.0), references Core only

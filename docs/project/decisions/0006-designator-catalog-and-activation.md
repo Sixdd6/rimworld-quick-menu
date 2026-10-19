@@ -35,7 +35,7 @@ Catalog:
   - A background-thread build: game defs are not thread-safe. Rejected.
 - Startup cost: the build counts toward loading time (P-11c, at most 200 ms on a large list), not toward a gameplay frame. The self-test reports it.
 - `DesignatorActivator.Activate(entry, stuff?)`:
-  - order / non-stuff build / mod designator: `designator.ProcessInput(Event.current)`. Our pin prefix ignores it because no modifier click is involved.
+  - order / non-stuff build / mod designator: `designator.ProcessInput(Event.current)`. The menu wraps this call in `MenuActivation.Depth++/--` (try/finally); the pin prefix returns `true` immediately while `Depth > 0`, so a Ctrl/Alt held during activation (hold mode, Alt trigger) is never treated as a pin gesture.
   - stuff build: if `stuff` is given, `SetStuffDef(stuff)`, then `CheckCanInteract` → play `CurActivateSound` → `Find.DesignatorManager.Select(designator)`.
   - dropdown: expands in our UI (FR-11). The chosen element is activated as above. `SetActiveDesignator` is called on the dropdown so the architect shows the same "last used" element.
 - `StuffOptions` reproduces the vanilla availability rule described above (behaviour, not code). Last-used = the designator's current `StuffDefRaw`, so the order is shared with the architect menu. One option skips the ring. Zero options greys the slot with the vanilla "NoStuffsToBuildWith" text.

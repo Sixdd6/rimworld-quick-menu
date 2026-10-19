@@ -125,7 +125,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Owner**: developer
   - **Requirements**: FR-3 (centred), FR-13, NFR-1 (P-6) (ADR 0007)
   - **Depends on**: T-2, T-5, T-6
-  - **Files**: `src/QuickMenu/UI/{MenuController,QuickMenuWindow}.cs`, `src/QuickMenu/Diagnostics/Spike/SkeletonPins.cs`
+  - **Files**: `src/QuickMenu/Menu/{MenuController,QuickMenuWindow}.cs`, `src/QuickMenu/Diagnostics/Spike/SkeletonPins.cs`
   - **Time box**: one session. Output: window flags and layer recorded for T-14.
   - **Acceptance criteria**:
     - [ ] Given the trigger fires, when `MenuController.Open` runs, then a full-screen transparent `Window` (no background, no shadow, `forcePause=false`, `closeOnCancel`, layer per ADR 0007) is added in the same frame, and dev mode logs `Time.frameCount` at the trigger and at the first `DoWindowContents`.
@@ -168,7 +168,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Owner**: performance-engineer
   - **Requirements**: NFR-1 (P-1, P-2, P-6, P-7a, P-8, P-9, P-18; performance.md T-6)
   - **Depends on**: T-5, T-7, T-9
-  - **Files**: `src/QuickMenu/Diagnostics/{MeasureScope,PerfCounters,ControlRunWindow}.cs`, `src/QuickMenu/Trigger/TriggerPoller.cs` (scope around the body), `src/QuickMenu/UI/QuickMenuWindow.cs` (scopes around the open path, `DoWindowContents`, `WindowUpdate`), `src/QuickMenu/Diagnostics/SelfTest.cs` (print counters)
+  - **Files**: `src/QuickMenu/Diagnostics/{MeasureScope,PerfCounters,ControlRunWindow}.cs`, `src/QuickMenu/Trigger/TriggerPoller.cs` (scope around the body), `src/QuickMenu/Menu/QuickMenuWindow.cs` (scopes around the open path, `DoWindowContents`, `WindowUpdate`), `src/QuickMenu/Diagnostics/SelfTest.cs` (print counters)
   - **Acceptance criteria**:
     - [ ] Given dev mode is off, then the poller and the window pay only one cached bool check for measurement.
     - [ ] Given the window scopes and debug action "Quick Menu: control window" (an empty full-screen transparent window making the same `Widgets`/`GUI` calls, for the P-9 control run), then open-path ms, per-frame draw ms and allocated bytes are printed by "Quick Menu: perf report". T-32 keeps these scopes when it replaces the skeleton window.
@@ -397,6 +397,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Acceptance criteria**:
     - [ ] Given T-14 recorded that entry clicks already reach the element's `ProcessInput`, then this task is closed as "not needed" with a note, and no code is added.
     - [ ] Otherwise: given a postfix on `RimWorld.Designator_Dropdown.GetDesignatorSelectAction`, when the user holds the modifier and clicks an entry, then the entry's own key is toggled and the original action does not run; without the modifier, the action is unchanged.
+    - [ ] Given a quick-menu activation with a modifier held, then the pin prefix does not intercept it (`MenuActivation.Depth > 0`).
     - [ ] *(UC-2)* Ctrl+click on an entry in an open dropdown pins only that entry; Ctrl+click on the dropdown button pins the whole dropdown.
   - **Tests**: in-game UC-2.
   - **In-game check**: UC-2 (user)
@@ -406,7 +407,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Owner**: visual-designer
   - **Requirements**: NFR-5, NFR-7 (design.md §2, §6; ADR 0007)
   - **Depends on**: T-14, T-22, T-23
-  - **Files**: `src/QuickMenu/UI/{Textures,QMStyle}.cs`; only if S-7 chose the PNG level: `scripts/export-masks.sh`, `mod/Textures/QuickMenu/UI/*.png`, `docs/project/assets.md`
+  - **Files**: `src/QuickMenu/Menu/{Textures,QMStyle}.cs`; only if S-7 chose the PNG level: `scripts/export-masks.sh`, `mod/Textures/QuickMenu/UI/*.png`, `docs/project/assets.md`
   - **Acceptance criteria**:
     - [ ] Given startup, then every mask is uploaded once at the level chosen in T-14 (bilinear, no mipmaps, clamp), and rebuilt only when button size or UI scale changes (≤ 5 ms), never per frame.
     - [ ] Given `QMStyle`, then every colour token of design.md §2 exists with its exact value, and `danger` uses `ColorLibrary.RedReadable` only under the stated 3:1 rule. No drawing code uses colour literals.
@@ -419,7 +420,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Owner**: visual-designer
   - **Requirements**: FR-4, FR-13 (look), NFR-5 (design.md S1, S4 states 1/2/3/6, S4a)
   - **Depends on**: T-16, T-17, T-28
-  - **Files**: `src/QuickMenu/UI/{MenuRenderer,SlotRenderer,HubRenderer,PlateRenderer}.cs`
+  - **Files**: `src/QuickMenu/Menu/{MenuRenderer,SlotRenderer,HubRenderer,PlateRenderer}.cs`
   - **Acceptance criteria**:
     - [ ] Given a placement array, origin and scale, then the renderer draws disc + rim + outlines, slots, hub, label plate in that order, with no allocation per frame (labels cached per open).
     - [ ] Slot states Normal, Hover, Pressed and Empty (Fixed, use mode) match design.md S4 exactly; icons are drawn with `Command.DrawIcon` in a 0.75 B square.
@@ -462,7 +463,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Owner**: developer
   - **Requirements**: FR-2 (toggle), FR-3, FR-5 (Fixed), FR-6, FR-13, FR-17, FR-18, NFR-1, NFR-5 (ADR 0006, 0007)
   - **Depends on**: T-21, T-25, T-29, T-31
-  - **Files**: `src/QuickMenu/UI/{MenuController,QuickMenuWindow}.cs`, `src/QuickMenu/Activation/DesignatorActivator.cs`, `mod/Languages/English/Keyed/QuickMenu.Menu.xml`; delete `SkeletonPins`
+  - **Files**: `src/QuickMenu/Menu/{MenuController,QuickMenuWindow}.cs`, `src/QuickMenu/Activation/DesignatorActivator.cs`, `mod/Languages/English/Keyed/QuickMenu.Menu.xml`; delete `SkeletonPins`
   - **Acceptance criteria**:
     - [ ] Given open, then the layout comes from a cache rebuilt only on settings or UI screen size change, is edge-dodged, and the window is added in the trigger frame.
     - [ ] Given input, then every IMGUI event is mapped to a `TriggerEvent`, hit-tested by Core, and the `MenuCommand` is executed; the window holds no menu logic of its own.
@@ -576,6 +577,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Acceptance criteria**:
     - [ ] Given a stuff build, then the options are the counted stuffs on the map that `IsStuff` and `CanMake` the def (all in god mode), ordered by `StuffOrdering` with the designator's current stuff first.
     - [ ] Given `Activate(entry, stuff)`, then `SetStuffDef(stuff)`, the interaction check, `CurActivateSound`, `DesignatorManager.Select`; Ideology style variants keep the game's default style.
+    - [ ] Known gap from T-7: the architect fires on mouse-up over the same slot and never activates `Disabled` designators; the T-7 skeleton fires on mouse-down. Align here.
     - [ ] Given a dropdown element, then it is activated the same way and `SetActiveDesignator` is called on the dropdown so the architect shows it as last used.
     - [ ] Given no options, then the slot reports "none" with the vanilla "NoStuffsToBuildWith" text.
     - [ ] The activator calls no `Designate*` method itself (FR-18).
@@ -587,7 +589,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Owner**: visual-designer
   - **Requirements**: FR-10, FR-11, FR-12, FR-14 (look) (design.md S3, S4 states 4, 5, 12, 13, 14)
   - **Depends on**: T-29
-  - **Files**: `src/QuickMenu/UI/{SlotRenderer,SatelliteRenderer}.cs`
+  - **Files**: `src/QuickMenu/Menu/{SlotRenderer,SatelliteRenderer}.cs`
   - **Acceptance criteria**:
     - [ ] States 4 (last-used), 5 (greyed with lock), 12 (sub-menu badge at 1:30), 13 (material dot at 4:30 in the last-used stuff colour or `textMuted`) and 14 (open parent) are drawn per S4 and combine as stated; material options show the stuff icon in its colour.
     - [ ] The main menu draws at 45 % opacity while a satellite is open.
@@ -599,7 +601,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Owner**: developer
   - **Requirements**: FR-10, FR-11, FR-12, FR-13 (design.md S3)
   - **Depends on**: T-36, T-41, T-42
-  - **Files**: `src/QuickMenu/UI/{QuickMenuWindow,MenuController,SatelliteController}.cs`
+  - **Files**: `src/QuickMenu/Menu/{QuickMenuWindow,MenuController,SatelliteController}.cs`
   - **Acceptance criteria**:
     - [ ] Given a pinned dropdown slot (`dropdown:` or `moddrop:`), when it is clicked, then its options fan out as a satellite with the parent as its hub, `Tick_Tiny` plays, and any option can be activated.
     - [ ] Given a stuff build slot or option, then 2+ materials open the material ring (last-used first, highlighted), 1 activates directly, 0 greys the slot with the "no materials" tooltip; choosing a material activates with that stuff.
@@ -613,7 +615,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Owner**: developer
   - **Requirements**: FR-9 (enter/exit, add), FR-7 (entry point) (design.md S4a, S5)
   - **Depends on**: T-32
-  - **Files**: `src/QuickMenu/UI/{EditModeController,QuickMenuWindow,HubRenderer}.cs`
+  - **Files**: `src/QuickMenu/Menu/{EditModeController,QuickMenuWindow,HubRenderer}.cs`
   - **Acceptance criteria**:
     - [ ] Given use mode, when the Edit sub-button gets a deliberate click (down and up on it), then edit mode starts; the hub shows Done and Add; satellites do not open in edit mode.
     - [ ] Given edit mode, then Done or the first Esc leaves it (settings written once if dirty), a second Esc closes, a left-click outside does nothing.
@@ -626,7 +628,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Owner**: developer
   - **Requirements**: FR-7, FR-10, FR-15, NFR-1 (P-15), NFR-2, NFR-4 (design.md S6)
   - **Depends on**: T-40, T-44
-  - **Files**: `src/QuickMenu/UI/{PickerWindow,PickerRow}.cs`, `mod/Languages/English/Keyed/QuickMenu.Picker.xml`
+  - **Files**: `src/QuickMenu/Menu/{PickerWindow,PickerRow}.cs`, `mod/Languages/English/Keyed/QuickMenu.Picker.xml`
   - **Acceptance criteria**:
     - [ ] Given the picker, then it is a 540 × 680 dialog (clamped), non-pausing, with `QuickSearchWidget` focused, a status line, rows grouped by category, only visible rows drawn, and a footer.
     - [ ] Given a search, then results match label, category and mod name (Core `SearchIndex`); Enter pins when exactly one row matches; no results shows "Nothing matches “{0}”."
@@ -730,7 +732,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Owner**: visual-designer
   - **Requirements**: FR-4, FR-11 (look) (design.md S2, §2 grid panel)
   - **Depends on**: T-29, T-42
-  - **Files**: `src/QuickMenu/UI/{GridRenderer,PanelRenderer}.cs`
+  - **Files**: `src/QuickMenu/Menu/{GridRenderer,PanelRenderer}.cs`
   - **Acceptance criteria**:
     - [ ] Given a grid layout, then the 9-slice panel and rim (radius 10), slots, hub in the centre cell and the label plate are drawn using the same slot and hub routines as the wheel; sub-grids and the material grid use the same panel; the main panel dims to 45 % while one is open.
   - **Tests**: build; visual review T-61.
@@ -741,7 +743,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Owner**: visual-designer
   - **Requirements**: FR-9, FR-14, FR-16 (look) (design.md S4 states 7–11, S5)
   - **Depends on**: T-29
-  - **Files**: `src/QuickMenu/UI/{EditStateRenderer,HelpPanelRenderer}.cs`, `mod/Languages/English/Keyed/QuickMenu.Menu.xml`
+  - **Files**: `src/QuickMenu/Menu/{EditStateRenderer,HelpPanelRenderer}.cs`, `mod/Languages/English/Keyed/QuickMenu.Menu.xml`
   - **Acceptance criteria**:
     - [ ] States 7 (empty edit), 8 (reserved-missing "?"), 9 (drag source ghost and dragged icon at 0.9 B, 80 %, offset +16), 10 (insert cursor with caret) and 11 (drop target) are drawn per S4.
     - [ ] The help panel is at top centre (60 px down, max 520 wide) with the Fixed or Auto text and the capacity line (`danger` when full); the hint plate wraps at 360.
@@ -753,7 +755,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Owner**: developer
   - **Requirements**: FR-4, FR-5, FR-11, FR-12, FR-6 (design.md S2, S3)
   - **Depends on**: T-43, T-51, T-54
-  - **Files**: `src/QuickMenu/UI/{MenuController,QuickMenuWindow,SatelliteController}.cs`
+  - **Files**: `src/QuickMenu/Menu/{MenuController,QuickMenuWindow,SatelliteController}.cs`
   - **Acceptance criteria**:
     - [ ] Given layout = Grid, then the menu, sub-grids and material grids use `GridLayout`/`SubMenuLayout` and every feature that works in the wheel works in the grid (FR-4).
     - [ ] Given sizing = Auto, then the menu grows by ring or row as pins are added and pinning reports full per `Capacity`.
@@ -766,7 +768,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Owner**: developer
   - **Requirements**: FR-9, FR-5, FR-14, NFR-1 (P-17 write count)
   - **Depends on**: T-44, T-52, T-55, T-56
-  - **Files**: `src/QuickMenu/UI/{EditModeController,QuickMenuWindow}.cs`, `src/QuickMenu/Pinning/PinService.cs`
+  - **Files**: `src/QuickMenu/Menu/{EditModeController,QuickMenuWindow}.cs`, `src/QuickMenu/Pinning/PinService.cs`
   - **Acceptance criteria**:
     - [ ] Given edit mode, when slot A is dragged (start after 6 px) onto slot B, then they swap with `Tick_Tiny`; less than 6 px is a click that sets or clears the insert cursor.
     - [ ] Given a right-click on a slot (including a reserved one), then it is cleared; on the hub it does nothing.
@@ -781,7 +783,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Owner**: developer
   - **Requirements**: FR-16, FR-1 (journey 1)
   - **Depends on**: T-55, T-56
-  - **Files**: `src/QuickMenu/UI/QuickMenuWindow.cs`, `mod/Languages/English/Keyed/QuickMenu.Menu.xml`
+  - **Files**: `src/QuickMenu/Menu/QuickMenuWindow.cs`, `mod/Languages/English/Keyed/QuickMenu.Menu.xml`
   - **Acceptance criteria**:
     - [ ] Given no visible pins and not in edit mode, when the menu opens, then the label plate is replaced by the hint with the effective modifier name; Fixed draws its empty slots, Auto a ring-1 disc (or 1-row panel); the hub with Edit is shown.
     - [ ] *(UC-4)* Journey 1 after "Clear all pins".
@@ -853,7 +855,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Owner**: developer
   - **Requirements**: FR-2 (design.md S7 trigger mode)
   - **Depends on**: T-56, T-63
-  - **Files**: `src/QuickMenu/UI/QuickMenuWindow.cs`, `src/QuickMenu/Settings/SettingsPage.cs`, `mod/Languages/English/Keyed/QuickMenu.Settings.xml`
+  - **Files**: `src/QuickMenu/Menu/QuickMenuWindow.cs`, `src/QuickMenu/Settings/SettingsPage.cs`, `mod/Languages/English/Keyed/QuickMenu.Settings.xml`
   - **Acceptance criteria**:
     - [ ] Given hold mode, then `WindowUpdate` polls `GetMouseButtonUp(i)`/`GetKeyUp(code)` for the bound trigger and feeds the release and the dwell time to the state machine.
     - [ ] Given settings, then "Trigger mode" radio (Press to open… / Hold, release over a button) is shown and saved.
@@ -866,9 +868,10 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Owner**: developer
   - **Requirements**: FR-14, FR-7 (greyed items), NFR-4, NFR-6 (ADR 0006, U-4)
   - **Depends on**: T-14, T-42, T-45
-  - **Files**: `src/QuickMenu/Catalog/AvailabilityResolver.cs`, `src/QuickMenu/UI/{QuickMenuWindow,PickerRow}.cs`, `mod/Languages/English/Keyed/QuickMenu.Menu.xml`
+  - **Files**: `src/QuickMenu/Catalog/AvailabilityResolver.cs`, `src/QuickMenu/Menu/{QuickMenuWindow,PickerRow}.cs`, `mod/Languages/English/Keyed/QuickMenu.Menu.xml`
   - **Acceptance criteria**:
     - [ ] Given a `Disabled` designator, then the reason is `disabledReason`; given `Visible == false`, then the reason is composed from the causes found in S-5 (research with the project label, tech level, required building, monolith, grav engine) using game strings where they exist, else "Not available right now."
+    - [ ] Known gap from T-7: Disabled designators must never be activated (the skeleton does not check), and activation fires on mouse-up over the same slot.
     - [ ] Given a greyed slot, then the tooltip adds the reason in `danger`; clicking it plays `ClickReject` and shows the reason as a `RejectInput` message; availability is evaluated on open and on hover only.
     - [ ] Given the picker, then greyed rows show the same reason in the sub-line.
     - [ ] *(UC-5)* An unresearched build (e.g. a tier-2 power building on a new colony) shows the research reason; a Biotech mechanitor item without a mechanitor is greyed.
@@ -880,7 +883,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Owner**: developer
   - **Requirements**: FR-14, FR-17, NFR-6 (architecture §4, U-2)
   - **Depends on**: T-57, T-59
-  - **Files**: `src/QuickMenu/Pinning/PinService.cs`, `src/QuickMenu/UI/QuickMenuWindow.cs`, `mod/Languages/English/Keyed/QuickMenu.Menu.xml`
+  - **Files**: `src/QuickMenu/Pinning/PinService.cs`, `src/QuickMenu/Menu/QuickMenuWindow.cs`, `mod/Languages/English/Keyed/QuickMenu.Menu.xml`
   - **Acceptance criteria**:
     - [ ] Given a pin whose def or type is not loaded, then Fixed reserves its slot (empty in use mode, "?" in edit mode with the S4 state 8 tooltip and mod name), Auto hides it, and the settings count includes it; no error is logged.
     - [ ] Given the mod is added back, then the pin returns in its place.
@@ -893,7 +896,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Owner**: developer
   - **Requirements**: FR-1, FR-8, NFR-2, NFR-4 (design.md S7 Mint line, S8)
   - **Depends on**: T-31
-  - **Files**: `src/QuickMenu/Compat/ModDetection.cs`, `src/QuickMenu/UI/FirstRunNoticeWindow.cs`, `src/QuickMenu/QuickMenuMod.cs`, `mod/Languages/English/Keyed/QuickMenu.Notices.xml`
+  - **Files**: `src/QuickMenu/Compat/ModDetection.cs`, `src/QuickMenu/Menu/FirstRunNoticeWindow.cs`, `src/QuickMenu/QuickMenuMod.cs`, `mod/Languages/English/Keyed/QuickMenu.Notices.xml`
   - **Acceptance criteria**:
     - [ ] Given startup, then Mint (`Dubwise.DubsMintMenus`), BAM and Multiplayer are detected once; the effective modifier is Alt when Mint is active and the user has not chosen; the settings page shows the Mint line.
     - [ ] Given the first colony map ever, then the first-run notice (S8) appears once with [Use middle mouse] [Open settings] [OK], and includes the Mint line if Mint is active (setting both flags).

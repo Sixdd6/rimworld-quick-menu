@@ -5,6 +5,7 @@ using System.Reflection;
 using HarmonyLib;
 using QuickMenu.Diagnostics;
 using QuickMenu.Diagnostics.Spike;
+using QuickMenu.Menu;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -65,7 +66,7 @@ internal static class PinClickPatch
     /// <summary>Observe-only prefix. Invoked on clicks and hotkeys only; one flag check when the probe is off.</summary>
     internal static bool Prefix(Designator __instance, Event __0)
     {
-        if (Site.Disabled || !ProcessInputProbe.Enabled)
+        if (MenuActivation.Depth > 0 || Site.Disabled || !ProcessInputProbe.Enabled)
         {
             return true;
         }

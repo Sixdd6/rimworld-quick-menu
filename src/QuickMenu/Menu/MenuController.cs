@@ -15,13 +15,18 @@ internal static class MenuController
     /// <summary>Opens the menu in the current frame. Pressing the trigger while it is open closes it.</summary>
     internal static void Open()
     {
-        if (Site.Disabled)
+        if (Site.Disabled || QuickMenuWindow.DrawSite.Disabled)
         {
             return;
         }
 
         try
         {
+            if (_window != null && !Find.WindowStack.IsOpen(_window))
+            {
+                _window = null;
+            }
+
             if (_window != null)
             {
                 Close();

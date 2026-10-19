@@ -89,17 +89,35 @@ internal sealed class QuickMenuWindow : Window
 
     public override void WindowUpdate()
     {
-        base.WindowUpdate();
-        if (!ReferenceEquals(Find.CurrentMap, _map) || WorldRendererUtility.WorldRendered)
+        try
         {
+            base.WindowUpdate();
+            if (!ReferenceEquals(Find.CurrentMap, _map) || WorldRendererUtility.WorldRendered)
+            {
+                MenuController.Close();
+            }
+        }
+        catch (Exception ex)
+        {
+            DrawSite.Fail(ex);
             MenuController.Close();
         }
     }
 
     public override void PostClose()
     {
-        base.PostClose();
-        MenuController.Closed(this);
+        try
+        {
+            base.PostClose();
+        }
+        catch (Exception ex)
+        {
+            DrawSite.Fail(ex);
+        }
+        finally
+        {
+            MenuController.Closed(this);
+        }
     }
 
     public override void DoWindowContents(Rect inRect)
@@ -139,22 +157,27 @@ internal sealed class QuickMenuWindow : Window
         if (ev.type == EventType.Repaint)
         {
             Color old = GUI.color;
-            GUI.color = _hubColor;
-            GUI.DrawTexture(_hubRect, BaseContent.WhiteTex);
-            for (int i = 0; i < _count; i++)
+            try
             {
-                Rect box = SlotRect(i, 1f);
-                GUI.color = i == hover ? _slotHoverColor : _slotColor;
-                GUI.DrawTexture(box, BaseContent.WhiteTex);
-                GUI.color = old;
-                Designator? d = _designators[i];
-                if (d != null)
+                GUI.color = _hubColor;
+                GUI.DrawTexture(_hubRect, BaseContent.WhiteTex);
+                for (int i = 0; i < _count; i++)
                 {
-                    DrawDesignatorIcon(d, SlotRect(i, IconScale));
+                    Rect box = SlotRect(i, 1f);
+                    GUI.color = i == hover ? _slotHoverColor : _slotColor;
+                    GUI.DrawTexture(box, BaseContent.WhiteTex);
+                    GUI.color = old;
+                    Designator? d = _designators[i];
+                    if (d != null)
+                    {
+                        DrawDesignatorIcon(d, SlotRect(i, IconScale));
+                    }
                 }
             }
-
-            GUI.color = old;
+            finally
+            {
+                GUI.color = old;
+            }
         }
         else if (ev.type == EventType.MouseDown)
         {
@@ -163,7 +186,17 @@ internal sealed class QuickMenuWindow : Window
                 Designator? d = _designators[hover];
                 if (d != null)
                 {
-                    d.ProcessInput(ev);
+                    // Known gap (T-26/T-65): the architect fires on mouse-up over the same slot and never activates
+                    // Disabled designators; this skeleton fires on mouse-down.
+                    MenuActivation.Enter();
+                    try
+                    {
+                        d.ProcessInput(ev);
+                    }
+                    finally
+                    {
+                        MenuActivation.Exit();
+                    }
                 }
             }
 
