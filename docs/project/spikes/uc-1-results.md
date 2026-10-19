@@ -1,7 +1,7 @@
 # UC-1 spike session results (2026-10-19)
 
 Run by the user on RimWorld 1.7.4982 (Waylith), Harmony mod v3.0.1.0 (library 3.0.0-rc.3), Linux, 2560x1440.
-The orchestrator read the log directly; full raw logs are in `raw/`:
+The orchestrator read the log directly; full raw logs are kept locally in `raw/` (not committed: they contain local paths):
 - `raw/uc-1a-Player.log`: setup (a) Harmony + all 5 DLC + Quick Menu.
 - `raw/uc-1b-Player.log`: setup (b) as (a) + Better Architect Menu (`ferny.BetterArchitect`).
 Screenshots: `../design/spikes/uc1-texture-probe-scale1.0.png`, `uc1-texture-probe-scale1.5.png` (the game refused UI scale 2.0 at 2560x1440; 1.5 used).

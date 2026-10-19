@@ -38,3 +38,6 @@ dist/
 !/mod/1.7/Assemblies/.gitkeep
 # Local-only dev files
 .dotnet/
+
+# Raw in-game logs (contain local paths); kept local only
+/docs/project/spikes/raw/
