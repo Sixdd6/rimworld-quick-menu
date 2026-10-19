@@ -112,7 +112,7 @@ The menu opens in the trigger frame, with geometry from §1.1. Drawing order:
 2. slots
 3. hub (S4a)
 4. label plate (hovered slot's label, Small font)
-6. satellite (if open): first the `satelliteUnderlay` circle (T-86), then its disc, slots, hub and plate
+6. satellite (if open): its disc, slots, hub and plate. (No underlay: T-86 declined by the user, 2026-10-19 — the see-through look is wanted.)
 
 The main menu is drawn at 45% opacity while a satellite is open, and it does not react to the mouse.
 
@@ -321,7 +321,7 @@ The game's UI is dark only, so there is one theme. Tokens live in one adapter cl
 | `unavailableIcon` | — | `#808080` α 0.75 (multiplied into the icon) | Greyed icons | 4.0:1 vs slotBg, always paired with the lock badge |
 | `plate` | — | black α 0.80 | Label, hint and help plates | — |
 | `dimmedMenu` | — | menu α 0.45 | Main menu behind a satellite | — |
-| `satelliteUnderlay` | — | black α 0.55 | Under a satellite disc or sub-grid panel, so the dimmed main menu does not show through it (T-48 finding 4, T-86) | — |
+| ~~`satelliteUnderlay`~~ | — | — | Declined by the user (2026-10-19, T-86 removed) | — |
 | windows, buttons | — | the game's own (`Widgets.WindowBGFillColor`, vanilla button atlas) | Settings, dialogs | vanilla |
 
 Target: **WCAG 2.2 AA** (text ≥ 4.5:1, UI parts ≥ 3:1). Every text pair passes.
@@ -493,4 +493,4 @@ Evidence: [uc3-material-ring.png](design/spikes/uc3-material-ring.png) (wheel, F
 | 9 | Hierarchy overall | Satellite (rim, options, hovered option) → plate → dimmed main → map. After T-86 the satellite interior is clean. | Pass after T-86 |
 | 10 | Not shown | States 4 (alone), 5, 12 (sub-menu badge), edit-mode hub (Done), pressed (3), hub hover, edge-dodge corners, rim over snow, UI scale 2.0. | Carried to UC-4 (T-60) and T-61 |
 
-**T-86 values.** New token `satelliteUnderlay` = black α **0.55**. Draw it once per frame, before the satellite disc (S1 step 6): the `Circle` mask at diameter `2·D_s − 4` (inside the rim's outer outline), centred on the satellite centre. With the gradient on top, the covered alpha is about 0.93 at the centre and 0.80 at the edge (1 − 0.45·0.15 and 1 − 0.45·0.45), so main content under the satellite falls to about a fifth of its dimmed strength. The map is still faintly visible near the satellite edge. Outside the satellite nothing changes, and `dimmedMenu` stays 0.45. The grid sub-grid gets the same underlay on its panel (9-slice `Panel` mask, same token).
+**T-86 values (declined by the user 2026-10-19; kept for reference).** New token `satelliteUnderlay` = black α **0.55**. Draw it once per frame, before the satellite disc (S1 step 6): the `Circle` mask at diameter `2·D_s − 4` (inside the rim's outer outline), centred on the satellite centre. With the gradient on top, the covered alpha is about 0.93 at the centre and 0.80 at the edge (1 − 0.45·0.15 and 1 − 0.45·0.45), so main content under the satellite falls to about a fifth of its dimmed strength. The map is still faintly visible near the satellite edge. Outside the satellite nothing changes, and `dimmedMenu` stays 0.45. The grid sub-grid gets the same underlay on its panel (9-slice `Panel` mask, same token).
