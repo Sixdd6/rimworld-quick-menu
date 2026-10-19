@@ -209,6 +209,51 @@ Setup (b): Harmony + 5 DLC + BAM + Quick Menu, 10 mods, 723 catalog entries (571
 
 No `perf:` task is required for any in-play row. One is required for the settings-page texture rebuild FAIL above.
 
+### UC-5 record (2026-10-19, T-71)
+
+Setups: (b) Harmony + 5 DLC + BAM + Quick Menu, and (d) = (b) + Dubs Mint Menus (self-test: 11 loaded mods, 720 catalog entries, 571 top-level), the user's colony, UI scale 1.0 with a short run at 1.75, user's Linux PC. Dev-mode Stopwatch scopes, one session, one run, no run-to-run spread. Pass/fail at 50% of budget. Source: the session's self-test and perf report (raw log kept local only; a second self-test was not run after the last 10 rebuilds, so the rebuild list below is read from the log lines and the counter value comes from the report).
+
+| Date | Build / commit | Metric | Value | Change vs baseline | Notes |
+|---|---|---|---|---|---|
+| 2026-10-19 | UC-5 (T-95 build) | Slider texture rebuilds: count per drag | Discrete rebuild lines only; none in bursts. Report counter "sized texture rebuilds this session=10" at the self-test (it includes the startup prewarm); 18 further log lines after the prewarm in the whole session | UC-4: one rebuild per slider step | **PASS** (target at most one per drag). Closes the cause of the UC-4 FAIL. Caveat: the log cannot show where a drag started and ended, so "one per drag" is read from the user's observation plus the absence of per-step lines, not from a drag marker. |
+| 2026-10-19 | UC-5 | Slider texture rebuild time, UI 1.0, 2 rings (B 36 to 96) | All-texture rebuilds (15 lines): median 2.90 ms, range 0.94 to 5.78 ms; B 96: 5.62, 3.73, 5.78, 5.48, 2.47 ms; B 36: 1.79 to 3.82 ms; rim-only 0.94 ms | UC-4 at UI 1.5, B 96, 5 rings: 32.5 ms | **Over the 50% line (2.5 ms) in 10 of 15; over the hard 5 ms budget in 3 of 15 (5.48, 5.62, 5.78 ms, all B 96, up to 16% over).** Median 58% of budget. **Marginal FAIL at B 96, PASS at B 64 and below.** The rebuild now happens once per drag, so the cost is one frame hitch in the settings page (35% of a 16.7 ms frame at worst), never on the in-play path. |
+| 2026-10-19 | UC-5 | Slider rebuild time, UI 1.75 | All textures 6.19 ms (B 96, 2 rings, 940 px rim, in the menu-open path); rim only 1.84 ms (576 px); satellite rim 2.78 ms (576 px) | none (first measurement) | **All-texture rebuild FAIL (24% over 5 ms)**; rim-only PASS (37% of budget); satellite rim marginal (56% of budget, 0.28 ms over the 50% line, under the hard budget: watch item as at UC-3). **UC-4's exact case (UI 1.5, B 96, 5 rings) and UI 2.0 were not run**, so the T-71 re-measure criterion is only partly met: the 5-ring, UI 1.5 to 2.0 rim sizes (1,742 px and larger) are untested and will cost more than the 940 px case above. |
+| 2026-10-19 | UC-5 | **UC-4 FAIL row (slider at UI 1.5, 5 rings)** | Cause fixed (per-step rebuild gone); worst measured rebuild now 6.19 ms vs 32.5 ms | UC-4: 32.5 ms | **Keep open as a narrowed watch item, not closed.** Re-run at UC-6: UI 1.5 and 2.0, 5 rings, B 96. If a single rebuild there stays under about 8 ms the hitch is the same class as the accepted one below; recommend the user decides then. |
+| 2026-10-19 | UC-5 | P-8 draw + input per frame, whole session (wheel, grid, sub-ring, sub-grid; includes UI 1.75) | median 60.4 us, p99 202.6 us, max 8,208.8 us (2,730 steady frames, 2 opens) | UC-4: 29.8 us | **PASS** (limit 0.5 ms; median 12%, p99 41%). Median is about 2x UC-4: the session was weighted to grids, satellites and UI 1.75, which cost more (rows below); not a code regression that is visible here, but not isolated either. |
+| 2026-10-19 | UC-5 | P-8 by layout (new split) | wheel 48.0 us median / 161 us p99; grid 56.2 / 296; wheel with satellite 66.7 / 199; sub-grid 73.0 / 303 | UC-4: not split | **PASS** (all medians 10 to 15% of 0.5 ms; worst p99 61% of it, sub-grid 303 us, which is over the 50% line at p99 only; medians pass). **Closes the UC-4 "P-8 by layout" item.** Steady-frame counts 929 / 265 / 1,131 / 407. The max-size (5+ rings, B 96) pass was run only at UI 1.75 for 2 rings, so a max-capacity pass is still open. |
+| 2026-10-19 | UC-5 | P-9 window allocations | median 128 B/frame, p99 160 B; by layout: 96 / 96 / 160 / 128 B median | UC-4: 96 B (control 32) | **PASS provisional** (limit 50% of 512 B = 256 B over control). The control window did not run this session (0 calls), so the delta is inferred from UC-4's 32 B control: about +96 B. |
+| 2026-10-19 | UC-5 | Accepted one-time hitch: first menu frame after a size change | 8.2 ms and 1.5 MB in one frame (first frame of the satellite bucket; same figure is the window max) | none | **Over budget by design; accepted by the user's decision.** Not a steady cost: it occurs once per size change (texture rebuild plus first sub-ring layout). 1.5 MB is 12x the 128 KB first-frame allocation line and 8.2 ms is 49% of a 16.7 ms frame, so it is one visible dropped frame. Recorded here so the decision is traceable. |
+| 2026-10-19 | UC-5 | P-7a open path (2 opens) | median 461 us; first 6,766 us and 7.9 MB (the open that rebuilt all textures after the UI scale change to 1.75) | UC-4: median 47 us | Median **PASS** (limit 1.5 ms). The first open **FAILS** the limit (4.5x) but is the same event as the 6.19 ms rebuild above, so it belongs to the accepted size-change hitch class. Only 2 opens: no spread. |
+| 2026-10-19 | UC-5 | P-1 poller (open and closed frames) | median 0.23 us, p99 0.96 us (13,268 frames); max 361 us / 66 KB | UC-4: 0.24 us | **PASS** (limit 5 us). Max is the report-printing frame as in UC-1 note 3. |
+| 2026-10-19 | UC-5 | Texture leak check | live 27 = expected 27 (13 static, 13 sized once a menu was opened, 1 satellite rim); `staticDisabled=False sizedDisabled=False` after about 10 rebuilds, UI 1.75 and size changes | UC-4: 27 = 27 | **PASS**. Leak-free through repeated rebuilds. |
+| 2026-10-19 | UC-5 | Settings writes (P-17 count) | 3 saves this session | UC-4: 25 | **Info.** Fewer edits; the slider drag path is not shown to write once per drag by this count. `WriteSettings` time still not isolated. |
+| 2026-10-19 | UC-5 | P-11c catalog build with Mint and BAM | 6.94 ms, 720 entries (571 top-level), builds=1 (P-12 holds), 0 duplicates, round trip 100 % | UC-4: 6.21 ms at 723 | **PASS** (limit 100 ms; 7%). Mint adds no entries. |
+| 2026-10-19 | UC-5 | P-7c Ideology refresh | 2 rebuilds, last 0.18 ms | UC-4: 0.27 ms | **PASS** (budget 0.5 ms; 36%, under the 50% line). **Closes the UC-4 watch item.** |
+| 2026-10-19 | UC-5 | P-18 mod constructor | 87.7 ms (patching 26.3 of it; 8 patched, 0 failed; settings load incl. the game's read 60.5, of which GetSettings 58.5 and the scribe pass 6.7) | UC-4: 84.7 ms | **PASS** against the large-list tier (50% of 300 ms = 150 ms; 58%), over the vanilla tier line (75 ms) by 12.7 ms. Same call as UC-3 and UC-4: 11 mods, 720 entries; the excess is the game's own file read and JIT. Mint/BAM/MP detection time is still reported "n/a" in the ctor line. |
+| 2026-10-19 | UC-5 | P-16 settings load, our part | PostLoad 2.98 ms | UC-4: 2.81 ms | **PASS** (limit 10 ms). |
+| 2026-10-19 | UC-5 | P-4 idle `ProcessInput` calls (vanilla, BAM, Mint) | no idle-count line in the report or log | | **Not measured.** The report has no P-4 counter output; this is why R-1 stays closed on the UC-1 evidence only. T-71's "P-4 must be 0 with vanilla, BAM and Mint" is **not yet shown**. |
+| 2026-10-19 | UC-5 | P-3 pin click prefix, P-5 pin click | pin click prefix counter: 0 calls | | **Not measured.** No pin click fell in the measuring window. |
+
+Correctness items in the UC-5 session (not performance): see the UC-5 results document. One log error, from BAM's own Mint integration (`toggleDesMethod is null`), is not ours.
+
+**Left for UC-6 (final pass, M6):**
+
+| Item | State |
+|---|---|
+| 8,000-def stress run (P-11c at scale) | Open since UC-3. 2,850 entries gave 10.9 ms, so scaling argues for pass; run it for the record. |
+| P-19 pin-marker hook (FR-19), architect menu open on a full category, and with a pawn's command bar | New in M6, not started. Budget per performance.md section 1. |
+| Frame Profiler cross-check of P-1, plus the overhead question | Open since UC-1. |
+| P-6 at 30 fps | Open since UC-1 (same-frame draw held 21/21 and 12/12 at normal frame rates). |
+| P-3 and P-5 pin clicks measured in vanilla, BAM and Mint | Open: UC-2 to UC-5 never captured a pin click in the measuring window. Pin by click first, then read the line. |
+| P-4 idle count with vanilla, BAM and Mint | Open: no counter output at UC-5. Needs the idle-hover count printed in the report. |
+| Slider rebuild at UI 1.5 and 2.0, 5 rings, B 96 | Open: the UC-4 case was not repeated; UI 1.75 with 2 rings gave 6.19 ms. |
+| P-8 and P-7a at maximum size (5+ rings, B 96) in wheel and grid, UI 2.0 | Open. |
+| P-9 with a same-session control run; P-17 `WriteSettings` time and writes per edit session | Open. |
+| Run-to-run spread (a second session or a repeated run) | Open for every row; all UC rows are single sessions. |
+| Mint/BAM/MP detection time in the ctor line | Reported "n/a"; add the timing or drop the line. |
+
+No `perf:` task is required for in-play rows. The slider rebuild at B 96 is the only row over its hard budget in the settings page (marginal, 5.5 to 6.2 ms); a `perf:` task is optional and should only be opened if the UC-6 re-run at UI 1.5 to 2.0 with 5 rings shows more than about 8 ms.
+
 ### UC-1 baseline notes (2026-10-19)
 Pass/fail uses 50% of each budget (architecture section 7 hardware margin), except the zero/equality budgets (P-2, P-4, P-6, P-12), which need no margin. Setup (a): Harmony + 5 DLC + Quick Menu, 8 mods, 454 entries. Setup (b): (a) + Better Architect Menu, 10 mods, 718 entries.
 
