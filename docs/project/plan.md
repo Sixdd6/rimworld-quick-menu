@@ -1129,42 +1129,42 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: none (decision record); the decision is verified by T-90/T-91/T-92 and UC-6.
   - **Size**: S
 
-- [ ] **T-88**: P-19 budget and gate for the marker hook · `parallel-ok`
+- [x] **T-88**: P-19 budget and gate for the marker hook · `parallel-ok`
   - **Owner**: performance-engineer
   - **Requirements**: FR-19, NFR-1
   - **Depends on**: T-87
   - **Files**: `docs/project/performance.md` (budget table row P-19, CI gate table, in-game measurement steps)
   - **Acceptance criteria**:
-    - [ ] Given performance.md, then row P-19 reads: marker hook cost per gizmo draw call (pinned and not pinned, designator and non-designator gizmo), ≤ 100 ns and 0 bytes; in-game total with the architect menu open on the largest category ≤ 10 µs per frame; methods: Core Perf-trait test and BenchmarkDotNet on the pinned-set lookup (T-90), and a dev-mode counter plus `MeasureScope` around the hook body reported by "Quick Menu: perf report" (T-91).
-    - [ ] Given the gate table, then the Core lookup gate is "0 bytes strict; fail above 5 × 100 ns", like P-3, and P-1's note says the marker hook runs only while gizmos are drawn (it is not part of the closed-menu cost unless a command bar is shown).
+    - [x] Given performance.md, then row P-19 reads: marker hook cost per gizmo draw call (pinned and not pinned, designator and non-designator gizmo), ≤ 100 ns and 0 bytes; in-game total with the architect menu open on the largest category ≤ 10 µs per frame; methods: Core Perf-trait test and BenchmarkDotNet on the pinned-set lookup (T-90), and a dev-mode counter plus `MeasureScope` around the hook body reported by "Quick Menu: perf report" (T-91).
+    - [x] Given the gate table, then the Core lookup gate is "0 bytes strict; fail above 5 × 100 ns", like P-3, and P-1's note says the marker hook runs only while gizmos are drawn (it is not part of the closed-menu cost unless a command bar is shown).
   - **Tests**: none (budget definition); the gates live in T-90.
   - **Size**: S
 
-- [ ] **T-89**: Pin-marker glyph and style tokens · `parallel-ok`
+- [x] **T-89**: Pin-marker glyph and style tokens · `parallel-ok`
   - **Owner**: visual-designer
   - **Requirements**: FR-19, NFR-5, NFR-7 (design.md §2 tokens, §3 glyphs, §6 texture level; the corner from T-87)
   - **Depends on**: T-87
-  - **Files**: `src/QuickMenu.Core/Render/{Glyphs,StyleTokens}.cs`, `tests/QuickMenu.Core.Tests/Render/{GlyphsTests,StyleTokensTests}.cs`, `src/QuickMenu/Menu/{Textures,QMStyle}.cs`, `docs/project/design.md` (new subsection "Architect pin marker")
+  - **Files**: `src/QuickMenu.Core/Render/{Glyphs,StyleTokens,MaskSet,TextureSizing,PinMarkerSizing}.cs`, `tests/QuickMenu.Core.Tests/Render/{GlyphsTests,StyleTokensTests,PinMarkerSizingTests}.cs`, `src/QuickMenu/Menu/{Textures,QMStyle}.cs`, `docs/project/design.md` (new subsection "Architect pin marker")
   - **Acceptance criteria**:
-    - [ ] Given the glyph set, then `Glyphs.PinMarker` (our own pin shape, not Mint's or BAM's art) is rasterized in its final orientation, deterministic, with a coverage test (alpha mass in the expected region, empty margin) like the other glyphs, test first.
-    - [ ] Given the marker size is a fixed fraction of the gizmo (design.md states it, e.g. about 0.2 × the 75 px gizmo), then the texture is rasterized at its drawn size in screen px (`Glyphs.MinSize` rules), with a `rimOutline` copy 1 px larger under it, and rebuilt with the other glyphs on UI-scale change within the existing ≤ 5 ms rebuild budget; never per frame.
-    - [ ] Given `QMStyle` / `StyleTokens`, then the marker colour and outline are tokens (no colour literals), with a contrast note against a typical gizmo background (the marker is a shape, not colour alone).
-    - [ ] Given design.md, then the new subsection states the corner (from ADR 0009), size, tokens and draw order (drawn last, after the game's own gizmo drawing), and that it is drawn only for pinned designators.
+    - [x] Given the glyph set, then `Glyphs.PinMarker` (our own pin shape, not Mint's or BAM's art) is rasterized in its final orientation, deterministic, with a coverage test (alpha mass in the expected region, empty margin) like the other glyphs, test first.
+    - [x] Given the marker size is a fixed fraction of the gizmo (design.md states it, e.g. about 0.2 × the 75 px gizmo), then the texture is rasterized at its drawn size in screen px (`Glyphs.MinSize` rules), with a `rimOutline` copy 1 px larger under it, and rebuilt with the other glyphs on UI-scale change within the existing ≤ 5 ms rebuild budget; never per frame.
+    - [x] Given `QMStyle` / `StyleTokens`, then the marker colour and outline are tokens (no colour literals), with a contrast note against a typical gizmo background (the marker is a shape, not colour alone).
+    - [x] Given design.md, then the new subsection states the corner (from ADR 0009), size, tokens and draw order (drawn last, after the game's own gizmo drawing), and that it is drawn only for pinned designators.
   - **Tests**: unit `GlyphsTests` (PinMarker coverage, determinism), `StyleTokensTests` (new tokens), texture sizing test if a sizing helper is added.
   - **Size**: S
 
-- [ ] **T-90**: Core pinned-set cache rules and perf gate (test first) · `parallel-ok`
+- [x] **T-90**: Core pinned-set cache rules and perf gate (test first) · `parallel-ok`
   - **Owner**: developer
   - **Requirements**: FR-19, FR-10, FR-14, FR-15, NFR-1, NFR-8 (ADR 0009)
   - **Depends on**: T-87
   - **Files**: `src/QuickMenu.Core/Pins/{PinnedSet,PinnedSetBuilder}.cs`, `tests/QuickMenu.Core.Tests/Pins/PinnedSetTests.cs`, `tests/QuickMenu.Core.Tests/Perf/PinnedSetPerfTests.cs`, `tests/QuickMenu.Core.Benchmarks/PinBenchmarks.cs` (new benchmark method)
   - **Acceptance criteria**:
-    - [ ] ADR-0009 alignment (overrides older wording in this task): a single-entry pin gives its dropdown a `Partial` mark (decision 11); pins hidden beyond the current capacity are NOT marked (decision 13); add the def-keyed map (BuildableDef → mark) so BAM edit-mode designator copies are marked.
-    - [ ] Given Core cannot reference game types, then `PinnedSet<T> where T : class` uses reference identity (`ReferenceEqualityComparer`), and the builder takes the board's pins plus a resolver delegate/interface (key → instance or none) supplied by the adapter.
-    - [ ] Given a board with a whole-dropdown pin (`dropdown:` / `moddrop:`), then the dropdown instance is in the set and its elements are not; given a single-entry pin, then that element instance is in the set and its dropdown is not; given unresolved, opaque or missing-mod pins, then nothing is added for them; given pins hidden beyond capacity, then they are still members (they are pinned; toggling them unpins).
-    - [ ] Given a pin, unpin, settings load, catalog build or Ideology refresh, when `Rebuild` runs, then membership matches the board exactly; given an edit-mode swap, then membership is unchanged; a `Version` counter increments on each rebuild so the adapter can detect staleness cheaply.
-    - [ ] Given warm-up, when `Contains` runs 10,000 times for members and non-members (and `null`), then 0 bytes are allocated and the time per call fails above 5 × 100 ns (P-19 gate, trait `Category=Perf`); `Rebuild` for 200 pins reuses its storage (no growth after the first build) and is benchmarked.
-    - [ ] Core line coverage stays ≥ 90 % and `CoreIsolationTests` still pass.
+    - [x] ADR-0009 alignment (overrides older wording in this task): a single-entry pin gives its dropdown a `Partial` mark (decision 11); pins hidden beyond the current capacity are NOT marked (decision 13); add the def-keyed map (BuildableDef → mark) so BAM edit-mode designator copies are marked.
+    - [x] Given Core cannot reference game types, then `PinnedSet<T> where T : class` uses reference identity (`ReferenceEqualityComparer`), and the builder takes the board's pins plus a resolver delegate/interface (key → instance or none) supplied by the adapter.
+    - [x] Given a board with a whole-dropdown pin (`dropdown:` / `moddrop:`), then the dropdown instance is in the set and its elements are not; given a single-entry pin, then that element instance is in the set and its dropdown is not; given unresolved, opaque or missing-mod pins, then nothing is added for them; given pins hidden beyond capacity, then they are not members (superseded by the ADR-0009 line above).
+    - [x] Given a pin, unpin, settings load, catalog build or Ideology refresh, when `Rebuild` runs, then membership matches the board exactly; given an edit-mode swap, then membership is unchanged; a `Version` counter increments on each rebuild so the adapter can detect staleness cheaply.
+    - [x] Given warm-up, when `Contains` runs 10,000 times for members and non-members (and `null`), then 0 bytes are allocated and the time per call fails above 5 × 100 ns (P-19 gate, trait `Category=Perf`); `Rebuild` for 200 pins reuses its storage (no growth after the first build) and is benchmarked.
+    - [x] Core line coverage stays ≥ 90 % and `CoreIsolationTests` still pass.
   - **Tests**: unit `PinnedSetTests` (rules table above); perf `PinnedSetPerfTests`; benchmark `PinBenchmarks.PinnedSetContains`.
   - **Size**: M
 
