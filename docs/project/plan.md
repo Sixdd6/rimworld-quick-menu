@@ -20,7 +20,7 @@
 | M1 | Walking skeleton + spike build | The mod loads on 1.7.4982 with Harmony 3. Mouse 4 on a colony map opens a crude wheel with two hard-coded pins (Mine, Wall); clicking one selects the designator. A dev-mode spike build answers S-1 … S-7 in one user session (UC-1); results go into the ADRs. CI is green on GitHub | T-1 … T-15 | 15 |
 | M2 | Pin by click, use the wheel | Ctrl+click any designator in vanilla or BAM pins it (message; full; toggle). The bindable trigger opens the styled Fixed wheel centred on the mouse, dodging edges; clicking a slot activates it like the architect. Unavailable pins (e.g. Ideology morbid slabs) always show greyed with the reason. The centre is the Edit button (it does nothing until M3 and never closes the menu); modifier+click on a slot unpins it. Pins and settings persist across saves and restarts. A short follow-up session (UC-2b) checks the post-UC-2 fixes and re-measures settings load, texture prewarm and window allocations | T-16 … T-35, T-81, T-82 | 22 |
 | M3 | Sub-menus, materials, edit mode shell | Whole dropdowns pinned from the architect fan out as a sub-ring; stuff builds open a material ring (last-used first); Ideology designators resolve and refresh; edit mode shell (the centre Edit button enters it and shows Done; Done/Esc leave; modifier+click unpins; plain clicks do nothing); design, performance and architecture documents aligned with the picker removal | T-36, T-37, T-40 … T-44, T-46 … T-49, T-83 … T-85 | 14 |
-| M4 | Edit mode, grid, Auto sizing | Drag to swap (Fixed: onto an empty slot moves the pin there), help panel, full state, one settings write per edit session; grid layout with sub-grids; Auto sizing (new pins at the end); full layout settings with live preview; empty-menu hint | T-50 … T-62 | 13 |
+| M4 | Edit mode, grid, Auto sizing | Drag to swap (Fixed: onto an empty slot moves the pin there), help panel, full state, one settings write per edit session; grid layout with sub-grids; Auto sizing (new pins at the end); full layout settings with live preview; empty-menu hint; satellite underlay (T-86) | T-50 … T-62, T-86 | 14 |
 | M5 | Hold mode, availability, compatibility | Hold-and-release with 150 ms hover-open; greyed slots with the game's (or composed) reason for every cause; missing-mod pins kept and restored; Mint detection with Alt default and notices; first-run notice; Multiplayer-safe audit | T-63 … T-71 | 9 |
 | M6 | Hardening and release prep | Fault isolation verified, string and clean-room audits, final performance pass, final regression on all setups, Preview.png, README, CHANGELOG, Workshop description, release package (publishing is the separate gated Phase 7) | T-72 … T-80 | 9 |
 | | | | **Total** | **82** active (85 IDs; T-38, T-39, T-45 removed) |
@@ -727,7 +727,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-3 (user)
   - **Size**: S
 
-- [ ] **T-48**: M3 visual review · `parallel-ok`
+- [x] **T-48**: M3 visual review · `parallel-ok`
   - **Owner**: visual-designer
   - **Requirements**: NFR-7, NFR-5
   - **Depends on**: T-47
@@ -735,6 +735,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Acceptance criteria**:
     - [ ] States 4, 5, 12, 13, 14, satellites, the material ring and the edit-mode hub (Done) match design.md and the mockups; the user confirms.
     - [ ] Carried over from T-34: pressed (3), hub hover, edge-dodge corners and the rim over snow or ice are captured and checked (the T-81 look was checked in UC-2b, T-82).
+  - **Result (2026-10-19)**: reviewed on `design/spikes/uc3-material-ring.png` (design.md §8 "UC-3 visual review"): satellite geometry, hover, open parent (14), material dot (13) and plate pass; one change → T-86. States 4 (last-used alone), 5, 12, edit-mode hub, and the T-34 carry-overs were not captured and moved to UC-4 (T-60) / T-61.
   - **Tests**: screenshot review.
   - **Size**: S
 
@@ -885,13 +886,26 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Depends on**: T-56, T-57, T-58, T-59
   - **Files**: `docs/project/test-checklist.md` (M4, UC-4), `docs/project/test-reports/uc-4.md`
   - **Acceptance criteria**:
-    - [ ] *(UC-4)* Carry-over M3 checks (M3 test review): material ring with 1 material skips the ring, 0 materials → greyed with "no materials"; journey 4 (chair dropdown → armchair → wood → ready to place) if a stuff dropdown exists; satellites at UI scale 2.0 (or the max allowed); grid sub-grid and material ring; pressed state, hub hover, edge-dodge corners, rim over snow (T-34 carry-over).
+    - [ ] *(UC-4)* Carry-over M3 checks (M3 test review): material ring with 1 material skips the ring, 0 materials → greyed with "no materials"; journey 4 (chair dropdown → armchair → wood → ready to place) if a stuff dropdown exists; satellites at UI scale 2.0 (or the max allowed); grid sub-grid and material ring; pressed state, hub hover, edge-dodge corners, rim over snow (T-34 carry-over); last-used material (state 4) captured with the mouse away from it, after building the stuff build once with a chosen material, so the 3 px ring and the stuff-coloured parent dot are both visible (T-48 finding 6); T-86 underlay check.
     - [ ] *(UC-4)* Carry-over perf re-measures from M3 (T-49): P-7c Ideology refresh time on a colony with an ideoligion; P-9 control run in the stress setup; sub-ring per-frame cost with a satellite open; satellite rim rebuild (3.1 ms, watch item vs 5 ms).
     - [ ] Items for every M4 criterion, the FR-4 matrix (each feature × wheel/grid), UI scale 1.0 and 2.0 screenshots of every S4 state in both layouts, edit-session write counter, and the perf steps for P-8 (grid, max size) and P-9.
     - [ ] *(UC-4)* Results recorded; failures become bug tasks.
   - **Tests**: the session itself.
   - **In-game check**: UC-4 (user)
   - **Size**: S
+
+- [ ] **T-86**: Satellite underlay so the dimmed main menu does not show through satellites (M3 visual review, T-48 finding 4) · `parallel-ok`
+  - **Owner**: developer (visual-designer checks it in UC-4 / T-61)
+  - **Requirements**: NFR-7, FR-11, FR-12 (design.md §2 `satelliteUnderlay`, S1 draw order, §8 UC-3 visual review)
+  - **Depends on**: T-48
+  - **Files**: `src/QuickMenu.Core/Render/StyleTokens.cs`, the satellite drawing path in `src/QuickMenu/Menu/` (renderer that draws the satellite disc), `tests/QuickMenu.Core.Tests/Render/` (token test)
+  - **Acceptance criteria**:
+    - [ ] Given the token set, then `StyleTokens.SatelliteUnderlayAlpha` = 0.55 (black), and `DimmedMenuAlpha` stays 0.45 (user decision: the map showing through the dimmed main wheel is wanted).
+    - [ ] Given an open wheel satellite, then before its disc the `Circle` mask is drawn once at diameter `2·D_s − 4`, centred on the satellite centre, tinted `satelliteUnderlay`; no new texture, no per-frame allocation.
+    - [ ] Given an open grid sub-grid (when T-54 lands), then the same underlay is drawn with the `Panel` 9-slice at the sub-panel rect.
+    - [ ] *(UC-4)* With a 3-option material ring over a 2-ring wheel, the main hub pencil and main slot outlines are no longer visible inside the satellite; outside the satellite the dimmed main looks unchanged.
+  - **Tests**: token unit test; build; in-game UC-4 screenshot (T-61).
+  - **Size**: XS
 
 - [ ] **T-61**: M4 visual review (UI scale 1.0 and 2.0) · `parallel-ok`
   - **Owner**: visual-designer

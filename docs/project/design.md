@@ -112,7 +112,7 @@ The menu opens in the trigger frame, with geometry from §1.1. Drawing order:
 2. slots
 3. hub (S4a)
 4. label plate (hovered slot's label, Small font)
-6. satellite (if open)
+6. satellite (if open): first the `satelliteUnderlay` circle (T-86), then its disc, slots, hub and plate
 
 The main menu is drawn at 45% opacity while a satellite is open, and it does not react to the mouse.
 
@@ -321,6 +321,7 @@ The game's UI is dark only, so there is one theme. Tokens live in one adapter cl
 | `unavailableIcon` | — | `#808080` α 0.75 (multiplied into the icon) | Greyed icons | 4.0:1 vs slotBg, always paired with the lock badge |
 | `plate` | — | black α 0.80 | Label, hint and help plates | — |
 | `dimmedMenu` | — | menu α 0.45 | Main menu behind a satellite | — |
+| `satelliteUnderlay` | — | black α 0.55 | Under a satellite disc or sub-grid panel, so the dimmed main menu does not show through it (T-48 finding 4, T-86) | — |
 | windows, buttons | — | the game's own (`Widgets.WindowBGFillColor`, vanilla button atlas) | Settings, dialogs | vanilla |
 
 Target: **WCAG 2.2 AA** (text ≥ 4.5:1, UI parts ≥ 3:1). Every text pair passes.
@@ -473,3 +474,23 @@ Evidence: [uc2-wheel-hover.png](design/spikes/uc2-wheel-hover.png) (wheel, Fixed
 | 9 | Tooltip | The vanilla tooltip opens at the mouse after the vanilla delay and covers 1 or 2 ring-2 slots to the right. This is the same as vanilla gizmos. It moves or disappears when the mouse moves, and the label plate gives the name without waiting. Moving the tooltip outside the disc would need a custom tooltip path. | Accept for v1 (user to confirm) |
 | 10 | Not shown | The dropdown pin has no sub-menu badge yet (state 12, T-42/M3). The morbid slabs draw as Empty: this is the known FR-14 bug, and they should be greyed with a lock (T-32 UC-2 fix). Pressed (3), hub hover, edge-dodge corners and UI scale 2 were not captured. | Check in T-48 (M3) |
 
+
+### UC-3 visual review (T-48, 2026-10-19)
+Evidence: [uc3-material-ring.png](design/spikes/uc3-material-ring.png) (wheel, Fixed, 2 rings, B 56, UI scale 1, Wall material ring open, mouse on Wood; the cursor is not in the capture). Compared with [uc2-wheel-hover.png](design/spikes/uc2-wheel-hover.png), §1.1 (satellite), S1, S3, S4 (states 4, 13, 14), S4a and §2. Pixel values were measured on the PNG (1:1, satellite rim 208 px across).
+
+**Verdict: satellite geometry and states match the design. One change (T-86): main-wheel content shows through the satellite disc. No blocker.**
+
+| # | Area | Finding | Result |
+|---|---|---|---|
+| 1 | Satellite geometry | n = 3 → m = 1, `D_s` = 104 (rim measured 2·D_s ≈ 208). It is centred on the Wall slot (ring 1, 12 o'clock), and the options sit at −90°, 30° and 150° on radius 64 (Auto spread). The triangle is balanced, the 8 px gaps hold, and each option covers a main ring-1 or ring-2 lattice point exactly, so no main slot is half-covered by an option. | Pass |
+| 2 | Satellite vs main size and weight | The 208 px satellite on the 336 px main disc, with its full-opacity accent rim and opaque option fills, reads clearly as the top layer. | Pass |
+| 3 | Dimmed main (45 %) | The map shows through the dimmed main disc strongly (disc edge ≈ 0.25 effective alpha). The user likes this. `dimmedMenu` stays at 0.45. | Pass (user decision 2026-10-19) |
+| 4 | **Bleed-through inside the satellite** | The satellite disc is only the translucent gradient (`discCentre` 0.85 → `discEdge` 0.55), so the dimmed main content under it stays visible. The main hub pencil (45 %) sits exactly in the satellite's empty 6 o'clock position, so it reads as a fourth, disabled option. Two ghost ring-2 slot outlines show at about 10 and 2 o'clock, and the ring-1 floor-tile slot at 30° shows at the same strength inside and outside the satellite rim. With 3 options the satellite looks like a 6-position ring with ghosts. | **Change (T-86)**: satellite underlay (below) |
+| 5 | Hover on an option (state 2) | Wood: 2 px `accent` ring (measured), fill #3B454F (= `slotBgHover` + 8 % white), plate "Wood". Clear. | Pass |
+| 6 | Last-used (state 4) | **Not judged.** The mouse was on Wood, so the capture shows hover. The ring is 2 px; by the S4 ring priority, a last-used option keeps its 3 px ring when hovered. Together with the parent dot in `textMuted` (#A7B0B8, measured; that colour means "no last-used stuff"), this suggests that this Wall had no remembered material at open time. It is not a visual bug in itself. | Check in UC-4: screenshot with the mouse away from the last-used option, after the Wall was built once with a chosen material (the dot must then show that stuff colour) |
+| 7 | Open parent / satellite hub (state 14, 13) | Wall icon, `slotBg` fill, 2 px `accent` ring, full opacity above the dimmed menu. The material dot at 4:30 straddles the ring by design (badges sit on radius B/2) and its `rimOutline` keeps it separate from the ring. | Pass |
+| 8 | Label plate | Top at `cy_s + D_s + plateGap` (measured ≈ 283), centred on the satellite, one line, over the dimmed main wheel. White on `plate` stays readable over the dimmed slots. | Pass |
+| 9 | Hierarchy overall | Satellite (rim, options, hovered option) → plate → dimmed main → map. After T-86 the satellite interior is clean. | Pass after T-86 |
+| 10 | Not shown | States 4 (alone), 5, 12 (sub-menu badge), edit-mode hub (Done), pressed (3), hub hover, edge-dodge corners, rim over snow, UI scale 2.0. | Carried to UC-4 (T-60) and T-61 |
+
+**T-86 values.** New token `satelliteUnderlay` = black α **0.55**. Draw it once per frame, before the satellite disc (S1 step 6): the `Circle` mask at diameter `2·D_s − 4` (inside the rim's outer outline), centred on the satellite centre. With the gradient on top, the covered alpha is about 0.93 at the centre and 0.80 at the edge (1 − 0.45·0.15 and 1 − 0.45·0.45), so main content under the satellite falls to about a fifth of its dimmed strength. The map is still faintly visible near the satellite edge. Outside the satellite nothing changes, and `dimmedMenu` stays 0.45. The grid sub-grid gets the same underlay on its panel (9-slice `Panel` mask, same token).
