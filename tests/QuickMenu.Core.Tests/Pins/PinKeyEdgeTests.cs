@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using QuickMenu.Core.Pins;
 using Xunit;
@@ -63,7 +64,7 @@ public class PinKeyEdgeTests
     }
 
     [Fact]
-    public void ModDropdown_DuplicateAndManyChildren_AreStableAndRoundTrip()
+    public void ModDropdown_ManyChildren_AreStableAndRoundTrip()
     {
         var children = new List<PinKey>();
         for (int i = 50; i >= 0; i--)
@@ -71,14 +72,61 @@ public class PinKeyEdgeTests
             children.Add(PinKey.Build(PinKeyKind.BuildThing, "D" + i));
         }
 
-        children.Add(children[0]);
         PinKey a = PinKey.ModDropdown("T", "C", children);
         children.Reverse();
         PinKey b = PinKey.ModDropdown("T", "C", children);
         Assert.Equal(a, b);
         Assert.True(PinKey.TryParse(a.Value, out PinKey? parsed));
         Assert.Equal(a.Value, parsed.Value);
-        Assert.Equal(52, parsed.Children!.Count);
+        Assert.Equal(51, parsed.Children!.Count);
+    }
+
+    [Fact]
+    public void ModDropdown_Children_AreASet_DuplicatesCollapse()
+    {
+        PinKey x = PinKey.Build(PinKeyKind.BuildThing, "X");
+        PinKey y = PinKey.Build(PinKeyKind.BuildThing, "Y");
+        PinKey dup = PinKey.ModDropdown("T", "C", new[] { y, x, y, PinKey.Build(PinKeyKind.BuildThing, "X") });
+        PinKey once = PinKey.ModDropdown("T", "C", new[] { x, y });
+        Assert.Equal(once, dup);
+        Assert.Equal(2, dup.Children!.Count);
+        Assert.True(PinKey.TryParse("moddrop:T@C~build:thing/Y,build:thing/X,build:thing/Y", out PinKey? parsed));
+        Assert.Equal(once.Value, parsed.Value);
+    }
+
+    [Fact]
+    public void Children_AreReadOnly()
+    {
+        PinKey key = PinKey.ModDropdown("T", "C", new[] { PinKey.Dropdown("A"), PinKey.Dropdown("B") });
+        Assert.False(key.Children is PinKey[]);
+        Assert.True(key.Children is System.Collections.ObjectModel.ReadOnlyCollection<PinKey>);
+        Assert.Throws<NotSupportedException>(() => ((IList<PinKey>)key.Children!)[0] = PinKey.Dropdown("Z"));
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(1_000_000_000)]
+    [InlineData(int.MaxValue)]
+    [InlineData(int.MinValue)]
+    public void Order_OrdinalOutOfRange_Throws(int ordinal)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => PinKey.Order("T", ordinal));
+    }
+
+    [Fact]
+    public void TryParse_DeeplyNestedModDropdowns_ReturnsFalseQuickly()
+    {
+        var sb = new System.Text.StringBuilder();
+        for (int i = 0; i < 10_000; i++)
+        {
+            sb.Append("moddrop:T@C~");
+        }
+
+        sb.Append("build:thing/A");
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        Assert.False(PinKey.TryParse(sb.ToString(), out PinKey? key));
+        Assert.Null(key);
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(1), watch.Elapsed.ToString());
     }
 
     [Fact]
@@ -108,18 +156,34 @@ public class PinKeyEdgeTests
         Assert.Equal(2, set.Count);
     }
 
+    // Grammar pinned per ADR 0004: names are non-empty, specials \ , ~ @ # | must be escaped, ordinals are
+    // canonical ASCII decimals, mod dropdown children are complete non-moddrop keys. Whitespace and lone
+    // surrogates are ordinary name characters.
     [Theory]
-    [InlineData("build:thing/A build:thing/B")]
+    [InlineData("order:T\\#1")] // escaped hash: part of the name
+    [InlineData("build:thing/\ud800")]
+    [InlineData("build:thing/A build:thing/B")] // space is an ordinary name character
+    [InlineData("moddrop:T@C~build:thing/A,build:thing/B")]
+    public void TryParse_ExpectedValid_ParsesAndRoundTrips(string text)
+    {
+        Assert.True(PinKey.TryParse(text, out PinKey? key));
+        Assert.Equal(text, key.Value);
+        Assert.True(PinKey.TryParse(key.Value, out PinKey? again));
+        Assert.Equal(key, again);
+    }
+
+    [Theory]
     [InlineData("build:thing/\\")]
     [InlineData("build:thing/\\\\\\")]
     [InlineData("dropdown:a\\")]
-    [InlineData("order:T\\#1")] // escaped hash is part of the name, so this is a valid key; see ValidEscapedHash
     [InlineData("order:T#1\\")]
     [InlineData("order:T#\\1")]
     [InlineData("order:T#1,")]
-    [InlineData("order:T#٣")] // non-ASCII digit
+    [InlineData("order:T#\u0663")] // non-ASCII digit
     [InlineData("order:T# 1")]
     [InlineData("order:T#+1")]
+    [InlineData("order:T#1000000000")]
+    [InlineData("order:T#01")]
     [InlineData("moddrop:T@C~build:thing/A\\")]
     [InlineData("moddrop:T@C~build:thing/A,,build:thing/B")]
     [InlineData("moddrop:T@C~build:thing/A~build:thing/B")]
@@ -128,21 +192,12 @@ public class PinKeyEdgeTests
     [InlineData("moddrop:T@C~order:X#")]
     [InlineData("moddrop:T@C~ ")]
     [InlineData("moddrop:T@C~dropdown:")]
+    [InlineData("moddrop:T@C~moddrop:U@D~build:thing/A")]
     [InlineData("\0")]
-    [InlineData("build:thing/\ud800")] // lone surrogate is a valid .NET char but must not crash
-    public void TryParse_AdversarialInput_NeverThrows(string text)
+    public void TryParse_ExpectedInvalid_ReturnsFalseWithNullKey(string text)
     {
-        bool ok = PinKey.TryParse(text, out PinKey? key);
-        if (ok)
-        {
-            Assert.NotNull(key);
-            Assert.True(PinKey.TryParse(key.Value, out PinKey? again));
-            Assert.Equal(key, again);
-        }
-        else
-        {
-            Assert.Null(key);
-        }
+        Assert.False(PinKey.TryParse(text, out PinKey? key));
+        Assert.Null(key);
     }
 
     [Fact]

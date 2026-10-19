@@ -14,6 +14,7 @@ namespace QuickMenu.Core.Pins;
 public sealed class PinKey : IEquatable<PinKey>
 {
     private const char Escape = '\\';
+    private const int MaxOrdinal = 999_999_999;
     private static readonly SearchValues<char> _specials = SearchValues.Create("\\,~@#|");
 
     private PinKey(
@@ -21,7 +22,7 @@ public sealed class PinKey : IEquatable<PinKey>
         string name,
         int? ordinal,
         string? category,
-        PinKey[]? children,
+        IReadOnlyList<PinKey>? children,
         string value)
     {
         Kind = kind;
@@ -43,7 +44,7 @@ public sealed class PinKey : IEquatable<PinKey>
     /// <summary>Category def name of a mod dropdown, unescaped; otherwise null.</summary>
     public string? Category { get; }
 
-    /// <summary>Sorted child keys of a mod dropdown; otherwise null.</summary>
+    /// <summary>Sorted, unique child keys of a mod dropdown (a set); read-only; otherwise null.</summary>
     public IReadOnlyList<PinKey>? Children { get; }
 
     /// <summary>The canonical string form.</summary>
@@ -65,9 +66,9 @@ public sealed class PinKey : IEquatable<PinKey>
 
     public static PinKey Order(string typeFullName, int? ordinal = null)
     {
-        if (ordinal is < 0)
+        if (ordinal is < 0 or > MaxOrdinal)
         {
-            throw new ArgumentOutOfRangeException(nameof(ordinal));
+            throw new ArgumentOutOfRangeException(nameof(ordinal), ordinal, "Ordinal must be 0 to 999999999.");
         }
 
         string value = "order:" + Esc(typeFullName, nameof(typeFullName));
@@ -100,6 +101,14 @@ public sealed class PinKey : IEquatable<PinKey>
         }
 
         sorted.Sort(static (a, b) => string.CompareOrdinal(a.Value, b.Value));
+        for (int i = sorted.Count - 1; i > 0; i--)
+        {
+            if (sorted[i].Equals(sorted[i - 1]))
+            {
+                sorted.RemoveAt(i);
+            }
+        }
+
         var sb = new StringBuilder("moddrop:");
         sb.Append(Esc(typeFullName, nameof(typeFullName))).Append('@').Append(Esc(categoryDefName, nameof(categoryDefName))).Append('~');
         for (int i = 0; i < sorted.Count; i++)
@@ -112,7 +121,7 @@ public sealed class PinKey : IEquatable<PinKey>
             sb.Append(sorted[i].Value);
         }
 
-        return new PinKey(PinKeyKind.ModDropdown, typeFullName, null, categoryDefName, sorted.ToArray(), sb.ToString());
+        return new PinKey(PinKeyKind.ModDropdown, typeFullName, null, categoryDefName, Array.AsReadOnly(sorted.ToArray()), sb.ToString());
     }
 
     /// <summary>Parses a key; never throws. Child order in a mod dropdown is normalised to sorted.</summary>
@@ -227,7 +236,8 @@ public sealed class PinKey : IEquatable<PinKey>
         {
             int comma = IndexOfUnescaped(list, ',');
             ReadOnlySpan<char> item = comma < 0 ? list : list[..comma];
-            if (!TryParse(item.ToString(), out PinKey? child) || child.Kind == PinKeyKind.ModDropdown)
+            if (item.StartsWith("moddrop:", StringComparison.Ordinal) ||
+                !TryParse(item.ToString(), out PinKey? child))
             {
                 return false;
             }
