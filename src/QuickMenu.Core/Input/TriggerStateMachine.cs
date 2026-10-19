@@ -14,6 +14,15 @@ public sealed class TriggerStateMachine
 {
     private bool _pressValid;
     private Hit _pressHit;
+    private int _dragSource = -1;
+    private Vec2 _dragStart;
+    private bool _dragging;
+
+    /// <summary>Pointer travel in UI px before a press on a slot in edit mode becomes a drag (design.md S5).</summary>
+    public const float DragThreshold = 6f;
+
+    /// <summary>The slot being dragged, or -1 when no drag has started (a press under <see cref="DragThreshold"/> is not a drag yet).</summary>
+    public int DragSource => _dragging ? _dragSource : -1;
 
     public MenuState State { get; private set; }
 
@@ -47,8 +56,21 @@ public sealed class TriggerStateMachine
             case TriggerEventKind.MapLost:
                 return CloseAll();
             case TriggerEventKind.MouseMove:
+                if (_dragSource >= 0 && !_dragging && State == MenuState.Edit)
+                {
+                    float dx = e.Position.X - _dragStart.X;
+                    float dy = e.Position.Y - _dragStart.Y;
+                    _dragging = (dx * dx) + (dy * dy) >= DragThreshold * DragThreshold;
+                }
+
                 return MenuCommand.None;
             case TriggerEventKind.Escape:
+                if (_dragging)
+                {
+                    EndDrag();
+                    return MenuCommand.None;
+                }
+
                 return Cancel(true);
             case TriggerEventKind.MouseDown:
                 return OnDown(e);
@@ -84,6 +106,7 @@ public sealed class TriggerStateMachine
         var wasEditing = State == MenuState.Edit;
         State = MenuState.Closed;
         _pressValid = false;
+        EndDrag();
         return wasEditing ? MenuCommand.CloseFromEdit : MenuCommand.Close;
     }
 
@@ -94,6 +117,7 @@ public sealed class TriggerStateMachine
     private MenuCommand Cancel(bool fromEscape)
     {
         _pressValid = false;
+        EndDrag();
         switch (State)
         {
             case MenuState.Satellite:
@@ -116,6 +140,14 @@ public sealed class TriggerStateMachine
     {
         if (e.Button == 1)
         {
+            if (_dragging)
+            {
+                // A right-click cancels a drag in progress first and never unpins; the next one closes the menu.
+                _pressValid = false;
+                EndDrag();
+                return MenuCommand.None;
+            }
+
             return Cancel(false);
         }
 
@@ -123,6 +155,12 @@ public sealed class TriggerStateMachine
         {
             _pressValid = true;
             _pressHit = e.Hit;
+            EndDrag();
+            if (State == MenuState.Edit && e.Hit.Kind == HitKind.Slot && e.SlotKind is not SlotKind.Empty)
+            {
+                _dragSource = e.Hit.Index;
+                _dragStart = e.Position;
+            }
         }
 
         return MenuCommand.None;
@@ -136,6 +174,14 @@ public sealed class TriggerStateMachine
         }
 
         _pressValid = false;
+        if (_dragging)
+        {
+            int from = _dragSource;
+            EndDrag();
+            return e.Hit.Kind == HitKind.Slot && e.Hit.Index != from ? MenuCommand.Swap(from, e.Hit.Index) : MenuCommand.None;
+        }
+
+        EndDrag();
         if (e.Hit != _pressHit)
         {
             return MenuCommand.None;
@@ -192,5 +238,11 @@ public sealed class TriggerStateMachine
             default:
                 return MenuCommand.None;
         }
+    }
+
+    private void EndDrag()
+    {
+        _dragSource = -1;
+        _dragging = false;
     }
 }

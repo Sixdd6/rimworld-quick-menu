@@ -49,6 +49,12 @@ internal static class MenuController
     /// <summary>True while the open menu is in edit mode (the hub shows Done).</summary>
     internal static bool IsEditing => _machine?.State == MenuState.Edit;
 
+    /// <summary>The slot being dragged in edit mode (after 6 px), or -1.</summary>
+    internal static int DragSource => _machine?.DragSource ?? -1;
+
+    /// <summary>True when a drop on <paramref name="slot"/> can swap: the slot has a position on the pin board.</summary>
+    internal static bool CanDrop(int slot) => _content != null && slot >= 0 && slot < _content.BoardIndex.Length && _content.BoardIndex[slot] >= 0;
+
     /// <summary>Opens the menu in the current frame. Pressing the trigger while it is open closes it.</summary>
     internal static void Open()
     {
@@ -141,6 +147,11 @@ internal static class MenuController
         MenuContent content = BuildContent(mouse);
         _content = content;
         _satellite = null;
+        if (IsEditing)
+        {
+            UpdateHelp();
+        }
+
         LastSlotCount = content.Model.SlotCount;
         LastDesignators = content.Designators;
         return content;
@@ -227,12 +238,18 @@ internal static class MenuController
             case MenuCommandKind.Unpin:
                 Unpin(command.Index);
                 break;
+            case MenuCommandKind.Swap:
+                Swap(command.Index, command.Other);
+                break;
             case MenuCommandKind.ExitEdit:
                 // Done or the first Esc: the pins are already applied; one write ends the edit session, and only if something changed.
+                HelpPanelRenderer.Clear();
                 FlushEdit();
                 break;
+            case MenuCommandKind.EnterEdit:
+                UpdateHelp();
+                break;
             default:
-                // EnterEdit changes only the state, which the window reads when it paints.
                 break;
         }
     }
@@ -357,6 +374,49 @@ internal static class MenuController
         window.Refresh();
     }
 
+    /// <summary>
+    /// Drag swap in edit mode: exchanges the pins behind two slots (Fixed: either may be empty, so the pin moves; Auto: the
+    /// two pins exchange places), plays Tick_Tiny and refreshes the wheel. No settings write: the session's one write
+    /// happens when edit mode ends.
+    /// </summary>
+    private static void Swap(int from, int to)
+    {
+        MenuContent? content = _content;
+        QuickMenuWindow? window = _window;
+        if (content == null || window == null || !CanDrop(from) || !CanDrop(to))
+        {
+            return;
+        }
+
+        if (PinService.Board.Swap(content.BoardIndex[from], content.BoardIndex[to]))
+        {
+            _editDirty = true;
+            SoundDefOf.Tick_Tiny.PlayOneShotOnCamera();
+            window.Refresh();
+        }
+    }
+
+    /// <summary>Tells the help panel the pin count and whether the menu is full (edit start and after each pin change).</summary>
+    private static void UpdateHelp()
+    {
+        Settings.QuickMenuSettings settings = QuickMenuMod.Settings;
+        int used = 0;
+        foreach (PinEntry? entry in PinService.Board.Entries)
+        {
+            if (entry != null)
+            {
+                used++;
+            }
+        }
+
+        bool auto = settings.Sizing == SizingMode.Auto;
+        int capacity = PinService.Board.Capacity;
+        bool full = auto
+            ? SettingsRules.IsAutoFull(settings.Layout, settings.Sizing, used, settings.GridColumns, SettingsRules.ClampButtonSize(settings.ButtonSize), new Vec2(UI.screenWidth, UI.screenHeight), WheelModel.DefaultPlateHeight)
+            : used >= capacity;
+        HelpPanelRenderer.SetContent(auto, used, capacity, full);
+    }
+
     /// <summary>Writes the settings once if edit mode changed them, then clears the flag.</summary>
     private static void FlushEdit()
     {
@@ -402,6 +462,7 @@ internal static class MenuController
 
     private static void Reset()
     {
+        HelpPanelRenderer.Clear();
         FlushEdit(); // every way out of the menu (Done, Esc, outside click, a fault, an external close) ends the edit session
         _window = null;
         _machine = null;

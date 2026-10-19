@@ -27,6 +27,7 @@ internal sealed class MenuContent
 {
     private readonly string?[] _tips;
     private readonly string?[] _reasons;
+    private readonly string?[] _editTips;
     private string? _editTip;
     private string? _doneTip;
 
@@ -40,6 +41,33 @@ internal sealed class MenuContent
         StuffSets = new StuffOptionSet[designators.Length];
         _tips = new string?[designators.Length];
         _reasons = new string?[designators.Length];
+        _editTips = new string?[designators.Length];
+        BoardIndex = new int[designators.Length];
+        System.Array.Fill(BoardIndex, -1);
+    }
+
+    /// <summary>
+    /// The pin board position behind each slot, or -1 for a slot with no board position (an Auto slot past the last pin).
+    /// Fixed: the slot number. Auto: <c>PinSlot.Index</c>, the position in the compact list (hidden unresolved pins sit
+    /// between), which is what <c>PinBoard.Swap</c> and <c>Clear</c> take.
+    /// </summary>
+    internal int[] BoardIndex { get; }
+
+    /// <summary>
+    /// The slot's tooltip with the edit-mode line (drag, modifier+click) appended; built on first hover, kept for this
+    /// open. Null when the slot has no tooltip of its own.
+    /// </summary>
+    internal string? EditTip(int slot)
+    {
+        string? tip = _editTips[slot];
+        if (tip == null)
+        {
+            string? own = Tip(slot);
+            tip = own == null ? string.Empty : own + "\n\n" + EditTexts.EditSlotTip;
+            _editTips[slot] = tip;
+        }
+
+        return tip.Length == 0 ? null : tip;
     }
 
     /// <summary>
@@ -109,6 +137,11 @@ internal sealed class MenuContent
         model.SetHubLabels("QuickMenu.Menu.Edit".Translate(), "QuickMenu.Menu.Done".Translate());
         model.Prepare();
         var content = new MenuContent(model, designators, pinsBySlot);
+        for (int i = 0; i < slots.Length && i < pins.Count; i++)
+        {
+            content.BoardIndex[i] = pins[i].Index;
+        }
+
         System.Collections.Generic.List<ThingDef>? present = materialPending.Count > 0 ? StuffOptions.Present() : null; // once per open
         foreach ((int slot, Designator d) in materialPending)
         {

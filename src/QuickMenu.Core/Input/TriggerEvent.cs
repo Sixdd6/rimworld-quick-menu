@@ -48,8 +48,9 @@ public readonly record struct TriggerEvent(
         new(TriggerEventKind.TriggerReleased, position, hit, 0, SlotKind.Normal);
 
     /// <param name="button">0 = left, 1 = right.</param>
-    public static TriggerEvent MouseDown(Vec2 position, Hit hit, int button) =>
-        new(TriggerEventKind.MouseDown, position, hit, button, SlotKind.Normal);
+    /// <param name="slotKind">When <paramref name="hit"/> is a slot: what the slot is (edit mode starts a drag from an occupied or reserved slot).</param>
+    public static TriggerEvent MouseDown(Vec2 position, Hit hit, int button, SlotKind slotKind = SlotKind.Normal) =>
+        new(TriggerEventKind.MouseDown, position, hit, button, slotKind);
 
     /// <param name="slotKind">When <paramref name="hit"/> is a slot: what the slot is (empty, normal, sub-menu, disabled).</param>
     /// <param name="modifier">The effective pin modifier was held for this click (read by the window from its own click event).</param>

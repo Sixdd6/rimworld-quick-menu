@@ -2,6 +2,7 @@ using System;
 using QuickMenu.Core.Geometry;
 using QuickMenu.Core.Input;
 using QuickMenu.Core.Layout;
+using QuickMenu.Core.Render;
 using QuickMenu.Diagnostics;
 using RimWorld;
 using RimWorld.Planet;
@@ -206,7 +207,7 @@ internal sealed class QuickMenuWindow : Window
                 }
 
                 MenuController.Dispatch(TriggerEvent.MouseMove(mouse));
-                Paint(model, ring, hit);
+                Paint(model, ring, hit, mouse);
                 break;
             case EventType.MouseDown:
                 if (ev.button == 0)
@@ -215,7 +216,8 @@ internal sealed class QuickMenuWindow : Window
                 }
 
                 ev.Use();
-                MenuController.Dispatch(TriggerEvent.MouseDown(mouse, hit, ev.button));
+                SlotKind downKind = hit.Kind == HitKind.Slot ? hitModel.Kinds[hit.Index] : SlotKind.Normal;
+                MenuController.Dispatch(TriggerEvent.MouseDown(mouse, hit, ev.button, downKind));
                 break;
             case EventType.MouseUp:
                 _pressHit = Hit.Outside;
@@ -251,21 +253,34 @@ internal sealed class QuickMenuWindow : Window
         _hoverSlot = -1;
     }
 
-    private void Paint(WheelModel main, RingContent? ring, Hit hit)
+    private void Paint(WheelModel main, RingContent? ring, Hit hit, Vec2 mouse)
     {
         bool editing = MenuController.IsEditing;
         main.Editing = editing;
         WheelModel model = ring?.Model ?? main;
         bool grid = main.Panel != null;
+        int dragSource = ring == null && editing ? MenuController.DragSource : -1;
         if (ring == null)
         {
+            var drag = DragVisual.None;
+            if (dragSource >= 0)
+            {
+                int target = hit.Kind == HitKind.Slot && hit.Index != dragSource && MenuController.CanDrop(hit.Index) ? hit.Index : -1;
+                drag = new DragVisual(dragSource, target, mouse);
+            }
+
             if (grid)
             {
-                GridRenderer.Draw(main, hit, _pressHit);
+                GridRenderer.Draw(main, hit, _pressHit, drag);
             }
             else
             {
-                MenuRenderer.Draw(main, hit, _pressHit);
+                MenuRenderer.Draw(main, hit, _pressHit, drag);
+            }
+
+            if (editing)
+            {
+                HelpPanelRenderer.Draw();
             }
         }
         else if (grid)
@@ -298,12 +313,17 @@ internal sealed class QuickMenuWindow : Window
             TooltipHandler.TipRegion(new Rect(model.Center.X - hubHalf, model.Center.Y - hubHalf, 2f * hubHalf, 2f * hubHalf), new TipSignal(_content!.HubTip(editing), TooltipIdBase - 1));
         }
 
+        if (dragSource >= 0)
+        {
+            return; // no tooltips while dragging
+        }
+
         if (ring == null && editing && hit.Kind == HitKind.Slot && _content!.ReservedTip(hit.Index) is { } reservedTip)
         {
             TipAt(model, hit.Index, reservedTip, TooltipIdBase + hit.Index);
         }
 
-        string? tip = slot < 0 ? null : ring != null ? ring.Tip(slot) : _content!.Tip(slot);
+        string? tip = slot < 0 ? null : ring != null ? ring.Tip(slot) : editing ? _content!.EditTip(slot) : _content!.Tip(slot);
         if (tip != null)
         {
             TipAt(model, slot, tip, TooltipIdBase + (ring != null ? 0x1000 : 0) + slot);

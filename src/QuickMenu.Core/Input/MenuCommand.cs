@@ -38,6 +38,9 @@ public enum MenuCommandKind
     /// keeps its state; the caller toggles the pin, shows the message and rebuilds the wheel content.
     /// </summary>
     Unpin,
+
+    /// <summary>Edit mode: a drag from slot <see cref="MenuCommand.Index"/> was dropped on slot <see cref="MenuCommand.Other"/>; swap them.</summary>
+    Swap,
 }
 
 /// <summary>The level a slot belongs to.</summary>
@@ -56,7 +59,8 @@ public readonly record struct MenuCommand(
     MenuCommandKind Kind,
     int Index = -1,
     MenuLevel Level = MenuLevel.Main,
-    bool WasEditing = false)
+    bool WasEditing = false,
+    int Other = -1)
 {
     public static readonly MenuCommand None = new(MenuCommandKind.None);
 
@@ -81,4 +85,6 @@ public readonly record struct MenuCommand(
     public static MenuCommand Reject(int slot) => new(MenuCommandKind.Reject, slot);
 
     public static MenuCommand Unpin(int slot) => new(MenuCommandKind.Unpin, slot);
+
+    public static MenuCommand Swap(int from, int to) => new(MenuCommandKind.Swap, from, MenuLevel.Main, false, to);
 }

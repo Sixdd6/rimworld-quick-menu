@@ -43,9 +43,13 @@ public sealed class QuickMenuMod : Mod
     internal static void RefreshEffectiveModifier() =>
         EffectiveModifier = ModifierPolicy.Effective(_settings.PinModifierUserSet, _settings.PinModifier, _mintActive);
 
+    /// <summary>How many times the settings were written this session (the self-test shows it: one per edit session, not per drag step).</summary>
+    internal static int SaveCount { get; private set; }
+
     /// <summary>Writes the settings file. Call once per pin, at the end of an edit and when the menu closes, never per frame or per drag step.</summary>
     internal static void SaveSettings()
     {
+        SaveCount++;
         try
         {
             _instance?.WriteSettings();
