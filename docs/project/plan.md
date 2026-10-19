@@ -367,6 +367,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Depends on**: T-6, T-14, T-18, T-19, T-20
   - **Files**: `src/QuickMenu/Settings/QuickMenuSettings.cs`, `src/QuickMenu/Pinning/PinService.cs`, `src/QuickMenu/QuickMenuMod.cs`, `mod/Languages/English/Keyed/QuickMenu.Messages.xml`
   - **Acceptance criteria**:
+    - [ ] Given PinSerializer returned `Preserved` lines (unknown key prefix), then PinService keeps them and passes them back to `ToLines` on every save, and their slot numbers are reserved so a new pin never lands on them (T-19 follow-up).
     - [ ] Given `ExposeData`, then every field of architecture §4 is saved with its default, `schemaVersion` = 1, pins as `PinSerializer` lines; a missing or corrupt file loads defaults with one warning.
     - [ ] Given startup after the catalog build, then stored pins are resolved against the key map once; opening the menu does no catalog work.
     - [ ] Given `PinService.Toggle(entry)`, then the result shows the design.md S9 message with its sound (`Tick_High`, `Tick_Low`, or `ClickReject` + full text), and settings are written once.
