@@ -324,7 +324,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
     - [ ] Given closed, when the trigger is pressed, then `Open`; given open, when pressed again, then `Close`.
     - [ ] Given the main level, then Esc, right-click, left-click outside and left-click `HubClose` give `Close`; left-click (down and up) on `HubEdit` gives `EnterEdit`; a click on `Slot(i)` gives `Activate(i)` or `OpenSub(i)` per slot kind.
     - [ ] Given a satellite open, then Esc, right-click, click outside and click on its hub give `Back`.
-    - [ ] Given edit mode, then Esc and `HubClose` (Done) give `ExitEdit`, a left-click outside gives nothing, and a second Esc closes. Given map lost, then `Close` in every state.
+    - [ ] Given edit mode, then Esc and `HubClose` (Done) give `ExitEdit`, a left-click outside closes (superseded by user decision 2026-10-19), and a second Esc closes. Given map lost, then `Close` in every state.
   - **Tests**: unit `TriggerStateMachineToggleTests` (one test per row of the close and cancel table).
   - **Note (2026-10-19)**: the hub rows are superseded by T-81: there is no `HubClose`, a hub click never closes, and right-click in edit mode closes.
   - **Size**: M
@@ -694,7 +694,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Files**: `src/QuickMenu/Menu/{EditModeController,QuickMenuWindow,HubRenderer,SlotRenderer}.cs`, `src/QuickMenu.Core/Input/TriggerStateMachine.cs` (only if a row is missing), `mod/Languages/English/Keyed/QuickMenu.Menu.xml`
   - **Acceptance criteria**:
     - [ ] `EditEnabled` is set to true. Given use mode, when the hub gets a deliberate click (down and up on it), then edit mode starts and the hub shows Done per S4a (`slotBg` + 22 % `accent` tint, 2 px `accent` ring, `IconDone` at `Hg`; hover/pressed 3 px ring), plate "Done"; a hold-mode release over the hub never enters edit mode; satellites do not open in edit mode.
-    - [ ] Given edit mode, then Done or the first Esc leaves it (settings written once if dirty), a second Esc closes, right-click or the trigger closes, a left-click outside does nothing.
+    - [ ] Given edit mode, then Done or the first Esc leaves it (settings written once if dirty), a second Esc closes, right-click, a left-click outside or the trigger closes the menu (user decision 2026-10-19).
     - [ ] Given edit mode, then a plain click on any slot does nothing (no activation, no sub-menu, no cursor); empty slots draw with `emptyBorder` and no glyph; there is no "+" and no Add target anywhere.
     - [ ] Given edit mode, when the user modifier+clicks an occupied or reserved slot, then it is unpinned by the same path as T-81 (Fixed: the slot is empty in place; Auto, where later pins move up, is wired in T-56/T-57); on an empty slot or the hub nothing extra happens; right-click never unpins.
     - [ ] Keyed strings added: `QuickMenu.Menu.Done` "Done"; `QuickMenu.Menu.EditTip` "Edit the quick menu: move and remove pins."; `QuickMenu.Menu.DoneTip` "Finish editing (Esc)". Hub tooltips use the vanilla delay. No `QuickMenu.Menu.Add`/`AddTip` keys exist.
