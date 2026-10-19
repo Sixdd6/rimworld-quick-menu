@@ -61,6 +61,34 @@ public static class StyleTokens
     /// <summary>The game's window fill (<c>Widgets.WindowBGFillColor</c>, 1.7: 21, 25, 29), used for contrast checks.</summary>
     public static readonly Rgba32 WindowBg = Rgba32.FromHex(0x15191D);
 
+    /// <summary>
+    /// Architect pin marker, full (design.md §2 "Architect pin marker"): the <see cref="Accent"/> colour, so the marker
+    /// reads as "in the Quick Menu". 4.7:1 on the lightest pixel of the vanilla button background under the marker.
+    /// </summary>
+    public static readonly Rgba32 PinMarker = Accent;
+
+    /// <summary>
+    /// Partial pin marker (a dropdown with only single entries pinned, user decision 11): a dimmer, opaque accent
+    /// <c>#2E9ACB</c>. Opaque so its contrast does not depend on what is under it: 3.2:1 on the lightest button pixel.
+    /// </summary>
+    public static readonly Rgba32 PinMarkerPartial = Rgba32.FromHex(0x2E9ACB);
+
+    /// <summary>
+    /// Outline under the pin marker, 1 UI px on every side: black α 0.85. Stronger than <see cref="RimOutline"/> (α 0.60)
+    /// because the marker overlaps the designator icon, which can be white: over white the outline is <c>#262626</c>, and
+    /// the marker colours keep ≥ 4.7:1 against it (with α 0.60 the full marker would reach only 2.7:1).
+    /// </summary>
+    public static readonly Rgba32 PinMarkerOutline = Rgba32.FromHex(0x000000, 0.85f);
+
+    /// <summary>
+    /// Reference only, not drawn: the lightest pixel of the vanilla architect button background (<c>UI/Widgets/DesButBG</c>,
+    /// 1.7.4982) in the marker's area <c>(xMax − 17 … xMax − 1, y + 18 … y + 34)</c>, for the pin-marker contrast checks.
+    /// </summary>
+    public static readonly Rgba32 GizmoBgLight = Rgba32.FromHex(0x2F4453);
+
+    /// <summary>Reference only, not drawn: the darkest pixel of the vanilla button background in the marker's area.</summary>
+    public static readonly Rgba32 GizmoBgDark = Rgba32.FromHex(0x1D2B33);
+
     /// <summary>Untinted drawing (masks with baked colour, designator icons).</summary>
     public static readonly Rgba32 White = Rgba32.FromHex(0xFFFFFF);
 

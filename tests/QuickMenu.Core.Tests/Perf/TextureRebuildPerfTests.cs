@@ -42,9 +42,17 @@ public class TextureRebuildPerfTests
             MaskRasterizer.DashedRing(slot.TextureSize, slot.Texels(TextureSizing.Ring1Width), MaskSet.DashCount, MaskSet.DashDuty, mask);
             MaskRasterizer.Ring(hub.TextureSize, hub.Texels(TextureSizing.Ring1Width), mask);
             MaskRasterizer.Ring(hub.TextureSize, hub.Texels(TextureSizing.Ring2Width), mask);
-            for (MaskId id = Glyphs.First; id <= Glyphs.Last; id++)
+            for (MaskId id = Glyphs.First; id <= Glyphs.LastMenuGlyph; id++)
             {
                 Glyphs.Render(id, sizing.GlyphTexels(id), mask);
+            }
+
+            // The pin markers are rebuilt with the rest when the UI scale changes (T-89): fill and outline per kind.
+            PinMarkerSizing marker = PinMarkerSizing.Create(sizing.UiScale);
+            for (PinMarkerKind kind = PinMarkerKind.Full; kind <= PinMarkerKind.Entry; kind++)
+            {
+                Glyphs.Render(MaskId.PinMarker, marker.Texels(kind), mask);
+                Glyphs.RenderOutline(MaskId.PinMarker, marker.Texels(kind), marker.OutlinePad, marker.OutlineGrow, mask);
             }
         }
 

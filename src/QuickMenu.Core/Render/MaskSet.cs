@@ -2,7 +2,7 @@ using System;
 
 namespace QuickMenu.Core.Render;
 
-/// <summary>The shape masks, badges and hub icons of design.md §6, in generation order.</summary>
+/// <summary>The shape masks, badges, hub icons and the pin marker of design.md §6, in generation order.</summary>
 public enum MaskId
 {
     /// <summary>Filled circle, 256 px: slot fill, hub.</summary>
@@ -43,6 +43,12 @@ public enum MaskId
 
     /// <summary>Glyph, 64 px: check mark, the hub's Done button in edit mode (S4a).</summary>
     IconDone,
+
+    /// <summary>
+    /// Glyph, 64 px: push pin tilted 45°, needle point bottom-left; the pin marker on pinned architect buttons and
+    /// dropdown entries (design.md §2 "Architect pin marker", FR-19). Sized by <see cref="PinMarkerSizing"/>, not by B.
+    /// </summary>
+    PinMarker,
 }
 
 /// <summary>
@@ -130,7 +136,7 @@ public static class MaskSet
     public const int GlyphSize = Glyphs.GridSize;
 
     /// <summary>Number of masks in the set.</summary>
-    public const int Count = 13;
+    public const int Count = 14;
 
     /// <summary>Largest <see cref="MaskSpec.ByteCount"/> in the set: one buffer of this size fits every mask.</summary>
     public const int MaxByteCount = RoundSize * RoundSize;
@@ -150,6 +156,7 @@ public static class MaskSet
         new(MaskId.Lock, "Lock", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
         new(MaskId.IconEdit, "IconEdit", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
         new(MaskId.IconDone, "IconDone", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
+        new(MaskId.PinMarker, "PinMarker", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
     ];
 
     /// <summary>Size and parameters of <paramref name="id"/>. Does not allocate.</summary>

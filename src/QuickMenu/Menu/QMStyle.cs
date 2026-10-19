@@ -44,6 +44,15 @@ internal static class QMStyle
     internal static readonly Color UnavailableIcon = ToColor(StyleTokens.UnavailableIcon);
     internal static readonly Color Plate = ToColor(StyleTokens.Plate);
 
+    /// <summary>Architect pin marker, full and entry (design.md §2 "Architect pin marker"): <c>accent</c>.</summary>
+    internal static readonly Color PinMarker = ToColor(StyleTokens.PinMarker);
+
+    /// <summary>Partial pin marker (only single entries of a dropdown pinned): the dimmer <c>#2E9ACB</c>.</summary>
+    internal static readonly Color PinMarkerPartial = ToColor(StyleTokens.PinMarkerPartial);
+
+    /// <summary>Outline mask under the pin marker: black α 0.85.</summary>
+    internal static readonly Color PinMarkerOutline = ToColor(StyleTokens.PinMarkerOutline);
+
     /// <summary>Untinted drawing: textures with baked colour (the disc rim) and designator icons.</summary>
     internal static readonly Color White = ToColor(StyleTokens.White);
 

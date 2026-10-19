@@ -29,7 +29,66 @@ public class StyleTokensTests
         { nameof(StyleTokens.UnavailableIcon), 0x808080, 191 },
         { nameof(StyleTokens.Plate), 0x000000, 204 },
         { nameof(StyleTokens.WindowBg), 0x15191D, 255 },
+        { nameof(StyleTokens.PinMarker), 0x38BDF8, 255 },
+        { nameof(StyleTokens.PinMarkerPartial), 0x2E9ACB, 255 },
+        { nameof(StyleTokens.PinMarkerOutline), 0x000000, 217 },
+        { nameof(StyleTokens.GizmoBgLight), 0x2F4453, 255 },
+        { nameof(StyleTokens.GizmoBgDark), 0x1D2B33, 255 },
     };
+
+    // ---- Architect pin marker (T-89, design.md §2 "Architect pin marker"): WCAG 1.4.11, 3:1 for graphics ----------
+
+    public static TheoryData<string> MarkerFills() => [nameof(StyleTokens.PinMarker), nameof(StyleTokens.PinMarkerPartial)];
+
+    private static Rgba32 Token(string name) => (Rgba32)typeof(StyleTokens).GetField(name)!.GetValue(null)!;
+
+    [Theory]
+    [MemberData(nameof(MarkerFills))]
+    public void PinMarker_MeetsTheComponentMinimum_OnTheVanillaButtonBackground(string fill)
+    {
+        // Lightest and darkest pixels of the game's button background where the marker sits (1.7.4982 DesButBG).
+        Rgba32 marker = Token(fill);
+
+        Assert.Equal(255, marker.A);
+        Assert.True(ColorContrast.Ratio(marker, StyleTokens.GizmoBgLight) >= ColorContrast.ComponentMinimum);
+        Assert.True(ColorContrast.Ratio(marker, StyleTokens.GizmoBgDark) >= ColorContrast.ComponentMinimum);
+    }
+
+    [Theory]
+    [MemberData(nameof(MarkerFills))]
+    public void PinMarker_StaysReadableOverAnyIcon_ThroughItsOutline(string fill)
+    {
+        // The marker overlaps the designator icon's corner, which can be any colour. Over a white icon the outline
+        // separates the marker from the icon (outline vs icon) and the fill from the outline (fill vs outline); over a
+        // dark icon the fill alone does (as on the button background).
+        Rgba32 marker = Token(fill);
+        Rgba32 white = Rgba32.FromHex(0xFFFFFF);
+        Rgba32 outlineOverWhite = ColorContrast.Over(StyleTokens.PinMarkerOutline, white);
+
+        Assert.True(ColorContrast.Ratio(outlineOverWhite, white) >= ColorContrast.ComponentMinimum);
+        Assert.True(ColorContrast.Ratio(marker, outlineOverWhite) >= ColorContrast.ComponentMinimum);
+        foreach (uint icon in new uint[] { 0x000000, 0x404040, 0x808080, 0xC0C0C0, 0x38BDF8, 0xFF0000, 0x00FF00, 0xFFFF00 })
+        {
+            Rgba32 outlineOverIcon = ColorContrast.Over(StyleTokens.PinMarkerOutline, Rgba32.FromHex(icon));
+            Assert.True(ColorContrast.Ratio(marker, outlineOverIcon) >= ColorContrast.ComponentMinimum, $"{fill} over icon {icon:X6}");
+        }
+    }
+
+    [Fact]
+    public void PinMarkerOutline_IsStrongerThanTheRimOutline_BecauseRimOutlineFailsOverWhite()
+    {
+        Rgba32 white = Rgba32.FromHex(0xFFFFFF);
+
+        Assert.True(StyleTokens.PinMarkerOutline.A > StyleTokens.RimOutline.A);
+        Assert.True(ColorContrast.Ratio(StyleTokens.PinMarker, ColorContrast.Over(StyleTokens.RimOutline, white)) < ColorContrast.ComponentMinimum);
+    }
+
+    [Fact]
+    public void PinMarkerPartial_IsDimmerThanTheFullMarker()
+    {
+        Assert.True(ColorContrast.Luminance(StyleTokens.PinMarkerPartial) < ColorContrast.Luminance(StyleTokens.PinMarker));
+        Assert.Equal(StyleTokens.Accent, StyleTokens.PinMarker);
+    }
 
     [Theory]
     [MemberData(nameof(Tokens))]

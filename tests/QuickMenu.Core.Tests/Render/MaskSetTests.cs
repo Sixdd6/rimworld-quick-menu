@@ -19,7 +19,7 @@ public class MaskSetTests
         string[] expected =
         [
             "Circle", "Disc", "Ring1", "Ring2", "Ring3", "RingDashed", "Panel", "PanelRim", "Plate",
-            "SubMenuBadge", "Lock", "IconEdit", "IconDone",
+            "SubMenuBadge", "Lock", "IconEdit", "IconDone", "PinMarker",
         ];
 
         Assert.Equal(MaskSet.Count, expected.Length);
@@ -46,6 +46,7 @@ public class MaskSetTests
     [InlineData(MaskId.Lock, 64, 0)]
     [InlineData(MaskId.IconEdit, 64, 0)]
     [InlineData(MaskId.IconDone, 64, 0)]
+    [InlineData(MaskId.PinMarker, 64, 0)]
     public void Spec_HasDocumentedSizeAndSliceBorder(MaskId id, int size, int sliceBorder)
     {
         MaskSpec spec = MaskSet.Spec(id);

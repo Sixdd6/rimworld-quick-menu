@@ -61,6 +61,12 @@ internal readonly struct SizedTexture
 /// <para>Masks are top row first; Unity pixel data is bottom row first, so rows are flipped in Core.</para>
 /// <para>Two fault sites: <see cref="Site"/> for the static masks and <see cref="SizedSite"/> for the size-dependent
 /// textures, so a rim or rebuild failure leaves the static masks working.</para>
+/// <para><b>Pin markers</b> (design.md §2 "Architect pin marker", T-89): the <see cref="MaskId.PinMarker"/> fill and its
+/// 1 UI px outline for each <see cref="PinMarkerKind"/>, rasterized at their drawn size in screen px. They depend only on
+/// the UI scale and are drawn on the game's architect buttons, so they do not wait for a menu open: built at startup
+/// (<see cref="Prewarm"/>), checked by <see cref="EnsurePinMarkers"/> (a float compare; the marker hook calls it once per
+/// frame) and rebuilt only when the UI scale changed. Their own fault site <see cref="PinMarkerSite"/> keeps a marker
+/// failure away from the menu textures and the other way round.</para>
 /// </remarks>
 [StaticConstructorOnStartup]
 internal static class Textures
@@ -71,10 +77,16 @@ internal static class Textures
     /// <summary>Fault site of the size-dependent textures (rings, rims, glyphs).</summary>
     internal static readonly PatchSite SizedSite = new("Textures.Sized");
 
+    /// <summary>Fault site of the pin-marker textures (T-89).</summary>
+    internal static readonly PatchSite PinMarkerSite = new("Textures.PinMarker");
+
     /// <summary>The RGBA buffer is kept between rebuilds up to this size (a rim of about 1000 px); larger is released.</summary>
     private const int RetainedRgbaBytes = 4 << 20;
 
-    private const int GlyphCount = Glyphs.Count;
+    private const int GlyphCount = Glyphs.MenuGlyphCount;
+
+    // Fill and outline per pin-marker kind.
+    private const int PinMarkerTextureCount = 2 * PinMarkerSizing.KindCount;
 
     // Slot rings 1/2/3/dashed, hub rings 1/2/3, glyphs, material dot, main rim.
     private const int SizedCount = 4 + 3 + GlyphCount + 1 + 1;
@@ -106,6 +118,9 @@ internal static class Textures
     private static SizedTexture _materialDot;
     private static SizedTexture _satelliteRim;
     private static RoundTextureGeometry? _satelliteRimGeometry;
+    private static readonly Texture2D?[] _pinFill = new Texture2D?[PinMarkerSizing.KindCount];
+    private static readonly Texture2D?[] _pinOutline = new Texture2D?[PinMarkerSizing.KindCount];
+    private static PinMarkerSizing? _pinSizing;
 
     static Textures()
     {
@@ -181,6 +196,98 @@ internal static class Textures
     /// <summary>A badge or hub-icon glyph at its drawn size (design.md §2 badges, S4a).</summary>
     internal static SizedTexture Glyph(MaskId id) => _glyphs[(int)id];
 
+    /// <summary>What the pin markers are built for (UI scale), or null before the first build or after a failure.</summary>
+    internal static PinMarkerSizing? BuiltPinMarkerSizing => PinMarkerSite.Disabled ? null : _pinSizing;
+
+    /// <summary>Pin-marker rebuilds this session (one at startup, then one per UI-scale change), for the perf report.</summary>
+    internal static int PinMarkerRebuilds { get; private set; }
+
+    /// <summary>The pin-marker fill mask of <paramref name="kind"/> (tint <see cref="QMStyle.PinMarker"/> or <see cref="QMStyle.PinMarkerPartial"/>), or null when not built.</summary>
+    internal static Texture2D? PinMarkerFill(PinMarkerKind kind) => _pinFill[(int)kind];
+
+    /// <summary>The pin-marker outline mask of <paramref name="kind"/> (tint <see cref="QMStyle.PinMarkerOutline"/>), or null when not built.</summary>
+    internal static Texture2D? PinMarkerOutline(PinMarkerKind kind) => _pinOutline[(int)kind];
+
+    /// <summary>
+    /// Makes the pin-marker textures match the current UI scale and returns whether they can be drawn. Cheap when nothing
+    /// changed (one float compare, no allocation), so the marker hook may call it once per frame; it rebuilds (6 small
+    /// textures) only after a UI-scale change. Never throws: a failure disables <see cref="PinMarkerSite"/> and returns false.
+    /// </summary>
+    internal static bool EnsurePinMarkers()
+    {
+        if (PinMarkerSite.Disabled)
+        {
+            return false;
+        }
+
+        try
+        {
+            float scale = Prefs.UIScale;
+            if (_pinSizing is { } built && built.UiScale == scale)
+            {
+                return true;
+            }
+
+            PinMarkerSizing next = PinMarkerSizing.Create(scale);
+            long start = Stopwatch.GetTimestamp();
+            for (int i = 0; i < PinMarkerSizing.KindCount; i++)
+            {
+                var kind = (PinMarkerKind)i;
+                int n = next.Texels(kind);
+                Glyphs.Render(MaskId.PinMarker, n, Scratch(n * n));
+                _pinFill[i] = ReplaceTexture(_pinFill[i], UploadMask(n, n, "PinMarker" + kind));
+                int o = next.OutlineTexels(kind);
+                Glyphs.RenderOutline(MaskId.PinMarker, n, next.OutlinePad, next.OutlineGrow, Scratch(o * o));
+                _pinOutline[i] = ReplaceTexture(_pinOutline[i], UploadMask(o, o, "PinMarkerOutline" + kind));
+            }
+
+            _pinSizing = next;
+            PinMarkerRebuilds++;
+            if (Prefs.DevMode)
+            {
+                Log.Info($"Pin markers rebuilt UI scale={scale} full={next.Texels(PinMarkerKind.Full)}px in {Stopwatch.GetElapsedTime(start).TotalMilliseconds:F2} ms (with upload)");
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            PinMarkerSite.Fail(ex);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Draws a pin marker whose fill sits at <paramref name="fill"/> (from <see cref="PinMarkerSizing.Button"/>,
+    /// <see cref="PinMarkerSizing.ListRow"/>, <see cref="PinMarkerSizing.ListRowNoIcon"/> or
+    /// <see cref="PinMarkerSizing.GridCell"/> of <see cref="BuiltPinMarkerSizing"/>): the outline mask tinted
+    /// <see cref="QMStyle.PinMarkerOutline"/>, then the fill tinted <see cref="QMStyle.PinMarker"/> (or
+    /// <see cref="QMStyle.PinMarkerPartial"/>). Restores <c>GUI.color</c>. Repaint only; allocates nothing; does nothing
+    /// when the textures are missing. Call <see cref="EnsurePinMarkers"/> first in the same frame.
+    /// </summary>
+    internal static void DrawPinMarker(MarkerRect fill, PinMarkerKind kind)
+    {
+        if (_pinSizing is not { } sizing || PinMarkerSite.Disabled)
+        {
+            return;
+        }
+
+        Texture2D? fillTex = _pinFill[(int)kind];
+        Texture2D? outlineTex = _pinOutline[(int)kind];
+        if (fillTex == null || outlineTex == null)
+        {
+            return;
+        }
+
+        MarkerRect o = sizing.OutlineRect(fill, kind);
+        Color saved = GUI.color;
+        GUI.color = QMStyle.PinMarkerOutline;
+        GUI.DrawTexture(new Rect(o.X, o.Y, o.Size, o.Size), outlineTex);
+        GUI.color = kind == PinMarkerKind.Partial ? QMStyle.PinMarkerPartial : QMStyle.PinMarker;
+        GUI.DrawTexture(new Rect(fill.X, fill.Y, fill.Size, fill.Size), fillTex);
+        GUI.color = saved;
+    }
+
     /// <summary>
     /// Builds the sized textures for the sizes the saved settings will open with, during the loading screen, so the first
     /// open pays nothing (UC-2: 6.46 ms on the first open, over the 5 ms budget). A wrong guess (Auto sizing, a grid
@@ -188,6 +295,8 @@ internal static class Textures
     /// </summary>
     private static void Prewarm()
     {
+        // The pin markers are drawn in the architect, before any menu open: build them whatever the layout.
+        EnsurePinMarkers();
         try
         {
             QuickMenu.Settings.QuickMenuSettings settings = QuickMenuMod.Settings;
@@ -255,7 +364,7 @@ internal static class Textures
 
             if ((groups & SizedGroups.Glyphs) != 0)
             {
-                for (MaskId id = Glyphs.First; id <= Glyphs.Last; id++)
+                for (MaskId id = Glyphs.First; id <= Glyphs.LastMenuGlyph; id++)
                 {
                     int n = next.GlyphTexels(id);
                     Glyphs.Render(id, n, Scratch(n * n));
@@ -265,6 +374,12 @@ internal static class Textures
                 RoundTextureGeometry dot = next.MaterialDot;
                 MaskRasterizer.Circle(dot.TextureSize, Scratch(dot.TextureSize * dot.TextureSize));
                 _materialDot = Replace(_materialDot, new SizedTexture(UploadMask(dot.TextureSize, dot.TextureSize, "MaterialDot"), dot.DrawSize));
+            }
+
+            if ((groups & SizedGroups.Glyphs) != 0)
+            {
+                // A UI-scale change seen at a menu open also refreshes the markers (normally the hook already did).
+                EnsurePinMarkers();
             }
 
             _sizing = next;
@@ -334,12 +449,23 @@ internal static class Textures
     {
         int expected = (Site.Disabled ? 0 : MaskSet.Count)
             + (_sizing is null ? 0 : SizedCount)
-            + (_satelliteRimGeometry is null ? 0 : 1);
+            + (_satelliteRimGeometry is null ? 0 : 1)
+            + (_pinSizing is null ? 0 : PinMarkerTextureCount);
         sb.AppendLine("live=" + _live.ToString(CultureInfo.InvariantCulture)
             + " expected=" + expected.ToString(CultureInfo.InvariantCulture)
             + " (static " + MaskSet.Count.ToString(CultureInfo.InvariantCulture)
-            + ", sized " + SizedCount.ToString(CultureInfo.InvariantCulture) + " once a menu was opened, +1 satellite rim)"
-            + " staticDisabled=" + Site.Disabled + " sizedDisabled=" + SizedSite.Disabled);
+            + ", sized " + SizedCount.ToString(CultureInfo.InvariantCulture) + " once a menu was opened, +1 satellite rim"
+            + ", pin markers " + PinMarkerTextureCount.ToString(CultureInfo.InvariantCulture) + ")"
+            + " staticDisabled=" + Site.Disabled + " sizedDisabled=" + SizedSite.Disabled + " pinMarkerDisabled=" + PinMarkerSite.Disabled);
+        if (_pinSizing is { } pin)
+        {
+            sb.AppendLine("pinMarkers uiScale=" + pin.UiScale.ToString(CultureInfo.InvariantCulture)
+                + " full=" + pin.Texels(PinMarkerKind.Full).ToString(CultureInfo.InvariantCulture) + "px"
+                + " partial=" + pin.Texels(PinMarkerKind.Partial).ToString(CultureInfo.InvariantCulture) + "px"
+                + " entry=" + pin.Texels(PinMarkerKind.Entry).ToString(CultureInfo.InvariantCulture) + "px"
+                + " outlinePad=" + pin.OutlinePad.ToString(CultureInfo.InvariantCulture) + "px"
+                + " rebuilds=" + PinMarkerRebuilds.ToString(CultureInfo.InvariantCulture));
+        }
         if (_sizing is { } s)
         {
             sb.AppendLine("sizing B=" + s.ButtonSize.ToString(CultureInfo.InvariantCulture)
@@ -477,6 +603,17 @@ internal static class Textures
         {
             _rgba = new byte[MaskSet.MaxByteCount * 4];
         }
+    }
+
+    private static Texture2D ReplaceTexture(Texture2D? old, Texture2D next)
+    {
+        if (old != null && old != next)
+        {
+            UnityEngine.Object.Destroy(old);
+            _live--;
+        }
+
+        return next;
     }
 
     private static SizedTexture Replace(SizedTexture old, SizedTexture next)

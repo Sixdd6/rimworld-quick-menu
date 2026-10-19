@@ -153,7 +153,7 @@ public readonly record struct TextureSizing(float ButtonSize, int RingsInUse, fl
         MaskId.SubMenuBadge => 0.22f * ButtonSize,
         MaskId.Lock => 0.25f * ButtonSize,
         MaskId.IconEdit or MaskId.IconDone => LayoutConstants.HubGlyphSize(ButtonSize),
-        _ => throw new ArgumentOutOfRangeException(nameof(id), id, "Not a glyph mask."),
+        _ => throw new ArgumentOutOfRangeException(nameof(id), id, "Not a menu glyph (the pin marker is sized by PinMarkerSizing)."),
     };
 
     /// <summary>Texture side for glyph <paramref name="id"/>: its drawn size in screen px, at least <see cref="Glyphs.MinSize"/>.</summary>

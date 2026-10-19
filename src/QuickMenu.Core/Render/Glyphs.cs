@@ -3,13 +3,14 @@ using System;
 namespace QuickMenu.Core.Render;
 
 /// <summary>
-/// Badge and hub-icon glyphs (design.md S4 badges, S4a hub icons, §3 art direction): grayscale alpha masks tinted
-/// with <c>GUI.color</c> at draw time, like the other masks of <see cref="MaskSet"/>.
+/// Badge, hub-icon and architect pin-marker glyphs (design.md S4 badges, S4a hub icons, §2 "Architect pin marker", §3
+/// art direction): grayscale alpha masks tinted with <c>GUI.color</c> at draw time, like the other masks of
+/// <see cref="MaskSet"/>.
 /// </summary>
 /// <remarks>
 /// <para>Every glyph is authored on a <see cref="GridSize"/> px grid with a <see cref="Margin"/> px empty border and
 /// <see cref="Stroke"/> px strokes, and is rasterized <b>in its final orientation</b>: the game draws no rotated GUI
-/// (design.md §1), so the 45° shapes (pencil, badge triangle, check mark) are baked as they appear on screen.</para>
+/// (design.md §1), so the 45° shapes (pencil, badge triangle, check mark, push pin) are baked as they appear on screen.</para>
 /// <para>Rows are written <b>top row first</b> (PNG order). These glyphs are not vertically symmetric, so the
 /// adapter must flip rows for <c>SetPixels32</c>, which expects the bottom row first.</para>
 /// <para>Coverage is the same signed-distance rule as <see cref="MaskRasterizer"/>: <c>clamp(0.5 − d, 0, 1)</c>
@@ -19,6 +20,9 @@ namespace QuickMenu.Core.Render;
 /// (0.22 B) and <see cref="MaskId.Lock"/> at 7:30 (0.25 B). The material dot at 4:30 is its own size-dependent circle.
 /// 10:30 is free: the insert caret and the edit-mode "+" were removed with the insert cursor and the Add slot
 /// (user decision 2026-10-19, T-55).</para>
+/// <para><see cref="MaskId.PinMarker"/> is drawn on the game's architect buttons, not in our menu, so its size depends
+/// only on the UI scale (<see cref="PinMarkerSizing"/>), not on B. The menu glyphs are <see cref="First"/> …
+/// <see cref="LastMenuGlyph"/>.</para>
 /// </remarks>
 public static class Glyphs
 {
@@ -51,14 +55,31 @@ public static class Glyphs
     // Pencil: axis from the tip (bottom-left) up-right at 45°; total length along the axis, half-width, tip length.
     private const double PencilTipX = 8, PencilTipY = 56, PencilLength = 62, PencilHalfW = 9, PencilTipLength = 17;
 
+    // Push pin: needle point bottom-left, axis up-right at 45° (x + y = 64, so the shape is symmetric about the
+    // anti-diagonal). Distances along the axis (u) from the needle point, half-widths across it (v).
+    private const double PinTipX = 9, PinTipY = 55;
+    private const double PinNeedleStart = 3, PinNeedleEnd = 25;                                        // 6 px round-capped needle
+    private const double PinCollarU = 27, PinCollarHalfLen = 3.5, PinCollarHalfW = 16, PinCollarRadius = 2; // flange
+    private const double PinBodyU = 37, PinBodyHalfLen = 7.5, PinBodyHalfW = 9;                           // waist
+    private const double PinCapU = 50, PinCapHalfLen = 7, PinCapHalfW = 14, PinCapRadius = 6;              // head
+
     /// <summary>The first glyph mask; the glyphs are the contiguous range <see cref="First"/> … <see cref="Last"/>.</summary>
     public const MaskId First = MaskId.SubMenuBadge;
 
     /// <summary>The last glyph mask.</summary>
-    public const MaskId Last = MaskId.IconDone;
+    public const MaskId Last = MaskId.PinMarker;
 
     /// <summary>Number of glyph masks.</summary>
     public const int Count = Last - First + 1;
+
+    /// <summary>
+    /// The last glyph drawn in our menu (badges and hub icons, sized from B by <see cref="TextureSizing"/>). The glyphs
+    /// after it (<see cref="MaskId.PinMarker"/>) are sized by <see cref="PinMarkerSizing"/>.
+    /// </summary>
+    public const MaskId LastMenuGlyph = MaskId.IconDone;
+
+    /// <summary>Number of menu glyphs (<see cref="First"/> … <see cref="LastMenuGlyph"/>).</summary>
+    public const int MenuGlyphCount = LastMenuGlyph - First + 1;
 
     /// <summary>True for the glyph masks (<see cref="First"/> … <see cref="Last"/>).</summary>
     public static bool IsGlyph(MaskId id) => id >= First && id <= Last;
@@ -76,24 +97,58 @@ public static class Glyphs
     /// Renders glyph <paramref name="id"/> into the first <c>size²</c> bytes of <paramref name="destination"/>,
     /// top row first. The grid scales with <paramref name="size"/> (margin and strokes included). Allocates nothing.
     /// </summary>
-    public static void Render(MaskId id, int size, Span<byte> destination)
+    public static void Render(MaskId id, int size, Span<byte> destination) => RenderCore(id, size, 0, 0.0, destination);
+
+    /// <summary>
+    /// Renders the outline mask of glyph <paramref name="id"/>: the glyph at the scale of a <paramref name="size"/> px
+    /// render, grown by <paramref name="grow"/> output px on every side (a uniform dilation, so thin parts such as the pin
+    /// needle get the full outline width), on a canvas of <c>size + 2·pad</c> px with the glyph offset by
+    /// <paramref name="pad"/> px. Drawn under the tinted glyph at its rect grown by <paramref name="pad"/> texels, it
+    /// lines up texel for texel. <c>RenderOutline(id, size, 0, 0, …)</c> equals <see cref="Render(MaskId, int, Span{byte})"/>.
+    /// Writes the first <c>(size + 2·pad)²</c> bytes, top row first. Allocates nothing.
+    /// </summary>
+    /// <param name="id">The glyph.</param>
+    /// <param name="size">Size of the matching glyph render, ≥ <see cref="MinSize"/>.</param>
+    /// <param name="pad">Extra canvas on each side in px, 0 … <see cref="MaxOutlinePad"/>.</param>
+    /// <param name="grow">Dilation in output px, 0 … <paramref name="pad"/> (more would be clipped).</param>
+    /// <param name="destination">At least <c>(size + 2·pad)²</c> bytes.</param>
+    public static void RenderOutline(MaskId id, int size, int pad, float grow, Span<byte> destination)
+    {
+        if (pad < 0 || pad > MaxOutlinePad)
+        {
+            throw new ArgumentOutOfRangeException(nameof(pad), pad, $"Pad must be 0…{MaxOutlinePad} px.");
+        }
+
+        if (!(grow >= 0f) || grow > pad)
+        {
+            throw new ArgumentOutOfRangeException(nameof(grow), grow, "Grow must be 0…pad px.");
+        }
+
+        RenderCore(id, size, pad, grow, destination);
+    }
+
+    /// <summary>Largest outline pad <see cref="RenderOutline"/> accepts (an outline of 1 UI px at UI scale ≤ 4).</summary>
+    public const int MaxOutlinePad = 4;
+
+    private static void RenderCore(MaskId id, int size, int pad, double grow, Span<byte> destination)
     {
         Check(id, size);
-        if (destination.Length < size * size)
+        int side = size + (2 * pad);
+        if (destination.Length < side * side)
         {
-            throw new ArgumentException($"Destination needs {size * size} bytes, has {destination.Length}.", nameof(destination));
+            throw new ArgumentException($"Destination needs {side * side} bytes, has {destination.Length}.", nameof(destination));
         }
 
         double toGrid = (double)GridSize / size;
         double toPixels = 1.0 / toGrid;
-        for (int y = 0; y < size; y++)
+        for (int y = 0; y < side; y++)
         {
-            double gy = (y + 0.5) * toGrid;
-            int row = y * size;
-            for (int x = 0; x < size; x++)
+            double gy = (y - pad + 0.5) * toGrid;
+            int row = y * side;
+            for (int x = 0; x < side; x++)
             {
-                double gx = (x + 0.5) * toGrid;
-                double d = Distance(id, gx, gy) * toPixels;
+                double gx = (x - pad + 0.5) * toGrid;
+                double d = (Distance(id, gx, gy) * toPixels) - grow;
                 destination[row + x] = (byte)((Math.Clamp(0.5 - d, 0.0, 1.0) * 255.0) + 0.5);
             }
         }
@@ -124,6 +179,8 @@ public static class Glyphs
                 return Math.Min(LockBody(x, y), Shackle(x, y) - HalfStroke);
             case MaskId.IconEdit:
                 return Pencil(x, y);
+            case MaskId.PinMarker:
+                return PushPin(x, y);
             default: // IconDone
                 return Math.Min(Segment(x, y, CheckAx, CheckAy, CheckVx, CheckVy), Segment(x, y, CheckVx, CheckVy, CheckBx, CheckBy)) - HalfStroke;
         }
@@ -183,6 +240,35 @@ public static class Glyphs
         double legX = Math.Abs(Math.Abs(dx) - ShackleR);
         double legY = Math.Max(y - ShackleLegEnd, 0.0);
         return Math.Sqrt((legX * legX) + (legY * legY));
+    }
+
+    /// <summary>
+    /// Push pin seen from the side, tilted 45° with the needle point bottom-left: a round-capped needle, a wide flange
+    /// (collar), a narrow waist and a rounded head. Symmetric about its axis.
+    /// </summary>
+    private static double PushPin(double x, double y)
+    {
+        double rx = x - PinTipX;
+        double ry = y - PinTipY;
+        double u = (rx - ry) * InvSqrt2;   // along the axis, towards the top-right
+        double v = Math.Abs((rx + ry) * InvSqrt2);
+        double needle = Math.Sqrt((v * v) + Square(Math.Max(Math.Max(PinNeedleStart - u, u - PinNeedleEnd), 0.0))) - HalfStroke;
+        double collar = RoundedBox(u - PinCollarU, v, PinCollarHalfLen, PinCollarHalfW, PinCollarRadius);
+        double body = RoundedBox(u - PinBodyU, v, PinBodyHalfLen, PinBodyHalfW, 0.0);
+        double cap = RoundedBox(u - PinCapU, v, PinCapHalfLen, PinCapHalfW, PinCapRadius);
+        return Math.Min(Math.Min(needle, collar), Math.Min(body, cap));
+    }
+
+    private static double Square(double a) => a * a;
+
+    /// <summary>Signed distance to an axis-aligned rounded box centred on the origin (half sizes include the radius).</summary>
+    private static double RoundedBox(double x, double y, double halfW, double halfH, double radius)
+    {
+        double qx = Math.Abs(x) - (halfW - radius);
+        double qy = Math.Abs(y) - (halfH - radius);
+        double ox = Math.Max(qx, 0.0);
+        double oy = Math.Max(qy, 0.0);
+        return Math.Sqrt((ox * ox) + (oy * oy)) + Math.Min(Math.Max(qx, qy), 0.0) - radius;
     }
 
     /// <summary>Filled pencil: a convex pentagon (pointed tip, straight body, flat end) along the 45° axis.</summary>

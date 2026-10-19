@@ -265,7 +265,7 @@ public class TextureSizingTests
         Assert.Equal(21, TextureSizing.Create(56f, 1, 1.5f).GlyphTexels(MaskId.Lock));
         Assert.Equal(8, TextureSizing.Create(36f, 1, 1f).GlyphTexels(MaskId.SubMenuBadge)); // 7.92 px → 8
         Assert.Equal(Glyphs.MinSize, TextureSizing.Create(36f, 1, 0.75f).GlyphTexels(MaskId.SubMenuBadge)); // 5.94 px → MinSize
-        for (MaskId id = Glyphs.First; id <= Glyphs.Last; id++)
+        for (MaskId id = Glyphs.First; id <= Glyphs.LastMenuGlyph; id++)
         {
             Assert.InRange(TextureSizing.Create(36f, 1, 1f).GlyphTexels(id), Glyphs.MinSize, 64);
         }
@@ -275,6 +275,7 @@ public class TextureSizingTests
     [InlineData(MaskId.Circle)]
     [InlineData(MaskId.Plate)]
     [InlineData(Glyphs.Last + 1)]
+    [InlineData(MaskId.PinMarker)] // sized by PinMarkerSizing, not by B
     public void GlyphDrawSize_RejectsNonGlyphs(MaskId id)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => TextureSizing.Create(56f, 1, 1f).GlyphDrawSize(id));
