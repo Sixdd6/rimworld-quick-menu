@@ -720,6 +720,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Depends on**: T-40, T-43, T-44, T-46
   - **Files**: `docs/project/test-checklist.md` (M3 items, section UC-3), `docs/project/test-reports/uc-3.md`
   - **Acceptance criteria**:
+    - [ ] *(UC-3)* Carry-over M2 checks (M2 test review): Mouse 5 / middle mouse / a keyboard key open the menu; Clear leaves it unbound; capture dialog rejects left/right click with the message; key-conflict warning; "Use middle mouse instead"; Pin with Ctrl/Alt/Shift; Clear all pins (with confirmation); Reset to defaults keeps pins; rings and button size apply on next open; the full-menu message at the capacity limit; hotkey and plain clicks unaffected by the pin prefix; middle-mouse trigger blocks camera drag; hub Edit label shows immediately on open (3fe81c5).
     - [ ] Checklist items cover every M3 acceptance criterion on (a) and (b); journey 2 (Ctrl+click the chair dropdown in the architect with BAM, it fills the first free slot as a whole sub-menu) and journey 4; an Ideology designator pinned before and after loading a game whose ideoligion allows it (refresh, setup a with Ideology); the edit mode shell (enter, Done, Esc twice, right-click closes, plain click does nothing, modifier+click unpins); the self-test on (R) and on the stress mod (2,000 and 8,000 defs); and the measurement actions for P-7c, P-8 with a sub-ring, P-11c and P-12.
     - [ ] *(UC-3)* Results recorded; failures become bug tasks.
   - **Tests**: the session itself.
