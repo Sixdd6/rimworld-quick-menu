@@ -1,9 +1,11 @@
 using QuickMenu.Activation;
+using QuickMenu.Catalog;
 using QuickMenu.Core.Geometry;
 using QuickMenu.Core.Input;
 using QuickMenu.Core.Layout;
 using QuickMenu.Core.Settings;
 using QuickMenu.Diagnostics;
+using QuickMenu.Pinning;
 using UnityEngine;
 using Verse;
 
@@ -112,6 +114,24 @@ internal static class MenuController
         return content;
     }
 
+    /// <summary>
+    /// Builds the content again for <paramref name="window"/> after the pins changed (modifier+click unpin), at the same
+    /// position, and publishes it. Returns null when the window is not the current one or the build fails.
+    /// </summary>
+    internal static MenuContent? Rebuild(QuickMenuWindow window, Vec2 mouse)
+    {
+        if (!Owns(window))
+        {
+            return null;
+        }
+
+        MenuContent content = BuildContent(mouse);
+        _content = content;
+        LastSlotCount = content.Model.SlotCount;
+        LastDesignators = content.Designators;
+        return content;
+    }
+
     /// <summary>Closes the window without consulting the state machine (a window fault). Settings are not written.</summary>
     internal static void Close()
     {
@@ -183,13 +203,35 @@ internal static class MenuController
                 }
 
                 break;
+            case MenuCommandKind.Unpin:
+                Unpin(command.Index);
+                break;
             case MenuCommandKind.ExitEdit:
                 QuickMenuMod.SaveSettings();
                 break;
             default:
-                // Back, OpenSub and EnterEdit cannot occur yet: no satellite (T-41, T-43) and no hub edit button (T-44).
+                // Back, OpenSub and EnterEdit cannot occur yet: no satellite (T-41, T-43), and the hub's edit mode is off until T-44.
                 break;
         }
+    }
+
+    /// <summary>
+    /// Pin-modifier+click on slot <paramref name="slot"/> (use or edit mode): toggles its pin off through
+    /// <see cref="PinService"/> (Tick_Low, the "Removed" message, one settings write), then refreshes the wheel in place.
+    /// The menu stays open, so several pins can be removed in a row and the player sees the slot go empty; closing and
+    /// reopening would move nothing but lose the hover state and cost a second open.
+    /// </summary>
+    private static void Unpin(int slot)
+    {
+        CatalogEntry? entry = _content != null && slot >= 0 && slot < _content.Entries.Length ? _content.Entries[slot] : null;
+        QuickMenuWindow? window = _window;
+        if (entry == null || window == null)
+        {
+            return;
+        }
+
+        PinService.Toggle(entry);
+        window.Refresh();
     }
 
     private static MenuContent BuildContent(Vec2 mouse)

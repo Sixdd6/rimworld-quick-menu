@@ -12,10 +12,7 @@ public enum HitKind
     /// <summary>A pin slot; <see cref="Hit.Index"/> is the slot index.</summary>
     Slot,
 
-    /// <summary>The hub main area (Close in use mode, Done in edit mode).</summary>
-    HubClose,
-
-    /// <summary>The hub sub-button (Edit in use mode, Add in edit mode).</summary>
+    /// <summary>The hub, one target: the Edit button in use mode, Done in edit mode. It never closes the menu.</summary>
     HubEdit,
 
     /// <summary>An extra button; <see cref="Hit.Index"/> is the caller's button kind.</summary>
@@ -31,8 +28,6 @@ public readonly record struct Hit(HitKind Kind, int Index = -1)
     public static readonly Hit Outside = new(HitKind.Outside);
 
     public static readonly Hit Inside = new(HitKind.Inside);
-
-    public static readonly Hit HubClose = new(HitKind.HubClose);
 
     public static readonly Hit HubEdit = new(HitKind.HubEdit);
 

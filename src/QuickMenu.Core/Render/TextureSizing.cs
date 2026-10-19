@@ -13,7 +13,7 @@ public enum SizedGroups
     /// <summary>Slot rings (1, 2, 3 px and dashed) at the slot diameter B.</summary>
     SlotRings = 1,
 
-    /// <summary>Hub sub-button rings (1 and 2 px) at its diameter e.</summary>
+    /// <summary>Hub rings (1 and 2 px) at the hub diameter H.</summary>
     HubRings = 2,
 
     /// <summary>The disc rim at the disc diameter 2 D.</summary>
@@ -89,8 +89,8 @@ public readonly record struct TextureSizing(float ButtonSize, int RingsInUse, fl
         return new TextureSizing(buttonSize, ringsInUse, uiScale);
     }
 
-    /// <summary>Hub sub-button diameter e.</summary>
-    public float HubSubDiameter => LayoutConstants.HubSubDiameter(ButtonSize);
+    /// <summary>Hub (Edit button) diameter H.</summary>
+    public float HubDiameter => LayoutConstants.HubDiameter(ButtonSize);
 
     /// <summary>Disc diameter 2 D.</summary>
     public float DiscDiameter => 2f * LayoutConstants.DiscRadius(ButtonSize, RingsInUse);
@@ -98,8 +98,8 @@ public readonly record struct TextureSizing(float ButtonSize, int RingsInUse, fl
     /// <summary>Geometry of the slot ring textures.</summary>
     public RoundTextureGeometry SlotRing => RoundTextureGeometry.For(ButtonSize, UiScale);
 
-    /// <summary>Geometry of the hub sub-button ring textures.</summary>
-    public RoundTextureGeometry HubRing => RoundTextureGeometry.For(HubSubDiameter, UiScale);
+    /// <summary>Geometry of the hub ring textures, rasterized at H.</summary>
+    public RoundTextureGeometry HubRing => RoundTextureGeometry.For(HubDiameter, UiScale);
 
     /// <summary>Geometry of the disc rim texture.</summary>
     public RoundTextureGeometry Rim => RoundTextureGeometry.For(DiscDiameter, UiScale);
@@ -140,15 +140,15 @@ public readonly record struct TextureSizing(float ButtonSize, int RingsInUse, fl
 
     /// <summary>
     /// Drawn size in UI px of glyph <paramref name="id"/> (design.md §2 badges, S4a): sub-menu 0.22 B, caret 0.2 B,
-    /// lock 0.25 B, hub × and ✓ 0.22 B, hub pencil and + 0.6 e.
+    /// lock 0.25 B, hub pencil and ✓ Hg = round(0.5 H), edit-mode + 0.3 B.
     /// </summary>
     public float GlyphDrawSize(MaskId id) => id switch
     {
         MaskId.SubMenuBadge => 0.22f * ButtonSize,
         MaskId.Caret => 0.2f * ButtonSize,
         MaskId.Lock => 0.25f * ButtonSize,
-        MaskId.IconClose or MaskId.IconDone => 0.22f * ButtonSize,
-        MaskId.IconEdit or MaskId.IconAdd => 0.6f * HubSubDiameter,
+        MaskId.IconEdit or MaskId.IconDone => LayoutConstants.HubGlyphSize(ButtonSize),
+        MaskId.IconAdd => 0.3f * ButtonSize,
         _ => throw new ArgumentOutOfRangeException(nameof(id), id, "Not a glyph mask."),
     };
 
@@ -170,7 +170,7 @@ public readonly record struct TextureSizing(float ButtonSize, int RingsInUse, fl
             groups |= SizedGroups.SlotRings | SizedGroups.Glyphs;
         }
 
-        if (old.HubSubDiameter != next.HubSubDiameter)
+        if (old.HubDiameter != next.HubDiameter)
         {
             groups |= SizedGroups.HubRings;
         }

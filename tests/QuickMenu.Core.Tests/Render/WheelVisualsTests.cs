@@ -15,7 +15,7 @@ public class WheelVisualsTests
     public void Slot_is_normal_when_not_hovered_or_pressed()
     {
         Assert.Equal(SlotVisualState.Normal, WheelVisuals.Slot(2, SlotKind.Normal, Hit.Slot(1), _none));
-        Assert.Equal(SlotVisualState.Normal, WheelVisuals.Slot(2, SlotKind.Submenu, Hit.HubClose, Hit.HubClose));
+        Assert.Equal(SlotVisualState.Normal, WheelVisuals.Slot(2, SlotKind.Submenu, Hit.HubEdit, Hit.HubEdit));
     }
 
     [Fact]
@@ -40,27 +40,19 @@ public class WheelVisualsTests
     }
 
     [Fact]
-    public void Hub_main_area_has_no_hover_until_hover_is_enabled()
+    public void Hub_has_no_hover_until_hover_is_enabled()
     {
-        Assert.Equal(HubPartState.Normal, WheelVisuals.HubMain(Hit.HubClose, _none, hoverEnabled: false));
-        Assert.Equal(HubPartState.Hover, WheelVisuals.HubMain(Hit.HubClose, _none, hoverEnabled: true));
-        Assert.Equal(HubPartState.Normal, WheelVisuals.HubMain(Hit.Slot(0), _none, hoverEnabled: true));
+        Assert.Equal(HubPartState.Normal, WheelVisuals.Hub(Hit.HubEdit, _none, hoverEnabled: false));
+        Assert.Equal(HubPartState.Hover, WheelVisuals.Hub(Hit.HubEdit, _none, hoverEnabled: true));
+        Assert.Equal(HubPartState.Normal, WheelVisuals.Hub(Hit.Slot(0), _none, hoverEnabled: true));
     }
 
     [Fact]
-    public void Hub_main_area_shows_pressed_while_pressed_on_it_even_before_moving()
+    public void Hub_shows_pressed_while_pressed_on_it_even_before_moving()
     {
-        Assert.Equal(HubPartState.Pressed, WheelVisuals.HubMain(Hit.HubClose, Hit.HubClose, hoverEnabled: false));
-        Assert.Equal(HubPartState.Normal, WheelVisuals.HubMain(Hit.Inside, Hit.HubClose, hoverEnabled: true));
-    }
-
-    [Fact]
-    public void Hub_sub_button_follows_its_own_hit_and_the_hover_gate()
-    {
-        Assert.Equal(HubPartState.Normal, WheelVisuals.HubSub(Hit.HubEdit, _none, hoverEnabled: false));
-        Assert.Equal(HubPartState.Hover, WheelVisuals.HubSub(Hit.HubEdit, _none, hoverEnabled: true));
-        Assert.Equal(HubPartState.Pressed, WheelVisuals.HubSub(Hit.HubEdit, Hit.HubEdit, hoverEnabled: true));
-        Assert.Equal(HubPartState.Normal, WheelVisuals.HubSub(Hit.HubClose, _none, hoverEnabled: true));
+        Assert.Equal(HubPartState.Pressed, WheelVisuals.Hub(Hit.HubEdit, Hit.HubEdit, hoverEnabled: false));
+        Assert.Equal(HubPartState.Pressed, WheelVisuals.Hub(Hit.HubEdit, Hit.HubEdit, hoverEnabled: true));
+        Assert.Equal(HubPartState.Normal, WheelVisuals.Hub(Hit.Inside, Hit.HubEdit, hoverEnabled: true));
     }
 
     [Fact]
@@ -68,12 +60,12 @@ public class WheelVisualsTests
     {
         SlotKind[] kinds = [SlotKind.Normal, SlotKind.Empty, SlotKind.Disabled];
 
-        Assert.Equal(PlateContent.Slot, WheelVisuals.Plate(Hit.Slot(0), false, false, kinds, 3));
-        Assert.Equal(PlateContent.Slot, WheelVisuals.Plate(Hit.Slot(2), false, false, kinds, 3));
-        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Slot(1), true, false, kinds, 3));
-        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Slot(2), true, false, kinds, 2));
-        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Slot(-1), true, false, kinds, 3));
-        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Slot(5), true, false, kinds, 9));
+        Assert.Equal(PlateContent.Slot, WheelVisuals.Plate(Hit.Slot(0), false, kinds, 3));
+        Assert.Equal(PlateContent.Slot, WheelVisuals.Plate(Hit.Slot(2), false, kinds, 3));
+        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Slot(1), true, kinds, 3));
+        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Slot(2), true, kinds, 2));
+        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Slot(-1), true, kinds, 3));
+        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Slot(5), true, kinds, 9));
     }
 
     [Fact]
@@ -81,12 +73,10 @@ public class WheelVisualsTests
     {
         SlotKind[] kinds = [];
 
-        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.HubClose, false, true, kinds, 0));
-        Assert.Equal(PlateContent.HubClose, WheelVisuals.Plate(Hit.HubClose, true, true, kinds, 0));
-        Assert.Equal(PlateContent.HubSub, WheelVisuals.Plate(Hit.HubEdit, true, true, kinds, 0));
-        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.HubEdit, true, false, kinds, 0));
-        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Inside, true, true, kinds, 0));
-        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Plate, true, true, kinds, 0));
+        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.HubEdit, false, kinds, 0));
+        Assert.Equal(PlateContent.Hub, WheelVisuals.Plate(Hit.HubEdit, true, kinds, 0));
+        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Inside, true, kinds, 0));
+        Assert.Equal(PlateContent.None, WheelVisuals.Plate(Hit.Plate, true, kinds, 0));
     }
 
     [Fact]
@@ -121,13 +111,11 @@ public class WheelVisualsTests
     }
 
     [Fact]
-    public void Hub_glyph_and_sub_button_centres_follow_S4a()
+    public void Hub_circle_and_glyph_share_the_menu_centre()
     {
-        var c = new Vec2(100f, 200f);
-
-        Assert.Equal(100f, WheelVisuals.HubGlyphCenter(c, 56f).X);
-        Assert.Equal(200f - (0.12f * 56f), WheelVisuals.HubGlyphCenter(c, 56f).Y, 4);
-        Assert.Equal(new Vec2(100f, 216f), WheelVisuals.HubSubCenter(c, 56f));
+        // S4a: no offsets any more; the model centre is the hub centre, so the renderer needs no centre helper.
+        Assert.Equal(36f, LayoutConstants.HubDiameter(56f));
+        Assert.Equal(18f, LayoutConstants.HubGlyphSize(56f));
     }
 
     [Fact]
@@ -155,11 +143,11 @@ public class WheelVisualsTests
     [Fact]
     public void Derived_tokens_match_S4_and_S4a()
     {
-        // Empty: slotBg at 70 %. Hub main area: slotBg at 60 %. Hover overlay: 8 % white.
+        // Empty (T-81): slotBg at 50 %, slotBorder at 70 %. The hub fill is plain slotBg. Hover overlay: 8 % white.
         Assert.Equal(StyleTokens.SlotBg.Rgb, StyleTokens.SlotBgEmpty.Rgb);
-        Assert.Equal(179, StyleTokens.SlotBgEmpty.A);
-        Assert.Equal(StyleTokens.SlotBg.Rgb, StyleTokens.HubBg.Rgb);
-        Assert.Equal(153, StyleTokens.HubBg.A);
+        Assert.Equal(128, StyleTokens.SlotBgEmpty.A);
+        Assert.Equal(StyleTokens.SlotBorder.Rgb, StyleTokens.SlotBorderEmpty.Rgb);
+        Assert.Equal(179, StyleTokens.SlotBorderEmpty.A);
         Assert.Equal(0xFFFFFFu, StyleTokens.HoverOverlay.Rgb);
         Assert.Equal(20, StyleTokens.HoverOverlay.A);
     }

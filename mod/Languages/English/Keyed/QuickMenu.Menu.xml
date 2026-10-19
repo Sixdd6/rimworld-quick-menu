@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
-  <!-- Label plate of the hub (design.md S4a). -->
-  <QuickMenu.Menu.Close>Close</QuickMenu.Menu.Close>
+  <!-- Label plate of the hub, the Edit button (design.md S4a). -->
   <QuickMenu.Menu.Edit>Edit</QuickMenu.Menu.Edit>
   <!-- Reason shown when a slot is clicked that cannot be used and the designator gives none (U-4). -->
   <QuickMenu.Menu.Unavailable>Not available right now.</QuickMenu.Menu.Unavailable>

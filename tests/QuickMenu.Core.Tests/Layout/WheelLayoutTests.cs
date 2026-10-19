@@ -85,22 +85,24 @@ public class WheelLayoutTests
     }
 
     [Theory]
-    [InlineData(36, 18, 15)]
-    [InlineData(56, 20, 16)]
-    [InlineData(96, 28, 32)]
-    public void HubSubButton_ClampsAndOffset(int b, float e, float ey)
+    [InlineData(36, 23, 12)]
+    [InlineData(56, 36, 18)]
+    [InlineData(96, 61, 31)]
+    public void Hub_diameter_and_glyph_round_half_away_from_zero(int b, float h, float hg)
     {
-        Assert.Equal(e, LayoutConstants.HubSubDiameter(b));
-        Assert.Equal(ey, LayoutConstants.HubSubOffset(b));
+        Assert.Equal(h, LayoutConstants.HubDiameter(b));
+        Assert.Equal(hg, LayoutConstants.HubGlyphSize(b));
     }
 
     [Fact]
-    public void HubSubButton_TopEdgeAtLeastSixBelowCentre()
+    public void Hub_is_smaller_than_a_slot_and_its_glyph_is_half_of_it_at_every_step()
     {
-        // top edge >= 6 below centre at every B
         for (var b = 36; b <= 96; b += 4)
         {
-            Assert.True(LayoutConstants.HubSubOffset(b) - (LayoutConstants.HubSubDiameter(b) / 2f) >= 6f - Tol);
+            var h = LayoutConstants.HubDiameter(b);
+            Assert.True(h < b);
+            Assert.True(h <= LayoutConstants.Pitch(b));
+            Assert.Equal(MathF.Round(0.5f * h, MidpointRounding.AwayFromZero), LayoutConstants.HubGlyphSize(b));
         }
     }
 

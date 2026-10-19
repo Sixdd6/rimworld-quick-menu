@@ -82,10 +82,11 @@ public class TextureSizingTests
         TextureSizing s = TextureSizing.Create(56f, 2, 1f);
 
         Assert.Equal(2f * LayoutConstants.DiscRadius(56f, 2), s.DiscDiameter);
-        Assert.Equal(LayoutConstants.HubSubDiameter(56f), s.HubSubDiameter);
+        Assert.Equal(LayoutConstants.HubDiameter(56f), s.HubDiameter);
+        Assert.Equal(36f, s.HubDiameter);
         Assert.Equal(58, s.SlotRing.TextureSize);
         Assert.Equal((int)s.DiscDiameter + 2, s.Rim.TextureSize);
-        Assert.Equal(RoundTextureGeometry.For(s.HubSubDiameter, 1f), s.HubRing);
+        Assert.Equal(RoundTextureGeometry.For(s.HubDiameter, 1f), s.HubRing);
     }
 
     [Theory]
@@ -223,9 +224,9 @@ public class TextureSizingTests
     [Fact]
     public void Changed_ButtonSize_KeepsHubRingsWhileEStaysClamped()
     {
-        // e = clamp(round(0.36 B), 18, 28) is 18 for B = 36 and 40.
+        // H = round(0.64 B) is 23 for B = 36 and 26 for B = 40, so the hub rings change too.
         Assert.Equal(
-            SizedGroups.SlotRings | SizedGroups.Glyphs | SizedGroups.Rim,
+            SizedGroups.SlotRings | SizedGroups.Glyphs | SizedGroups.HubRings | SizedGroups.Rim,
             TextureSizing.Changed(TextureSizing.Create(36f, 1, 1f), TextureSizing.Create(40f, 1, 1f)));
         Assert.Equal(SizedGroups.All, TextureSizing.Changed(TextureSizing.Create(56f, 1, 1f), TextureSizing.Create(60f, 1, 1f)));
     }
@@ -234,8 +235,7 @@ public class TextureSizingTests
     [InlineData(MaskId.SubMenuBadge, 0.22f)]
     [InlineData(MaskId.Caret, 0.2f)]
     [InlineData(MaskId.Lock, 0.25f)]
-    [InlineData(MaskId.IconClose, 0.22f)]
-    [InlineData(MaskId.IconDone, 0.22f)]
+    [InlineData(MaskId.IconAdd, 0.3f)]
     public void GlyphDrawSize_BadgesAreFractionsOfB(MaskId id, float fraction)
     {
         Assert.Equal(fraction * 56f, TextureSizing.Create(56f, 1, 1f).GlyphDrawSize(id), 4);
@@ -243,12 +243,12 @@ public class TextureSizingTests
 
     [Theory]
     [InlineData(MaskId.IconEdit)]
-    [InlineData(MaskId.IconAdd)]
-    public void GlyphDrawSize_HubSubIconsAreFractionsOfE(MaskId id)
+    [InlineData(MaskId.IconDone)]
+    public void GlyphDrawSize_HubIconsAreHg(MaskId id)
     {
-        TextureSizing s = TextureSizing.Create(56f, 1, 1f);
-
-        Assert.Equal(0.6f * s.HubSubDiameter, s.GlyphDrawSize(id), 4);
+        Assert.Equal(18f, TextureSizing.Create(56f, 1, 1f).GlyphDrawSize(id));
+        Assert.Equal(LayoutConstants.HubGlyphSize(96f), TextureSizing.Create(96f, 1, 1f).GlyphDrawSize(id));
+        Assert.Equal(31f, TextureSizing.Create(96f, 1, 1f).GlyphDrawSize(id));
     }
 
     [Fact]

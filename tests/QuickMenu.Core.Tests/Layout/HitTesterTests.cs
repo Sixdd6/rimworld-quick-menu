@@ -10,10 +10,10 @@ public class HitTesterTests
 {
     private static readonly Vec2 _c = new(500f, 400f);
 
-    private static HitLayout Make(float b, int rings = 2, Rect2? plate = null, HitButton[]? buttons = null, bool hasHubSub = true)
+    private static HitLayout Make(float b, int rings = 2, Rect2? plate = null, HitButton[]? buttons = null)
     {
         var slots = WheelLayout.Compute(new WheelParams(b, rings, _c));
-        return new HitLayout(_c, b, LayoutConstants.DiscRadius(b, rings), slots, slots.Length, plate, buttons, buttons?.Length ?? 0, hasHubSub);
+        return new HitLayout(_c, b, LayoutConstants.DiscRadius(b, rings), slots, slots.Length, plate, buttons, buttons?.Length ?? 0);
     }
 
     [Fact]
@@ -45,37 +45,26 @@ public class HitTesterTests
     [InlineData(56)]
     [InlineData(72)]
     [InlineData(96)]
-    public void Hub_edit_wins_at_its_centre_and_close_elsewhere_in_hub(int b)
+    public void Hub_is_one_target_out_to_half_a_pitch(int b)
     {
         var l = Make(b);
-        var e = LayoutConstants.HubSubDiameter(b);
-        var ey = LayoutConstants.HubSubOffset(b);
-        Assert.Equal(Hit.HubEdit, HitTester.Hit(new Vec2(_c.X, _c.Y + ey), l));
-        Assert.Equal(Hit.HubEdit, HitTester.Hit(new Vec2(_c.X + (e / 2f), _c.Y + ey), l));
-        Assert.Equal(Hit.HubClose, HitTester.Hit(new Vec2(_c.X + (e / 2f) + 0.5f, _c.Y + ey), l));
-        Assert.Equal(Hit.HubClose, HitTester.Hit(_c, l));
-        Assert.Equal(Hit.HubClose, HitTester.Hit(new Vec2(_c.X, _c.Y - (LayoutConstants.Pitch(b) / 2f)), l));
-        Assert.True(ey - (e / 2f) >= 6f);
+        var r = LayoutConstants.Pitch(b) / 2f;
+        Assert.Equal(Hit.HubEdit, HitTester.Hit(_c, l));
+        Assert.Equal(Hit.HubEdit, HitTester.Hit(new Vec2(_c.X, _c.Y - r), l));
+        Assert.Equal(Hit.HubEdit, HitTester.Hit(new Vec2(_c.X, _c.Y + r), l));
+        Assert.Equal(Hit.HubEdit, HitTester.Hit(new Vec2(_c.X - r, _c.Y), l));
+        Assert.Equal(Hit.HubEdit, HitTester.Hit(new Vec2(_c.X + r, _c.Y), l));
+        Assert.NotEqual(HitKind.HubEdit, HitTester.Hit(new Vec2(_c.X, _c.Y + r + 0.5f), l).Kind);
+        Assert.NotEqual(HitKind.HubEdit, HitTester.Hit(new Vec2(_c.X + r + 0.5f, _c.Y), l).Kind);
     }
 
     [Fact]
-    public void Defaults_edit_target_is_20_wide_16_below_centre()
+    public void Defaults_hub_hit_area_is_64_across_and_larger_than_the_drawn_36()
     {
         var l = Make(56f);
-        Assert.Equal(Hit.HubEdit, HitTester.Hit(new Vec2(_c.X, _c.Y + 6f), l));
-        Assert.Equal(Hit.HubEdit, HitTester.Hit(new Vec2(_c.X, _c.Y + 26f), l));
-        Assert.Equal(Hit.HubClose, HitTester.Hit(new Vec2(_c.X, _c.Y + 26.5f), l));
-        Assert.Equal(Hit.HubClose, HitTester.Hit(new Vec2(_c.X, _c.Y + 5.5f), l));
-    }
-
-    [Fact]
-    public void At_b36_edit_reaches_past_the_hub_and_wins()
-    {
-        var l = Make(36f);
-        var hubR = LayoutConstants.Pitch(36f) / 2f;
-        var bottom = LayoutConstants.HubSubOffset(36f) + (LayoutConstants.HubSubDiameter(36f) / 2f);
-        Assert.Equal(2f, bottom - hubR);
-        Assert.Equal(Hit.HubEdit, HitTester.Hit(new Vec2(_c.X, _c.Y + hubR + 1.5f), l));
+        Assert.Equal(Hit.HubEdit, HitTester.Hit(new Vec2(_c.X, _c.Y + 32f), l));
+        Assert.NotEqual(HitKind.HubEdit, HitTester.Hit(new Vec2(_c.X, _c.Y + 32.5f), l).Kind);
+        Assert.True(32f > LayoutConstants.HubDiameter(56f) / 2f);
     }
 
     [Theory]
@@ -99,7 +88,7 @@ public class HitTesterTests
     }
 
     [Fact]
-    public void Buttons_beat_slots_and_close_but_not_edit()
+    public void Buttons_beat_slots_but_the_hub_beats_nothing_it_does_not_overlap()
     {
         var slot0 = WheelLayout.Compute(new WheelParams(56f, 1, _c))[0].Center;
         var buttons = new[]
@@ -114,7 +103,7 @@ public class HitTesterTests
     }
 
     [Fact]
-    public void Button_over_hub_main_area_beats_close()
+    public void Button_over_the_hub_area_beats_the_hub()
     {
         var buttons = new[] { new HitButton(new Rect2(_c.X - 25f, _c.Y - 25f, 10f, 10f), 3) };
         var l = Make(56f, 1, null, buttons);
@@ -136,22 +125,12 @@ public class HitTesterTests
     }
 
     [Fact]
-    public void Without_hub_sub_the_sub_area_is_hub_close()
-    {
-        var l = Make(56f, 2, hasHubSub: false);
-        var ey = LayoutConstants.HubSubOffset(56f);
-        Assert.Equal(Hit.HubClose, HitTester.Hit(new Vec2(_c.X, _c.Y + ey), l));
-    }
-
-    [Fact]
-    public void Satellite_at_min_button_size_keeps_the_six_oclock_slot_area()
+    public void Min_button_size_keeps_the_six_oclock_slot_area_outside_the_hub()
     {
         const float b = 36f;
         var slots = new[] { new SlotPlacement(0, 1, new Vec2(_c.X, _c.Y + LayoutConstants.Pitch(b)), LayoutConstants.Pitch(b), 90f, LayoutConstants.Pitch(b) / 2f) };
-        var probe = new Vec2(_c.X, _c.Y + 23f);
-        var sat = new HitLayout(_c, b, 100f, slots, 1, HasHubSub: false);
-        var main = sat with { HasHubSub = true };
-        Assert.Equal(Hit.Slot(0), HitTester.Hit(probe, sat));
-        Assert.Equal(Hit.HubEdit, HitTester.Hit(probe, main));
+        var l = new HitLayout(_c, b, 100f, slots, 1);
+        Assert.Equal(Hit.HubEdit, HitTester.Hit(new Vec2(_c.X, _c.Y + 21f), l));
+        Assert.Equal(Hit.Slot(0), HitTester.Hit(new Vec2(_c.X, _c.Y + 23f), l));
     }
 }

@@ -78,6 +78,18 @@ public class StyleTokensTests
     }
 
     [Fact]
+    public void EmptySlot_IsFainterThanAFilledSlot_T81()
+    {
+        // S4 state 6 (T-81): fill slotBg at 50 %, ring slotBorder at 70 %.
+        Assert.Equal(StyleTokens.SlotBg.Rgb, StyleTokens.SlotBgEmpty.Rgb);
+        Assert.Equal(Rgba32.FromHex(0x1E2328, 0.50f), StyleTokens.SlotBgEmpty);
+        Assert.Equal(Rgba32.FromHex(0x56626E, 0.70f), StyleTokens.SlotBorderEmpty);
+        Assert.Equal(StyleTokens.SlotBorder.Rgb, StyleTokens.SlotBorderEmpty.Rgb);
+        Assert.True(StyleTokens.SlotBgEmpty.A < StyleTokens.SlotBg.A);
+        Assert.True(StyleTokens.SlotBorderEmpty.A < StyleTokens.SlotBorder.A);
+    }
+
+    [Fact]
     public void Over_BlendsByTopAlpha()
     {
         Rgba32 half = Rgba32.FromHex(0xFFFFFF, 0.5f);

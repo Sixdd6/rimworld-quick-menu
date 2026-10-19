@@ -69,7 +69,7 @@ public class ZeroAllocTests
     [Fact]
     public void TriggerStateMachine_Handle_allocates_nothing()
     {
-        var m = new TriggerStateMachine();
+        var m = new TriggerStateMachine { EditEnabled = true, HoldMode = true };
         var origin = new Vec2(100, 100);
         TriggerEvent[] events =
         {
@@ -79,6 +79,9 @@ public class ZeroAllocTests
             TriggerEvent.MouseUp(origin, Hit.Slot(1), SlotKind.Submenu, 0),
             TriggerEvent.MouseDown(origin, Hit.HubEdit, 0),
             TriggerEvent.MouseUp(origin, Hit.HubEdit, SlotKind.Normal, 0),
+            TriggerEvent.MouseDown(origin, Hit.Slot(2), 0),
+            TriggerEvent.MouseUp(origin, Hit.Slot(2), SlotKind.Normal, 0, true),
+            TriggerEvent.TriggerReleased(origin, Hit.HubEdit),
             TriggerEvent.Escape(origin),
             TriggerEvent.MouseDown(origin, Hit.Outside, 1),
             TriggerEvent.MapLost(),
@@ -95,7 +98,7 @@ public class ZeroAllocTests
         var center = new Vec2(500f, 400f);
         SlotPlacement[] slots = WheelLayout.Compute(new WheelParams(56f, 3, center));
         var buttons = new[] { new HitButton(new Rect2(0f, 0f, 10f, 10f), 1) };
-        var layout = new HitLayout(center, 56f, LayoutConstants.DiscRadius(56f, 3), slots, slots.Length, new Rect2(0f, 500f, 100f, 30f), buttons, buttons.Length, true);
+        var layout = new HitLayout(center, 56f, LayoutConstants.DiscRadius(56f, 3), slots, slots.Length, new Rect2(0f, 500f, 100f, 30f), buttons, buttons.Length);
         int sink = 0;
         long bytes = AllocatedBy(i =>
         {
@@ -126,7 +129,7 @@ public class ZeroAllocTests
     {
         // T-29: the renderer resolves every slot and hub state, the plate and the transform per frame.
         SlotKind[] kinds = [SlotKind.Normal, SlotKind.Empty, SlotKind.Submenu, SlotKind.Disabled, SlotKind.Empty, SlotKind.Normal];
-        Hit[] hits = [Hit.Slot(0), Hit.Slot(1), Hit.HubClose, Hit.HubEdit, Hit.Plate, Hit.Outside];
+        Hit[] hits = [Hit.Slot(0), Hit.Slot(1), Hit.HubEdit, Hit.Plate, Hit.Outside];
         var t = new RenderTransform(new Vec2(500f, 400f), new Vec2(100f, 80f), 0.5f);
         float sum = 0f;
         long bytes = AllocatedBy(i =>
@@ -140,10 +143,10 @@ public class ZeroAllocTests
                 sum += t.Rect(WheelVisuals.IconRect(new Vec2(s, s), 56f)).Width;
             }
 
-            sum += (int)WheelVisuals.HubMain(hover, pressed, enabled) + (int)WheelVisuals.HubSub(hover, pressed, enabled);
-            sum += (int)WheelVisuals.Plate(hover, enabled, true, kinds, kinds.Length);
+            sum += (int)WheelVisuals.Hub(hover, pressed, enabled);
+            sum += (int)WheelVisuals.Plate(hover, enabled, kinds, kinds.Length);
             sum += t.Rect(WheelVisuals.PlateRect(new Vec2(500f, 400f), 168f, 90f, 30f)).Y;
-            sum += t.Point(WheelVisuals.HubGlyphCenter(new Vec2(500f, 400f), 56f)).Y + WheelVisuals.HubSubCenter(new Vec2(500f, 400f), 56f).Y;
+            sum += LayoutConstants.HubDiameter(56f) + LayoutConstants.HubGlyphSize(56f);
         });
 
         Assert.Equal(0L, bytes);

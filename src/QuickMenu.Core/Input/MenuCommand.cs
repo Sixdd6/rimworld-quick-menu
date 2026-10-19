@@ -32,6 +32,12 @@ public enum MenuCommandKind
     /// The menu stays open.
     /// </summary>
     Reject,
+
+    /// <summary>
+    /// Pin-modifier+click on the occupied slot <see cref="MenuCommand.Index"/>: remove its pin. The menu stays open and
+    /// keeps its state; the caller toggles the pin, shows the message and rebuilds the wheel content.
+    /// </summary>
+    Unpin,
 }
 
 /// <summary>The level a slot belongs to.</summary>
@@ -73,4 +79,6 @@ public readonly record struct MenuCommand(
     public static MenuCommand OpenSub(int slot) => new(MenuCommandKind.OpenSub, slot);
 
     public static MenuCommand Reject(int slot) => new(MenuCommandKind.Reject, slot);
+
+    public static MenuCommand Unpin(int slot) => new(MenuCommandKind.Unpin, slot);
 }

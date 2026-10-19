@@ -22,4 +22,16 @@ public class ModifierPolicyTests
     {
         Assert.Equal(choice, ModifierPolicy.Effective(true, choice, mint));
     }
+
+    [Theory]
+    [InlineData(PinModifier.Ctrl, true, false, false, true)]
+    [InlineData(PinModifier.Ctrl, false, true, true, false)]
+    [InlineData(PinModifier.Alt, false, true, false, true)]
+    [InlineData(PinModifier.Alt, true, false, true, false)]
+    [InlineData(PinModifier.Shift, false, false, true, true)]
+    [InlineData(PinModifier.Shift, true, true, false, false)]
+    public void IsHeld_reads_only_the_effective_modifier(PinModifier modifier, bool ctrl, bool alt, bool shift, bool expected)
+    {
+        Assert.Equal(expected, ModifierPolicy.IsHeld(modifier, ctrl, alt, shift));
+    }
 }

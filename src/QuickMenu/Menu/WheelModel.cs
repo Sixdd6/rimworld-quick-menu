@@ -13,7 +13,7 @@ namespace QuickMenu.Menu;
 /// </summary>
 /// <remarks>
 /// Use: construct with the placement array, call <see cref="SetSlot"/> for each filled slot (the others stay
-/// <see cref="SlotKind.Empty"/>), <see cref="SetHubLabels"/>, then <see cref="Prepare"/> once. Hit-test with
+/// <see cref="SlotKind.Empty"/>), <see cref="SetHubLabel"/>, then <see cref="Prepare"/> once. Hit-test with
 /// <see cref="HitLayout"/>.
 /// </remarks>
 internal sealed class WheelModel
@@ -28,9 +28,8 @@ internal sealed class WheelModel
     /// <param name="ringsInUse">Rings the disc covers (Fixed: the setting; Auto: m).</param>
     /// <param name="slots">Slot placements from <see cref="WheelLayout"/>, centred on <paramref name="center"/>.</param>
     /// <param name="slotCount">Slots used from <paramref name="slots"/>.</param>
-    /// <param name="hasHubSub">Draw and hit-test the hub sub-button (Edit). False until edit mode exists (T-44).</param>
     /// <param name="plateHeight">Label plate height: Small line height + 8 (<see cref="DefaultPlateHeight"/>).</param>
-    internal WheelModel(Vec2 center, float buttonSize, int ringsInUse, SlotPlacement[] slots, int slotCount, bool hasHubSub, float plateHeight)
+    internal WheelModel(Vec2 center, float buttonSize, int ringsInUse, SlotPlacement[] slots, int slotCount, float plateHeight)
     {
         Center = center;
         ButtonSize = buttonSize;
@@ -38,12 +37,11 @@ internal sealed class WheelModel
         DiscRadius = LayoutConstants.DiscRadius(buttonSize, ringsInUse);
         Slots = slots;
         SlotCount = slotCount < slots.Length ? slotCount : slots.Length;
-        HasHubSub = hasHubSub;
         PlateHeight = plateHeight;
-        HubSubDiameter = LayoutConstants.HubSubDiameter(buttonSize);
+        HubDiameter = LayoutConstants.HubDiameter(buttonSize);
         DiscDrawSize = RoundTextureGeometry.DrawSizeForFixedMask(2f * DiscRadius, MaskSet.RoundSize);
         CircleDrawSize = RoundTextureGeometry.DrawSizeForFixedMask(buttonSize, MaskSet.RoundSize);
-        SubCircleDrawSize = RoundTextureGeometry.DrawSizeForFixedMask(HubSubDiameter, MaskSet.RoundSize);
+        HubCircleDrawSize = RoundTextureGeometry.DrawSizeForFixedMask(HubDiameter, MaskSet.RoundSize);
         _icons = new Command?[SlotCount];
         _kinds = new SlotKind[SlotCount];
         _labels = new string[SlotCount];
@@ -66,12 +64,10 @@ internal sealed class WheelModel
 
     internal int SlotCount { get; }
 
-    internal bool HasHubSub { get; }
-
     internal float PlateHeight { get; }
 
-    /// <summary>e, the hub sub-button diameter.</summary>
-    internal float HubSubDiameter { get; }
+    /// <summary>H, the drawn hub (Edit button) diameter; the hit area is larger (P/2 radius).</summary>
+    internal float HubDiameter { get; }
 
     /// <summary>Draw size of the 256 px <c>Disc</c> mask so its edge lands on 2 D.</summary>
     internal float DiscDrawSize { get; }
@@ -79,28 +75,22 @@ internal sealed class WheelModel
     /// <summary>Draw size of the 256 px <c>Circle</c> mask so its edge lands on B.</summary>
     internal float CircleDrawSize { get; }
 
-    /// <summary>Draw size of the <c>Circle</c> mask for the hub sub-button (diameter e).</summary>
-    internal float SubCircleDrawSize { get; }
+    /// <summary>Draw size of the <c>Circle</c> mask for the hub (diameter H).</summary>
+    internal float HubCircleDrawSize { get; }
 
-    /// <summary>Glyph of the hub main area: × in use mode (✓ in edit mode, T-44).</summary>
-    internal MaskId HubMainGlyph { get; set; } = MaskId.IconClose;
+    /// <summary>Glyph of the hub: the pencil in use mode (the check mark in edit mode, T-44).</summary>
+    internal MaskId HubGlyph { get; set; } = MaskId.IconEdit;
 
-    /// <summary>Glyph of the hub sub-button: pencil in use mode (+ in edit mode, T-44).</summary>
-    internal MaskId HubSubGlyph { get; set; } = MaskId.IconEdit;
+    /// <summary>The hub's plate label ("Edit"; "Done" in edit mode).</summary>
+    internal string HubLabel { get; private set; } = string.Empty;
 
-    internal string HubMainLabel { get; private set; } = string.Empty;
-
-    internal float HubMainLabelWidth { get; private set; }
-
-    internal string HubSubLabel { get; private set; } = string.Empty;
-
-    internal float HubSubLabelWidth { get; private set; }
+    internal float HubLabelWidth { get; private set; }
 
     /// <summary>Slot kinds, indexed like <see cref="Slots"/> (length <see cref="SlotCount"/>).</summary>
     internal SlotKind[] Kinds => _kinds;
 
     /// <summary>Hit layout for <see cref="HitTester"/>; no plate (the plate is not interactive in M2).</summary>
-    internal HitLayout HitLayout => new(Center, ButtonSize, DiscRadius, Slots, SlotCount, HasHubSub: HasHubSub);
+    internal HitLayout HitLayout => new(Center, ButtonSize, DiscRadius, Slots, SlotCount);
 
     /// <summary>Plate height for the current Small font: line height + 8 (design.md §1.1, 30 by default).</summary>
     internal static float DefaultPlateHeight => Text.LineHeightOf(GameFont.Small) + 8f;
@@ -134,12 +124,8 @@ internal sealed class WheelModel
         _labels[index] = label ?? icon.LabelCap ?? string.Empty;
     }
 
-    /// <summary>The hub's plate labels: main area ("Close") and sub-button ("Edit").</summary>
-    internal void SetHubLabels(string main, string sub)
-    {
-        HubMainLabel = main;
-        HubSubLabel = sub;
-    }
+    /// <summary>The hub's plate label ("Edit").</summary>
+    internal void SetHubLabel(string label) => HubLabel = label;
 
     /// <summary>
     /// Truncates and measures every label in the Small font once. With <paramref name="ensureTextures"/> it also sizes
@@ -163,10 +149,8 @@ internal sealed class WheelModel
                 _labels[i] = Fit(_labels[i], max, out _labelWidths[i]);
             }
 
-            HubMainLabel = Fit(HubMainLabel, max, out float mainWidth);
-            HubMainLabelWidth = mainWidth;
-            HubSubLabel = Fit(HubSubLabel, max, out float subWidth);
-            HubSubLabelWidth = subWidth;
+            HubLabel = Fit(HubLabel, max, out float hubWidth);
+            HubLabelWidth = hubWidth;
         }
         finally
         {

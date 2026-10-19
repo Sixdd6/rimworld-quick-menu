@@ -14,7 +14,7 @@ public class GlyphsTests
 
     public static readonly TheoryData<MaskId> AllGlyphs =
     [
-        MaskId.SubMenuBadge, MaskId.Caret, MaskId.Lock, MaskId.IconClose, MaskId.IconEdit, MaskId.IconDone, MaskId.IconAdd,
+        MaskId.SubMenuBadge, MaskId.Caret, MaskId.Lock, MaskId.IconEdit, MaskId.IconDone, MaskId.IconAdd,
     ];
 
     private static int At(byte[] m, int x, int y) => m[(y * S) + x];
@@ -263,27 +263,6 @@ public class GlyphsTests
     }
 
     // ---- Hub icons (S4a) --------------------------------------------------------------------------
-
-    [Fact]
-    public void IconClose_IsAnXOfTwoDiagonalStrokes()
-    {
-        byte[] m = R(MaskId.IconClose);
-
-        Assert.Equal(255, At(m, 32, 32));
-        Assert.Equal(255, At(m, 13, 13));
-        Assert.Equal(255, At(m, 50, 13));
-        Assert.Equal(255, At(m, 13, 50));
-        Assert.Equal(255, At(m, 50, 50));
-        Assert.Equal(0, At(m, 32, 12)); // between the top arms
-        Assert.Equal(0, At(m, 12, 32)); // between the left arms
-
-        // One 6 px stroke measured across an arm (perpendicular width = horizontal width / √2).
-        Assert.InRange(Mass(m, 0, 20, 32, 21) / Math.Sqrt(2.0), 5.5, 6.5);
-
-        AssertSymmetric(m, (x, y) => (S - 1 - x, y), "horizontal flip");
-        AssertSymmetric(m, (x, y) => (x, S - 1 - y), "vertical flip");
-        AssertSymmetric(m, (x, y) => (y, x), "diagonal fold");
-    }
 
     [Fact]
     public void IconAdd_IsAPlusOfTwoStrokes()

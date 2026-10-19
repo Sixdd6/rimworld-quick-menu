@@ -13,4 +13,12 @@ public static class ModifierPolicy
 
         return mintActive ? PinModifier.Alt : PinModifier.Ctrl;
     }
+
+    /// <summary>True when the key flags show <paramref name="modifier"/> held; the other two are ignored.</summary>
+    public static bool IsHeld(PinModifier modifier, bool ctrl, bool alt, bool shift) => modifier switch
+    {
+        PinModifier.Ctrl => ctrl,
+        PinModifier.Alt => alt,
+        _ => shift,
+    };
 }

@@ -16,11 +16,11 @@ public enum SlotVisualState
     /// <summary>State 3: <c>slotBgPressed</c> while the button is held on the slot.</summary>
     Pressed,
 
-    /// <summary>State 6 (Fixed, use mode; also reserved-missing): <c>slotBg</c> at 70 % + 1 px <c>emptyBorder</c>.</summary>
+    /// <summary>State 6 (Fixed, use mode; also reserved-missing): <c>slotBg</c> at 50 % + 1 px <c>slotBorder</c> at 70 %.</summary>
     Empty,
 }
 
-/// <summary>State of one hub target, the main area (Close) or the sub-button (Edit) (design.md S4a).</summary>
+/// <summary>State of the hub, the Edit button (design.md S4a).</summary>
 public enum HubPartState
 {
     /// <summary>Not highlighted.</summary>
@@ -42,11 +42,8 @@ public enum PlateContent
     /// <summary>The hovered slot's label; the slot index is the hover hit's index.</summary>
     Slot,
 
-    /// <summary>The hub main area's label ("Close"; "Done" in edit mode).</summary>
-    HubClose,
-
-    /// <summary>The hub sub-button's label ("Edit"; "Add from the list" in edit mode).</summary>
-    HubSub,
+    /// <summary>The hub's label ("Edit"; "Done" in edit mode).</summary>
+    Hub,
 }
 
 /// <summary>
@@ -80,9 +77,6 @@ public static class WheelVisuals
     /// <summary>The designator icon is drawn in a square of 0.75 B centred on the slot (S4).</summary>
     public const float IconScale = 0.75f;
 
-    /// <summary>The hub's × glyph is centred at <c>(cx, cy − 0.12 B)</c> (S4a).</summary>
-    public const float HubGlyphRise = 0.12f;
-
     /// <summary>Plate width = text width + 12 (§1.1).</summary>
     public const float PlatePadding = 12f;
 
@@ -107,22 +101,30 @@ public static class WheelVisuals
     }
 
     /// <summary>
-    /// Hub main area state. The hover highlight waits for <paramref name="hoverEnabled"/> (the pointer moved
+    /// Hub state. The hover highlight waits for <paramref name="hoverEnabled"/> (the pointer moved
     /// ≥ <see cref="TriggerStateMachine.HoverMoveThreshold"/> px since opening), so the menu does not open with
-    /// "Close" lit; a deliberate press shows at once.
+    /// "Edit" lit; a deliberate press shows at once.
     /// </summary>
-    public static HubPartState HubMain(Hit hover, Hit pressed, bool hoverEnabled) =>
-        Part(HitKind.HubClose, hover, pressed, hoverEnabled);
+    public static HubPartState Hub(Hit hover, Hit pressed, bool hoverEnabled)
+    {
+        if (hover.Kind != HitKind.HubEdit)
+        {
+            return HubPartState.Normal;
+        }
 
-    /// <summary>Hub sub-button state; same rules as <see cref="HubMain"/>. Only meaningful when the sub-button is shown.</summary>
-    public static HubPartState HubSub(Hit hover, Hit pressed, bool hoverEnabled) =>
-        Part(HitKind.HubEdit, hover, pressed, hoverEnabled);
+        if (pressed.Kind == HitKind.HubEdit)
+        {
+            return HubPartState.Pressed;
+        }
+
+        return hoverEnabled ? HubPartState.Hover : HubPartState.Normal;
+    }
 
     /// <summary>
     /// What the label plate shows: the hovered slot's label (not for empty slots), or a hub label once hover is
     /// enabled. <paramref name="kinds"/> holds the slot kinds; only the first <paramref name="count"/> are used.
     /// </summary>
-    public static PlateContent Plate(Hit hover, bool hoverEnabled, bool hasHubSub, SlotKind[] kinds, int count)
+    public static PlateContent Plate(Hit hover, bool hoverEnabled, SlotKind[] kinds, int count)
     {
         switch (hover.Kind)
         {
@@ -131,10 +133,8 @@ public static class WheelVisuals
                 return hover.Index >= 0 && hover.Index < n && kinds[hover.Index] != SlotKind.Empty
                     ? PlateContent.Slot
                     : PlateContent.None;
-            case HitKind.HubClose:
-                return hoverEnabled ? PlateContent.HubClose : PlateContent.None;
             case HitKind.HubEdit:
-                return hoverEnabled && hasHubSub ? PlateContent.HubSub : PlateContent.None;
+                return hoverEnabled ? PlateContent.Hub : PlateContent.None;
             default:
                 return PlateContent.None;
         }
@@ -163,28 +163,5 @@ public static class WheelVisuals
     {
         float size = buttonSize * IconScale;
         return new Rect2(slotCenter.X - (size / 2f), slotCenter.Y - (size / 2f), size, size);
-    }
-
-    /// <summary>Centre of the hub's × (or ✓) glyph.</summary>
-    public static Vec2 HubGlyphCenter(Vec2 center, float buttonSize) =>
-        new(center.X, center.Y - (HubGlyphRise * buttonSize));
-
-    /// <summary>Centre of the hub sub-button: <c>(cx, cy + ey)</c>.</summary>
-    public static Vec2 HubSubCenter(Vec2 center, float buttonSize) =>
-        new(center.X, center.Y + LayoutConstants.HubSubOffset(buttonSize));
-
-    private static HubPartState Part(HitKind kind, Hit hover, Hit pressed, bool hoverEnabled)
-    {
-        if (hover.Kind != kind)
-        {
-            return HubPartState.Normal;
-        }
-
-        if (pressed.Kind == kind)
-        {
-            return HubPartState.Pressed;
-        }
-
-        return hoverEnabled ? HubPartState.Hover : HubPartState.Normal;
     }
 }

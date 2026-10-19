@@ -6,8 +6,7 @@ namespace QuickMenu.Core.Layout;
 public readonly record struct HitButton(Rect2 Bounds, int Kind);
 
 /// <summary>
-/// Everything <see cref="HitTester"/> needs. <see cref="HasHubSub"/> is false for satellites and until edit mode
-/// ships: the hub sub-button area then belongs to HubClose and nothing else. Arrays are owned by the caller and only the first
+/// Everything <see cref="HitTester"/> needs. Arrays are owned by the caller and only the first
 /// <see cref="SlotCount"/> / <see cref="ButtonCount"/> entries are used. <see cref="Plate"/> is null when no plate is shown.
 /// </summary>
 public readonly record struct HitLayout(
@@ -18,11 +17,10 @@ public readonly record struct HitLayout(
     int SlotCount,
     Rect2? Plate = null,
     HitButton[]? Buttons = null,
-    int ButtonCount = 0,
-    bool HasHubSub = false);
+    int ButtonCount = 0);
 
 /// <summary>
-/// Point to typed hit. Priority: HubEdit, Button, HubClose, Slot, Plate, Inside, Outside. The hub is never a slot.
+/// Point to typed hit. Priority: Button, HubEdit (distance ≤ P/2, the one hub target), Slot, Plate, Inside, Outside. The hub is never a slot.
 /// Allocation-free, safe to call from OnGUI.
 /// </summary>
 public static class HitTester
@@ -32,13 +30,6 @@ public static class HitTester
         if (!float.IsFinite(point.X) || !float.IsFinite(point.Y))
         {
             return QuickMenu.Core.Layout.Hit.Outside;
-        }
-
-        var b = layout.ButtonSize;
-        var editCentre = new Vec2(layout.Center.X, layout.Center.Y + LayoutConstants.HubSubOffset(b));
-        if (layout.HasHubSub && editCentre.Distance(point) <= LayoutConstants.HubSubDiameter(b) / 2f)
-        {
-            return QuickMenu.Core.Layout.Hit.HubEdit;
         }
 
         var buttons = layout.Buttons;
@@ -54,9 +45,9 @@ public static class HitTester
             }
         }
 
-        if (layout.Center.Distance(point) <= LayoutConstants.Pitch(b) / 2f)
+        if (layout.Center.Distance(point) <= LayoutConstants.Pitch(layout.ButtonSize) / 2f)
         {
-            return QuickMenu.Core.Layout.Hit.HubClose;
+            return QuickMenu.Core.Layout.Hit.HubEdit;
         }
 
         var slot = WheelHitTest.SlotAt(layout.Slots, layout.SlotCount, point);

@@ -40,12 +40,8 @@ internal static class MenuRenderer
                 SlotRenderer.Draw(model, i, WheelVisuals.Slot(i, model.Kinds[i], hover, pressed), transform);
             }
 
-            HubRenderer.Draw(
-                model,
-                transform,
-                WheelVisuals.HubMain(hover, pressed, hoverEnabled),
-                model.HasHubSub ? WheelVisuals.HubSub(hover, pressed, hoverEnabled) : HubPartState.Normal);
-            PlateRenderer.Draw(model, transform, WheelVisuals.Plate(hover, hoverEnabled, model.HasHubSub, model.Kinds, model.SlotCount), hover.Index);
+            HubRenderer.Draw(model, transform, WheelVisuals.Hub(hover, pressed, hoverEnabled));
+            PlateRenderer.Draw(model, transform, WheelVisuals.Plate(hover, hoverEnabled, model.Kinds, model.SlotCount), hover.Index);
         }
         finally
         {

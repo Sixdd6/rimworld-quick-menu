@@ -21,10 +21,11 @@ internal sealed class MenuContent
     private readonly string?[] _tips;
     private readonly string?[] _reasons;
 
-    private MenuContent(WheelModel model, Designator?[] designators)
+    private MenuContent(WheelModel model, Designator?[] designators, CatalogEntry?[] entries)
     {
         Model = model;
         Designators = designators;
+        Entries = entries;
         _tips = new string?[designators.Length];
         _reasons = new string?[designators.Length];
     }
@@ -33,11 +34,15 @@ internal sealed class MenuContent
 
     internal Designator?[] Designators { get; }
 
+    /// <summary>The catalog entry behind each slot (null for empty and reserved slots); what modifier+click unpins.</summary>
+    internal CatalogEntry?[] Entries { get; }
+
     internal static MenuContent Build(PlacedWheel placed, float buttonSize, int rings)
     {
         SlotPlacement[] slots = placed.Slots;
-        var model = new WheelModel(placed.Center, buttonSize, rings, slots, slots.Length, hasHubSub: false, WheelModel.DefaultPlateHeight);
+        var model = new WheelModel(placed.Center, buttonSize, rings, slots, slots.Length, WheelModel.DefaultPlateHeight);
         var designators = new Designator?[slots.Length];
+        var entries = new CatalogEntry?[slots.Length];
         System.Collections.Generic.IReadOnlyList<PinSlot> pins = PinService.Board.VisibleSlots(PinService.Resolver);
         for (int i = 0; i < slots.Length && i < pins.Count; i++)
         {
@@ -50,12 +55,13 @@ internal sealed class MenuContent
 
             Designator d = entry.Designator;
             designators[i] = d;
+            entries[i] = entry;
             model.SetSlot(i, d, !entry.ForcedUnavailable && IsUsable(d) ? SlotKind.Normal : SlotKind.Disabled, entry.Label);
         }
 
-        model.SetHubLabels("QuickMenu.Menu.Close".Translate(), "QuickMenu.Menu.Edit".Translate());
+        model.SetHubLabel("QuickMenu.Menu.Edit".Translate());
         model.Prepare();
-        return new MenuContent(model, designators);
+        return new MenuContent(model, designators, entries);
     }
 
     /// <summary>The designator's own tooltip text (label and description), built on first hover and kept for this open.</summary>

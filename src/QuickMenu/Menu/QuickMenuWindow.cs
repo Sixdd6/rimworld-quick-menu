@@ -218,10 +218,35 @@ internal sealed class QuickMenuWindow : Window
             case EventType.MouseUp:
                 _pressHit = Hit.Outside;
                 SlotKind kind = hit.Kind == HitKind.Slot ? model.Kinds[hit.Index] : SlotKind.Normal;
+                bool modifier = ev.button == 0 && ModifierPolicy.IsHeld(QuickMenuMod.EffectiveModifier, ev.control || ev.command, ev.alt, ev.shift);
                 ev.Use();
-                MenuController.Dispatch(TriggerEvent.MouseUp(mouse, hit, kind, ev.button));
+                MenuController.Dispatch(TriggerEvent.MouseUp(mouse, hit, kind, ev.button, modifier));
                 break;
         }
+    }
+
+    /// <summary>Shows the pins as they are now, in place (after an unpin). A failed rebuild closes the menu.</summary>
+    internal void Refresh()
+    {
+        MenuContent? content = null;
+        try
+        {
+            content = MenuController.Rebuild(this, _openMouse);
+        }
+        catch (Exception ex)
+        {
+            Log.LogOnce("Menu.Build", $"Refreshing the menu content failed, the menu is closed: {ex}");
+        }
+
+        if (content == null)
+        {
+            SafeClose();
+            return;
+        }
+
+        _content = content;
+        _model = content.Model;
+        _hoverSlot = -1;
     }
 
     private void Paint(WheelModel model, Hit hit)

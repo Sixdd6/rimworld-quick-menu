@@ -120,26 +120,6 @@ public class WheelLayoutExtremesTests
     }
 
     [Fact]
-    public void HubSubButton_FormulaHoldsForEveryStep_AndSubButtonStaysInsideHubForB40Plus()
-    {
-        for (var b = 36; b <= 96; b += 4)
-        {
-            var e = LayoutConstants.HubSubDiameter(b);
-            var ey = LayoutConstants.HubSubOffset(b);
-            Assert.InRange(e, 18f, 28f);
-            Assert.Equal(MathF.Max((b / 2f) - (e / 2f) - 2f, (e / 2f) + 6f), ey);
-            if (b >= 40)
-            {
-                // Bottom edge inside the hub hit area (radius P/2).
-                Assert.True(ey + (e / 2f) <= LayoutConstants.Pitch(b) / 2f + Tol, $"B={b}");
-            }
-        }
-
-        // The design note: at B = 36 the sub-button reaches 2 px past the hub hit area.
-        Assert.Equal(2f, LayoutConstants.HubSubOffset(36) + (LayoutConstants.HubSubDiameter(36) / 2f) - (LayoutConstants.Pitch(36) / 2f), Tol);
-    }
-
-    [Fact]
     public void Compute_NonFiniteCenter_Throws()
     {
         foreach (float bad in new[] { float.NaN, float.PositiveInfinity, float.NegativeInfinity })

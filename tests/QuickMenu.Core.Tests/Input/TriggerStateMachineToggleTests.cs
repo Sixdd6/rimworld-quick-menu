@@ -12,7 +12,7 @@ public class TriggerStateMachineToggleTests
 
     private static TriggerStateMachine Opened()
     {
-        var m = new TriggerStateMachine();
+        var m = new TriggerStateMachine { EditEnabled = true };
         Assert.Equal(MenuCommand.Open, m.Handle(TriggerEvent.TriggerPressed(_origin)));
         return m;
     }
@@ -91,10 +91,16 @@ public class TriggerStateMachineToggleTests
     }
 
     [Fact]
-    public void Main_click_on_hub_close_closes()
+    public void Main_click_on_hub_never_closes_and_does_nothing_until_edit_is_enabled()
     {
-        var m = Opened();
-        Assert.Equal(MenuCommand.Close, Click(m, Hit.HubClose));
+        var m = new TriggerStateMachine();
+        Assert.False(m.EditEnabled);
+        m.Handle(TriggerEvent.TriggerPressed(_origin));
+        Assert.Equal(MenuCommand.None, Click(m, Hit.HubEdit));
+        Assert.Equal(MenuState.Main, m.State);
+        Assert.Equal(MenuCommand.None, Click(m, Hit.HubEdit));
+        m.EditEnabled = true;
+        Assert.Equal(MenuCommand.EnterEdit, Click(m, Hit.HubEdit));
     }
 
     [Fact]
@@ -109,12 +115,12 @@ public class TriggerStateMachineToggleTests
     public void Hub_edit_needs_press_and_release_on_it()
     {
         var m = Opened();
-        m.Handle(TriggerEvent.MouseDown(_origin, Hit.HubClose, 0));
+        m.Handle(TriggerEvent.MouseDown(_origin, Hit.Slot(0), 0));
         Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseUp(_origin, Hit.HubEdit, SlotKind.Normal, 0)));
         Assert.Equal(MenuState.Main, m.State);
 
         m.Handle(TriggerEvent.MouseDown(_origin, Hit.HubEdit, 0));
-        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseUp(_origin, Hit.HubClose, SlotKind.Normal, 0)));
+        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseUp(_origin, Hit.Slot(0), SlotKind.Normal, 0)));
         Assert.Equal(MenuState.Main, m.State);
     }
 
@@ -194,13 +200,11 @@ public class TriggerStateMachineToggleTests
         Assert.Equal(MenuState.Main, m.State);
     }
 
-    [Theory]
-    [InlineData(HitKind.HubClose)]
-    [InlineData(HitKind.HubEdit)]
-    public void Satellite_click_on_hub_goes_back(HitKind kind)
+    [Fact]
+    public void Satellite_click_on_hub_goes_back()
     {
         var m = Satellite();
-        Assert.Equal(MenuCommand.Back, Click(m, new Hit(kind)));
+        Assert.Equal(MenuCommand.Back, Click(m, Hit.HubEdit));
         Assert.Equal(MenuState.Main, m.State);
     }
 
@@ -233,26 +237,34 @@ public class TriggerStateMachineToggleTests
     public void Edit_done_exits_edit()
     {
         var m = Edit();
-        Assert.Equal(MenuCommand.ExitEdit, Click(m, Hit.HubClose));
+        Assert.Equal(MenuCommand.ExitEdit, Click(m, Hit.HubEdit));
         Assert.Equal(MenuState.Main, m.State);
     }
 
     [Fact]
-    public void Edit_click_outside_and_right_click_do_nothing()
+    public void Edit_click_outside_closes()
     {
         var m = Edit();
-        Assert.Equal(MenuCommand.None, Click(m, Hit.Outside));
-        Assert.Equal(MenuCommand.None, Click(m, Hit.HubClose, button: 1));
-        Assert.Equal(MenuCommand.None, Click(m, Hit.Slot(0), button: 1));
-        Assert.Equal(MenuState.Edit, m.State);
+        Assert.Equal(MenuCommand.CloseFromEdit, Click(m, Hit.Outside));
+        Assert.Equal(MenuState.Closed, m.State);
+    }
+
+    [Theory]
+    [InlineData(HitKind.HubEdit)]
+    [InlineData(HitKind.Slot)]
+    [InlineData(HitKind.Outside)]
+    public void Edit_right_click_closes_wherever_it_is(HitKind kind)
+    {
+        var m = Edit();
+        Assert.Equal(MenuCommand.CloseFromEdit, Click(m, new Hit(kind, kind == HitKind.Slot ? 0 : -1), button: 1));
+        Assert.Equal(MenuState.Closed, m.State);
     }
 
     [Fact]
-    public void Edit_slot_and_add_clicks_are_left_to_the_caller()
+    public void Edit_slot_clicks_are_left_to_the_caller()
     {
         var m = Edit();
         Assert.Equal(MenuCommand.None, Click(m, Hit.Slot(0)));
-        Assert.Equal(MenuCommand.None, Click(m, Hit.HubEdit));
         Assert.Equal(MenuState.Edit, m.State);
     }
 

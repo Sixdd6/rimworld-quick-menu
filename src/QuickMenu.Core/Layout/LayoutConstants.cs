@@ -25,19 +25,13 @@ public static class LayoutConstants
     /// <summary>Pitch P = B + G.</summary>
     public static float Pitch(float buttonSize) => buttonSize + Gap;
 
-    /// <summary>Hub sub-button diameter e = clamp(round(0.36 B), 18, 28).</summary>
-    public static float HubSubDiameter(float buttonSize)
-    {
-        var rounded = MathF.Round(0.36f * buttonSize, MidpointRounding.AwayFromZero);
-        return Math.Clamp(rounded, 18f, 28f);
-    }
+    /// <summary>Drawn hub (Edit button) diameter H = round(0.64 B), half away from zero (design.md §1.1, S4a).</summary>
+    public static float HubDiameter(float buttonSize) =>
+        MathF.Round(0.64f * buttonSize, MidpointRounding.AwayFromZero);
 
-    /// <summary>Hub sub-button centre offset below the hub centre: max(B/2 - e/2 - 2, e/2 + 6).</summary>
-    public static float HubSubOffset(float buttonSize)
-    {
-        var e = HubSubDiameter(buttonSize);
-        return MathF.Max((buttonSize / 2f) - (e / 2f) - 2f, (e / 2f) + 6f);
-    }
+    /// <summary>Hub glyph (pencil or check mark) size Hg = round(0.5 H), half away from zero.</summary>
+    public static float HubGlyphSize(float buttonSize) =>
+        MathF.Round(0.5f * HubDiameter(buttonSize), MidpointRounding.AwayFromZero);
 
     /// <summary>Disc radius D = m P + B/2 + rimPad for m rings in use.</summary>
     public static float DiscRadius(float buttonSize, int rings) =>

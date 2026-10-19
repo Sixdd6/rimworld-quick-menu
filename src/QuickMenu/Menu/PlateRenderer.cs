@@ -22,13 +22,9 @@ internal static class PlateRenderer
                 label = model.Label(slotIndex);
                 width = model.LabelWidth(slotIndex);
                 break;
-            case PlateContent.HubClose:
-                label = model.HubMainLabel;
-                width = model.HubMainLabelWidth;
-                break;
-            case PlateContent.HubSub:
-                label = model.HubSubLabel;
-                width = model.HubSubLabelWidth;
+            case PlateContent.Hub:
+                label = model.HubLabel;
+                width = model.HubLabelWidth;
                 break;
             default:
                 return;

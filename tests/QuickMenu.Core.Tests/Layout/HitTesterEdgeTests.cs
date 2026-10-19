@@ -8,10 +8,10 @@ public class HitTesterEdgeTests
 {
     private static readonly Vec2 _c = new(300f, 300f);
 
-    private static HitLayout Make(float b, int rings, Rect2? plate = null, HitButton[]? buttons = null, bool hasHubSub = true)
+    private static HitLayout Make(float b, int rings, Rect2? plate = null, HitButton[]? buttons = null)
     {
         var slots = WheelLayout.Compute(new WheelParams(b, rings, _c));
-        return new HitLayout(_c, b, LayoutConstants.DiscRadius(b, rings), slots, slots.Length, plate, buttons, buttons?.Length ?? 0, hasHubSub);
+        return new HitLayout(_c, b, LayoutConstants.DiscRadius(b, rings), slots, slots.Length, plate, buttons, buttons?.Length ?? 0);
     }
 
     [Theory]
@@ -19,7 +19,7 @@ public class HitTesterEdgeTests
     [InlineData(36, 5)]
     [InlineData(96, 1)]
     [InlineData(96, 3)]
-    public void Extremes_every_slot_centre_hits_itself_and_hub_is_close_or_edit(int b, int rings)
+    public void Extremes_every_slot_centre_hits_itself_and_hub_is_edit(int b, int rings)
     {
         var l = Make(b, rings);
         foreach (var s in l.Slots)
@@ -27,8 +27,8 @@ public class HitTesterEdgeTests
             Assert.Equal(Hit.Slot(s.Index), HitTester.Hit(s.Center, l));
         }
 
-        Assert.Equal(Hit.HubClose, HitTester.Hit(new Vec2(_c.X, _c.Y - 3f), l));
-        Assert.Equal(Hit.HubEdit, HitTester.Hit(new Vec2(_c.X, _c.Y + LayoutConstants.HubSubOffset(b)), l));
+        Assert.Equal(Hit.HubEdit, HitTester.Hit(new Vec2(_c.X, _c.Y - 3f), l));
+        Assert.Equal(Hit.HubEdit, HitTester.Hit(new Vec2(_c.X, _c.Y + 3f), l));
     }
 
     [Theory]
@@ -88,7 +88,7 @@ public class HitTesterEdgeTests
     {
         var l = Make(56f, 1);
         l = l with { SlotCount = 0 };
-        Assert.Equal(Hit.HubClose, HitTester.Hit(new Vec2(_c.X, _c.Y - 5f), l));
+        Assert.Equal(Hit.HubEdit, HitTester.Hit(new Vec2(_c.X, _c.Y - 5f), l));
         Assert.Equal(HitKind.Inside, HitTester.Hit(new Vec2(_c.X + 64f, _c.Y), l).Kind);
     }
 }

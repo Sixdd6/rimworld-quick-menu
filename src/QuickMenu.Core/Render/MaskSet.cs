@@ -41,16 +41,13 @@ public enum MaskId
     /// <summary>Glyph, 64 px: padlock (body + shackle); greyed-slot badge at 7:30 (S4 state 5).</summary>
     Lock,
 
-    /// <summary>Glyph, 64 px: ×, the hub's Close main area in use mode (S4a).</summary>
-    IconClose,
-
-    /// <summary>Glyph, 64 px: pencil, tip bottom-left, the hub's Edit sub-button (S4a).</summary>
+    /// <summary>Glyph, 64 px: pencil, tip bottom-left, the hub's Edit button in use mode (S4a).</summary>
     IconEdit,
 
-    /// <summary>Glyph, 64 px: check mark, the hub's Done main area in edit mode (S4a).</summary>
+    /// <summary>Glyph, 64 px: check mark, the hub's Done button in edit mode (S4a).</summary>
     IconDone,
 
-    /// <summary>Glyph, 64 px: plus, the hub's Add sub-button in edit mode (S4a) and the edit-mode empty slot (S4 state 7).</summary>
+    /// <summary>Glyph, 64 px: plus, the edit-mode empty slot (S4 state 7).</summary>
     IconAdd,
 }
 
@@ -139,7 +136,7 @@ public static class MaskSet
     public const int GlyphSize = Glyphs.GridSize;
 
     /// <summary>Number of masks in the set.</summary>
-    public const int Count = 16;
+    public const int Count = 15;
 
     /// <summary>Largest <see cref="MaskSpec.ByteCount"/> in the set: one buffer of this size fits every mask.</summary>
     public const int MaxByteCount = RoundSize * RoundSize;
@@ -158,7 +155,6 @@ public static class MaskSet
         new(MaskId.SubMenuBadge, "SubMenuBadge", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
         new(MaskId.Caret, "Caret", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
         new(MaskId.Lock, "Lock", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
-        new(MaskId.IconClose, "IconClose", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
         new(MaskId.IconEdit, "IconEdit", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
         new(MaskId.IconDone, "IconDone", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
         new(MaskId.IconAdd, "IconAdd", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),

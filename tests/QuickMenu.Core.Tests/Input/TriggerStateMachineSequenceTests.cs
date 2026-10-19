@@ -11,7 +11,7 @@ public class TriggerStateMachineSequenceTests
 
     private static TriggerStateMachine Opened()
     {
-        var m = new TriggerStateMachine();
+        var m = new TriggerStateMachine { EditEnabled = true };
         m.Handle(TriggerEvent.TriggerPressed(_p));
         return m;
     }
@@ -40,11 +40,11 @@ public class TriggerStateMachineSequenceTests
     }
 
     [Fact]
-    public void Press_on_hub_edit_release_on_close_does_not_enter_edit_or_close()
+    public void Press_on_hub_release_on_a_slot_does_not_enter_edit_or_close()
     {
         var m = Opened();
         Down(m, Hit.HubEdit);
-        Assert.Equal(MenuCommand.None, Up(m, Hit.HubClose));
+        Assert.Equal(MenuCommand.None, Up(m, Hit.Slot(0)));
         Assert.Equal(MenuState.Main, m.State);
     }
 
@@ -132,18 +132,17 @@ public class TriggerStateMachineSequenceTests
     {
         var m = Opened();
         ClickFull(m, Hit.HubEdit);
-        Assert.Equal(MenuCommand.ExitEdit, ClickFull(m, Hit.HubClose));
+        Assert.Equal(MenuCommand.ExitEdit, ClickFull(m, Hit.HubEdit));
         Assert.Equal(MenuState.Main, m.State);
         Assert.Equal(MenuCommand.Activate(0), ClickFull(m, Hit.Slot(0)));
         Assert.Equal(MenuState.Closed, m.State);
     }
 
     [Fact]
-    public void Edit_outside_click_then_escape_still_exits_edit_first()
+    public void Edit_escape_exits_edit_first_then_closes()
     {
         var m = Opened();
         ClickFull(m, Hit.HubEdit);
-        Assert.Equal(MenuCommand.None, ClickFull(m, Hit.Outside));
         Assert.Equal(MenuCommand.ExitEdit, m.Handle(TriggerEvent.Escape(_p)));
         Assert.Equal(MenuCommand.Close, m.Handle(TriggerEvent.Escape(_p)));
     }

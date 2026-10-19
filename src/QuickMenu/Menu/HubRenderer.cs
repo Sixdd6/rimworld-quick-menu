@@ -5,56 +5,36 @@ using UnityEngine;
 namespace QuickMenu.Menu;
 
 /// <summary>
-/// The hub (design.md S4a), drawn above the slots. Main area: <c>Circle</c> at B in <c>slotBg</c> 60 % + 1 px
-/// <c>slotBorder</c> ring and the × glyph (0.22 B, <c>textMuted</c>) at <c>(cx, cy − 0.12 B)</c>; hover
-/// <c>slotBgHover</c> + 2 px <c>accent</c> + × in <c>text</c>; pressed <c>slotBgPressed</c>. Sub-button (only when
-/// <see cref="WheelModel.HasHubSub"/>): <c>Circle</c> at e in <c>slotBg</c> + 1 px <c>accent</c> + pencil (0.6 e,
-/// <c>text</c>) at <c>(cx, cy + ey)</c>; hover 2 px ring on <c>slotBgHover</c>.
+/// The hub, the Edit button (design.md S4a), drawn above the slots: <c>Circle</c> at H = round(0.64 B) centred on the
+/// menu centre, a ring rasterized at H, and the pencil (<c>IconEdit</c> at Hg = round(0.5 H)) in <c>text</c>, also
+/// centred. Normal: <c>slotBg</c> + 1 px <c>accent</c>. Hover: <c>slotBgHover</c> + 8 % white + 2 px <c>accent</c>.
+/// Pressed: <c>slotBgPressed</c> + 2 px <c>accent</c>. It is smaller than a slot on purpose; the hit area (P/2) is larger.
 /// </summary>
 internal static class HubRenderer
 {
-    internal static void Draw(WheelModel model, in RenderTransform transform, HubPartState main, HubPartState sub)
+    internal static void Draw(WheelModel model, in RenderTransform transform, HubPartState state)
     {
         float scale = transform.Scale;
         Vec2 c = transform.Point(model.Center);
         if (Textures.Ready)
         {
-            GUI.color = main switch
-            {
-                HubPartState.Hover => QMStyle.SlotBgHover,
-                HubPartState.Pressed => QMStyle.SlotBgPressed,
-                _ => QMStyle.HubBg,
-            };
-            MenuRenderer.DrawMask(MaskId.Circle, c, model.CircleDrawSize * scale);
-        }
-
-        bool lit = main != HubPartState.Normal;
-        GUI.color = lit ? QMStyle.Accent : QMStyle.SlotBorder;
-        MenuRenderer.DrawSized(lit ? Textures.SlotRing2 : Textures.SlotRing1, c, scale);
-        GUI.color = lit ? QMStyle.Text : QMStyle.TextMuted;
-        MenuRenderer.DrawSized(Textures.Glyph(model.HubMainGlyph), transform.Point(WheelVisuals.HubGlyphCenter(model.Center, model.ButtonSize)), scale);
-
-        if (!model.HasHubSub)
-        {
-            return;
-        }
-
-        Vec2 s = transform.Point(WheelVisuals.HubSubCenter(model.Center, model.ButtonSize));
-        bool subLit = sub != HubPartState.Normal;
-        if (Textures.Ready)
-        {
-            GUI.color = sub switch
+            GUI.color = state switch
             {
                 HubPartState.Hover => QMStyle.SlotBgHover,
                 HubPartState.Pressed => QMStyle.SlotBgPressed,
                 _ => QMStyle.SlotBg,
             };
-            MenuRenderer.DrawMask(MaskId.Circle, s, model.SubCircleDrawSize * scale);
+            MenuRenderer.DrawMask(MaskId.Circle, c, model.HubCircleDrawSize * scale);
+            if (state == HubPartState.Hover)
+            {
+                GUI.color = QMStyle.HoverOverlay;
+                MenuRenderer.DrawMask(MaskId.Circle, c, model.HubCircleDrawSize * scale);
+            }
         }
 
         GUI.color = QMStyle.Accent;
-        MenuRenderer.DrawSized(subLit ? Textures.HubRing2 : Textures.HubRing1, s, scale);
+        MenuRenderer.DrawSized(state == HubPartState.Normal ? Textures.HubRing1 : Textures.HubRing2, c, scale);
         GUI.color = QMStyle.Text;
-        MenuRenderer.DrawSized(Textures.Glyph(model.HubSubGlyph), s, scale);
+        MenuRenderer.DrawSized(Textures.Glyph(model.HubGlyph), c, scale);
     }
 }

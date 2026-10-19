@@ -121,8 +121,6 @@ public static class Glyphs
                 return Triangle(x, y, CaretLeft, CaretTop, CaretTip, (CaretTop + CaretBottom) / 2.0, CaretLeft, CaretBottom);
             case MaskId.Lock:
                 return Math.Min(LockBody(x, y), Shackle(x, y) - HalfStroke);
-            case MaskId.IconClose:
-                return Math.Min(Segment(x, y, IconLo, IconLo, IconHi, IconHi), Segment(x, y, IconHi, IconLo, IconLo, IconHi)) - HalfStroke;
             case MaskId.IconDone:
                 return Math.Min(Segment(x, y, CheckAx, CheckAy, CheckVx, CheckVy), Segment(x, y, CheckVx, CheckVy, CheckBx, CheckBy)) - HalfStroke;
             case MaskId.IconEdit:

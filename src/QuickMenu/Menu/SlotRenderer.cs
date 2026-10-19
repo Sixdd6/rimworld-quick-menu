@@ -37,7 +37,7 @@ internal static class SlotRenderer
                 MenuRenderer.DrawSized(Textures.SlotRing2, c, scale);
                 break;
             case SlotVisualState.Empty:
-                GUI.color = QMStyle.EmptyBorder;
+                GUI.color = QMStyle.SlotBorderEmpty;
                 MenuRenderer.DrawSized(Textures.SlotRing1, c, scale);
                 return;
             default:

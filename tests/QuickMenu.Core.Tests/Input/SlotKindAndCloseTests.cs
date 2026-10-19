@@ -11,7 +11,7 @@ public class SlotKindAndCloseTests
 
     private static TriggerStateMachine Opened()
     {
-        var m = new TriggerStateMachine();
+        var m = new TriggerStateMachine { EditEnabled = true };
         m.Handle(TriggerEvent.TriggerPressed(_p));
         return m;
     }
