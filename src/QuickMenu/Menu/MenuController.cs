@@ -58,7 +58,6 @@ internal static class MenuController
                 return;
             }
 
-            using var scope = new MeasureScope(StatId.OpenPath);
             PerfCounters.MarkOpen();
             var machine = new TriggerStateMachine();
             if (machine.Handle(TriggerEvent.TriggerPressed(mouse)).Kind != MenuCommandKind.Open)
@@ -66,12 +65,11 @@ internal static class MenuController
                 return;
             }
 
-            MenuContent content = BuildContent(mouse);
+            // The content (text measuring) is built on the window's first DoWindowContents, inside OnGUI (BuildFor).
+            // OpenPath therefore covers the whole of that build, which is the work of opening the menu; this method
+            // itself only creates the state machine and the window.
             _machine = machine;
-            _content = content;
-            LastSlotCount = content.Model.SlotCount;
-            LastDesignators = content.Designators;
-            Find.WindowStack.Add(_window = new QuickMenuWindow(content, Time.frameCount));
+            Find.WindowStack.Add(_window = new QuickMenuWindow(mouse, Time.frameCount));
         }
         catch (System.Exception ex)
         {
@@ -92,12 +90,58 @@ internal static class MenuController
         Execute(machine.Handle(e));
     }
 
+    /// <summary>True when <paramref name="window"/> is the window this controller currently drives.</summary>
+    internal static bool Owns(QuickMenuWindow window) => ReferenceEquals(_window, window);
+
+    /// <summary>
+    /// Builds the content for <paramref name="window"/> (called from its first DoWindowContents, so text measuring
+    /// happens in OnGUI) and publishes it. Returns null when the window is not the current one.
+    /// </summary>
+    internal static MenuContent? BuildFor(QuickMenuWindow window, Vec2 mouse)
+    {
+        if (!Owns(window))
+        {
+            return null;
+        }
+
+        using var scope = new MeasureScope(StatId.OpenPath);
+        MenuContent content = BuildContent(mouse);
+        _content = content;
+        LastSlotCount = content.Model.SlotCount;
+        LastDesignators = content.Designators;
+        return content;
+    }
+
     /// <summary>Closes the window without consulting the state machine (a window fault). Settings are not written.</summary>
     internal static void Close()
     {
         QuickMenuWindow? window = _window;
         Reset();
-        window?.Close();
+        if (window != null)
+        {
+            CloseWindow(window);
+        }
+    }
+
+    /// <summary>Closes a window; if <c>Close</c> throws, removes it from the stack directly so it cannot linger.</summary>
+    internal static void CloseWindow(Window window)
+    {
+        try
+        {
+            window.Close();
+        }
+        catch (System.Exception ex)
+        {
+            Diagnostics.Log.LogOnce("Menu.Close", $"Closing the menu window failed, removing it from the window stack: {ex}");
+            try
+            {
+                Find.WindowStack.TryRemove(window, doCloseSound: false);
+            }
+            catch (System.Exception ex2)
+            {
+                Diagnostics.Log.LogOnce("Menu.Close.Remove", $"Removing the menu window from the window stack failed: {ex2}");
+            }
+        }
     }
 
     /// <summary>Called by the window when it has been removed from the stack for any reason.</summary>

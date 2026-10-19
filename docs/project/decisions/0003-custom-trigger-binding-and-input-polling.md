@@ -35,6 +35,7 @@ Polling site:
 - Our trigger does not appear in the game's Controls menu. Conflicts are only warned about.
 - Spike S-2 confirms in-game which physical side button is index 3 vs 4. Capture-by-press makes the mapping irrelevant to correctness; it matters only for the default's label.
 - Middle mouse as trigger also starts vanilla camera drag. This is accepted, and documented in the settings tooltip.
+- With middle mouse as the trigger the menu window keeps `preventCameraMotion = true`, because the camera drag would otherwise fight the menu. While the menu is open, keyboard and edge panning are frozen too. This is acceptable because the menu is open only briefly.
 
 ## Spike result (2026-10-19)
 

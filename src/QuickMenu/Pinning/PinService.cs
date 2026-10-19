@@ -22,8 +22,10 @@ internal static class PinService
 {
     private static readonly Dictionary<PinKey, CatalogEntry> _resolved = new();
     private static bool _initialized;
-    private static int _stamp = -1;
-    private static int _failedStamp = -1;
+    private static long _stamp = -1;
+    private static long _failedStamp = -1;
+    private static Game? _lastGame;
+    private static int _gameGeneration;
 
     /// <summary>
     /// True when pins have been resolved against a built, non-empty catalog. When false, "unresolved" means "not known yet",
@@ -181,11 +183,21 @@ internal static class PinService
         return result;
     }
 
-    private static int Stamp() => (DesignatorCatalog.Version * 4) + (Current.Game != null ? 1 : 0) + (Current.ProgramState == ProgramState.Playing ? 2 : 0);
+    private static long Stamp()
+    {
+        Game? game = Current.Game;
+        if (!ReferenceEquals(game, _lastGame))
+        {
+            _lastGame = game;
+            _gameGeneration++; // a different game object (a second save loaded) needs its pins resolved again
+        }
+
+        return ((long)_gameGeneration << 32) + ((long)DesignatorCatalog.Version * 4) + (game != null ? 1 : 0) + (Current.ProgramState == ProgramState.Playing ? 2 : 0);
+    }
 
     private static void EnsureCurrent()
     {
-        int stamp = Stamp();
+        long stamp = Stamp();
         if (_stamp != stamp && _failedStamp != stamp)
         {
             Refresh();

@@ -107,6 +107,9 @@ internal sealed class WheelModel
 
     internal Command? Icon(int index) => _icons[index];
 
+    /// <summary>Stops drawing the icon of slot <paramref name="index"/> (its designator's icon code threw); the slot stays otherwise as it was.</summary>
+    internal void BlankIcon(int index) => _icons[index] = null;
+
     internal string Label(int index) => _labels[index];
 
     internal float LabelWidth(int index) => _labelWidths[index];

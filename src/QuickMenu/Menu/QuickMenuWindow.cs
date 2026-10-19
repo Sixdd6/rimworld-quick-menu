@@ -27,16 +27,17 @@ internal sealed class QuickMenuWindow : Window
 
     private readonly int _openFrame;
     private readonly Map? _map;
-    private readonly MenuContent _content;
-    private readonly WheelModel _model;
+    private readonly Vec2 _openMouse;
+    private MenuContent? _content;
+    private WheelModel? _model;
     private Hit _pressHit = Hit.Outside;
     private int _hoverSlot = -1;
     private bool _loggedFirstDraw;
 
-    internal QuickMenuWindow(MenuContent content, int openFrame)
+    /// <summary>The content is built on the first <see cref="DoWindowContents"/> (inside OnGUI), around <paramref name="openMouse"/>.</summary>
+    internal QuickMenuWindow(Vec2 openMouse, int openFrame)
     {
-        _content = content;
-        _model = content.Model;
+        _openMouse = openMouse;
         _openFrame = openFrame;
         _map = Find.CurrentMap;
         layer = WindowLayer.GameUI;
@@ -75,6 +76,12 @@ internal sealed class QuickMenuWindow : Window
     {
         try
         {
+            if (!MenuController.Owns(this))
+            {
+                MenuController.CloseWindow(this);
+                return;
+            }
+
             using var scope = new MeasureScope(StatId.Window);
             base.WindowUpdate();
             if (!ReferenceEquals(Find.CurrentMap, _map) || WorldRendererUtility.WorldRendered)
@@ -95,6 +102,12 @@ internal sealed class QuickMenuWindow : Window
         try
         {
             Event.current.Use();
+            if (!MenuController.Owns(this))
+            {
+                MenuController.CloseWindow(this);
+                return;
+            }
+
             MenuController.Dispatch(TriggerEvent.Escape(MousePosition()));
         }
         catch (Exception ex)
@@ -122,14 +135,19 @@ internal sealed class QuickMenuWindow : Window
 
     public override void DoWindowContents(Rect inRect)
     {
-        if (DrawSite.Disabled)
+        if (DrawSite.Disabled || !MenuController.Owns(this))
         {
-            SafeClose();
+            MenuController.CloseWindow(this);
             return;
         }
 
         try
         {
+            if (_model == null && !BuildContent())
+            {
+                return;
+            }
+
             if (!_loggedFirstDraw)
             {
                 _loggedFirstDraw = true;
@@ -149,16 +167,44 @@ internal sealed class QuickMenuWindow : Window
         }
     }
 
+    /// <summary>Builds the content on the first draw. A failure (a foreign designator, a font) skips this open and does not disable the menu.</summary>
+    private bool BuildContent()
+    {
+        try
+        {
+            _content = MenuController.BuildFor(this, _openMouse);
+        }
+        catch (Exception ex)
+        {
+            Log.LogOnce("Menu.Build", $"Building the menu content failed, this open is skipped: {ex}");
+        }
+
+        if (_content == null)
+        {
+            SafeClose();
+            return false;
+        }
+
+        _model = _content.Model;
+        return true;
+    }
+
     private void HandleEvent(Event ev)
     {
+        WheelModel model = _model!;
         Vec2 mouse = new(ev.mousePosition.x, ev.mousePosition.y);
-        HitLayout layout = _model.HitLayout;
+        HitLayout layout = model.HitLayout;
         Hit hit = HitTester.Hit(mouse, in layout);
         switch (ev.type)
         {
             case EventType.Repaint:
+                if (_pressHit.Kind != HitKind.Outside && !Input.GetMouseButton(0))
+                {
+                    _pressHit = Hit.Outside; // released outside our window (MouseUp never arrived)
+                }
+
                 MenuController.Dispatch(TriggerEvent.MouseMove(mouse));
-                Paint(hit);
+                Paint(model, hit);
                 break;
             case EventType.MouseDown:
                 if (ev.button == 0)
@@ -171,18 +217,18 @@ internal sealed class QuickMenuWindow : Window
                 break;
             case EventType.MouseUp:
                 _pressHit = Hit.Outside;
-                SlotKind kind = hit.Kind == HitKind.Slot ? _model.Kinds[hit.Index] : SlotKind.Normal;
+                SlotKind kind = hit.Kind == HitKind.Slot ? model.Kinds[hit.Index] : SlotKind.Normal;
                 ev.Use();
                 MenuController.Dispatch(TriggerEvent.MouseUp(mouse, hit, kind, ev.button));
                 break;
         }
     }
 
-    private void Paint(Hit hit)
+    private void Paint(WheelModel model, Hit hit)
     {
         bool hoverEnabled = MenuController.HoverEnabled;
-        MenuRenderer.Draw(_model, hit, _pressHit, hoverEnabled);
-        int slot = hoverEnabled && hit.Kind == HitKind.Slot && _model.Kinds[hit.Index] != SlotKind.Empty ? hit.Index : -1;
+        MenuRenderer.Draw(model, hit, _pressHit, hoverEnabled);
+        int slot = hoverEnabled && hit.Kind == HitKind.Slot && model.Kinds[hit.Index] != SlotKind.Empty ? hit.Index : -1;
         if (slot != _hoverSlot)
         {
             _hoverSlot = slot;
@@ -192,11 +238,11 @@ internal sealed class QuickMenuWindow : Window
             }
         }
 
-        if (slot >= 0 && _content.Tip(slot) is { } tip)
+        if (slot >= 0 && _content!.Tip(slot) is { } tip)
         {
-            float half = _model.ButtonSize / 2f;
-            Vec2 c = _model.Slots[slot].Center;
-            TooltipHandler.TipRegion(new Rect(c.X - half, c.Y - half, _model.ButtonSize, _model.ButtonSize), new TipSignal(tip, TooltipIdBase + slot));
+            float half = model.ButtonSize / 2f;
+            Vec2 c = model.Slots[slot].Center;
+            TooltipHandler.TipRegion(new Rect(c.X - half, c.Y - half, model.ButtonSize, model.ButtonSize), new TipSignal(tip, TooltipIdBase + slot));
         }
     }
 

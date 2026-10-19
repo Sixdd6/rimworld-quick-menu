@@ -49,7 +49,17 @@ internal static class SlotRenderer
         if (icon != null)
         {
             GUI.color = QMStyle.White;
-            icon.DrawIcon(MenuRenderer.ToRect(transform.Rect(WheelVisuals.IconRect(layoutCentre, model.ButtonSize))), null, default);
+            try
+            {
+                icon.DrawIcon(MenuRenderer.ToRect(transform.Rect(WheelVisuals.IconRect(layoutCentre, model.ButtonSize))), null, default);
+            }
+            catch (System.Exception ex)
+            {
+                // A foreign designator's icon code is not ours to disable the menu for: blank this slot's icon and carry on.
+                string type = icon.GetType().FullName ?? icon.GetType().Name;
+                QuickMenu.Diagnostics.Log.LogOnce($"Menu.Icon.{type}", $"Drawing the icon of {type} failed, its icon is left blank: {ex.GetType().Name}: {ex.Message}");
+                model.BlankIcon(index);
+            }
         }
     }
 
