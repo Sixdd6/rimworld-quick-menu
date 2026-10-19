@@ -102,17 +102,27 @@ public class SampleRingTests
 
         ring.Summarize();
         stats.Record(1, 1, 1);
+        stats.MarkOpen();
+        stats.Flush();
 
         long before = GC.GetAllocatedBytesForCurrentThread();
         for (int i = 0; i < 10000; i++)
         {
             ring.Add((i * 7919L) % 1000);
-            stats.Record(i, i & 3, i);
+            if (i % 500 == 0)
+            {
+                stats.MarkOpen();
+            }
+
+            stats.Record(i, i & 3, i / 3);
         }
 
+        stats.Flush();
         SampleSummary s = ring.Summarize();
+        SampleSummary f = stats.FrameBytes.Summarize();
         long after = GC.GetAllocatedBytesForCurrentThread();
         Assert.Equal(0, after - before);
         Assert.True(s.Max >= s.P99 && s.P99 >= s.Median);
+        Assert.True(f.Count > 0);
     }
 }

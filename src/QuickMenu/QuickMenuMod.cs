@@ -31,7 +31,7 @@ public sealed class QuickMenuMod : Mod
 
         // Settings load and Mint/BAM/MP detection are not implemented yet; the ctor time is currently all patching (P-18).
         long end = Stopwatch.GetTimestamp();
-        PerfCounters.NoteStartup(end - started, end - started);
+        PerfStartup.Note(end - started, end - started);
     }
 
     // Isolated and not inlined so a missing 0Harmony assembly fails here, inside the caller's try block.

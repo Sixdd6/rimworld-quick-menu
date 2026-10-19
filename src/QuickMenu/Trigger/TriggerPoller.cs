@@ -28,7 +28,12 @@ internal static class TriggerPoller
 
         try
         {
-            using var scope = new MeasureScope(PerfCounters.Poller); // one cached bool check while measuring is off
+            if (PerfCounters.Enabled && PerfCounters.ReportPending)
+            {
+                PerfCounters.PrintPendingReport(); // deferred 10,000-frame report, outside the measured scope
+            }
+
+            using var scope = new MeasureScope(StatId.Poller); // one cached bool check while measuring is off
             if (!UnityEngine.Input.GetMouseButtonDown(SkeletonTrigger.MouseIndex))
             {
                 return;

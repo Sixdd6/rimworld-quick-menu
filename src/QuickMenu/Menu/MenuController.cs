@@ -10,6 +10,9 @@ internal static class MenuController
 
     private static QuickMenuWindow? _window;
 
+    /// <summary>Slot count of the most recently built window; the P-9 control window draws the same number.</summary>
+    internal static int LastSlotCount { get; set; }
+
     internal static bool IsOpen => _window != null;
 
     /// <summary>Opens the menu in the current frame. Pressing the trigger while it is open closes it.</summary>
@@ -33,7 +36,8 @@ internal static class MenuController
                 return;
             }
 
-            using var scope = new MeasureScope(PerfCounters.OpenPath);
+            using var scope = new MeasureScope(StatId.OpenPath);
+            PerfCounters.MarkOpen();
             Find.WindowStack.Add(_window = new QuickMenuWindow(UnityEngine.Time.frameCount));
         }
         catch (System.Exception ex)

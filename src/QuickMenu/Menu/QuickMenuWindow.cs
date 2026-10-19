@@ -75,6 +75,7 @@ internal sealed class QuickMenuWindow : Window
         }
 
         _count = pins.Length < wheel.Length ? pins.Length : wheel.Length;
+        MenuController.LastSlotCount = _count;
         _hubRect = new Rect(x - (ButtonSize / 2f), y - (ButtonSize / 2f), ButtonSize, ButtonSize);
     }
 
@@ -91,7 +92,7 @@ internal sealed class QuickMenuWindow : Window
     {
         try
         {
-            using var scope = new MeasureScope(PerfCounters.WindowUpdate);
+            using var scope = new MeasureScope(StatId.Window);
             base.WindowUpdate();
             if (!ReferenceEquals(Find.CurrentMap, _map) || WorldRendererUtility.WorldRendered)
             {
@@ -140,7 +141,7 @@ internal sealed class QuickMenuWindow : Window
                 }
             }
 
-            using var scope = new MeasureScope(PerfCounters.Draw);
+            using var scope = new MeasureScope(StatId.Window);
             Draw();
         }
         catch (Exception ex)

@@ -1,23 +1,27 @@
 using System;
 using LudeonTK;
+using QuickMenu.Catalog;
 using QuickMenu.Core.Geometry;
 using QuickMenu.Core.Layout;
+using QuickMenu.Core.Pins;
+using QuickMenu.Diagnostics.Spike;
+using QuickMenu.Menu;
 using UnityEngine;
 using Verse;
 
 namespace QuickMenu.Diagnostics;
 
 /// <summary>
-/// P-9 control run: an empty full-screen transparent window that makes the same <c>GUI</c>/<c>Widgets</c> calls per
-/// frame as <see cref="Menu.QuickMenuWindow"/> (hub, one box and one fitted icon per slot) but no mod logic: no hit
-/// test, no designators. Whatever it allocates is the engine/IMGUI baseline, not the mod's. It closes after
-/// <see cref="Seconds"/> s, on any click or on Esc. Measured by <see cref="PerfCounters.ControlDraw"/>.
+/// P-9 control run: a full-screen transparent window that makes the same <c>GUI</c> calls per frame as
+/// <see cref="Menu.QuickMenuWindow"/> (hub, one box per slot, <c>Designator.DrawIcon</c> on the same cached vanilla
+/// designators) with the same slot count N, but no mod logic: no hit test, no activation. Whatever it allocates is
+/// the engine/IMGUI baseline. N is the live wheel's count (<see cref="Menu.MenuController.LastSlotCount"/>, else the
+/// skeleton pin count) and is printed by "perf report". It closes after <see cref="Seconds"/> s, on a click or on Esc.
 /// </summary>
 internal sealed class ControlRunWindow : Window
 {
     private const float ButtonSize = 56f;
     private const float Seconds = 10f;
-    private const int SlotCount = 40; // P-8/P-9 reference size; the skeleton wheel draws far fewer
 
     private static readonly Color _slotColor = new(0.12f, 0.12f, 0.12f, 0.85f);
     private static readonly Color _hubColor = new(0f, 0f, 0f, 0.4f);
@@ -25,6 +29,7 @@ internal sealed class ControlRunWindow : Window
     private readonly float _endTime = Time.realtimeSinceStartup + Seconds;
     private readonly Rect[] _boxes;
     private readonly Rect[] _icons;
+    private readonly Designator?[] _designators;
     private readonly Rect _hub;
 
     internal ControlRunWindow()
@@ -47,15 +52,20 @@ internal sealed class ControlRunWindow : Window
 
         Vec2 centre = new(UI.screenWidth / 2f, UI.screenHeight / 2f);
         SlotPlacement[] wheel = WheelLayout.Compute(new WheelParams(ButtonSize, 1, centre));
-        _boxes = new Rect[SlotCount];
-        _icons = new Rect[SlotCount];
-        for (int i = 0; i < SlotCount; i++)
+        PinKey[] pins = SkeletonPins.Create();
+        int n = MenuController.LastSlotCount > 0 ? MenuController.LastSlotCount : pins.Length;
+        n = Math.Min(n, wheel.Length);
+        PerfCounters.ControlSlots = n;
+        _boxes = new Rect[n];
+        _icons = new Rect[n];
+        _designators = new Designator?[n];
+        for (int i = 0; i < n; i++)
         {
-            // Reuse the real ring positions, wrapping, so the draw calls cover a comparable screen area.
-            Vec2 c = wheel.Length == 0 ? centre : wheel[i % wheel.Length].Center;
+            Vec2 c = wheel[i].Center;
             _boxes[i] = new Rect(c.X - (ButtonSize / 2f), c.Y - (ButtonSize / 2f), ButtonSize, ButtonSize);
             float icon = ButtonSize * 0.75f;
             _icons[i] = new Rect(c.X - (icon / 2f), c.Y - (icon / 2f), icon, icon);
+            _designators[i] = pins.Length == 0 ? null : DesignatorCatalog.Resolve(pins[i % pins.Length])?.Designator;
         }
 
         _hub = new Rect(centre.X - (ButtonSize / 2f), centre.Y - (ButtonSize / 2f), ButtonSize, ButtonSize);
@@ -81,7 +91,7 @@ internal sealed class ControlRunWindow : Window
 
     public override void DoWindowContents(Rect inRect)
     {
-        using var scope = new MeasureScope(PerfCounters.ControlDraw);
+        using var scope = new MeasureScope(StatId.Control);
         Event ev = Event.current;
         if (ev.type == EventType.Repaint)
         {
@@ -95,7 +105,11 @@ internal sealed class ControlRunWindow : Window
                     GUI.color = _slotColor;
                     GUI.DrawTexture(_boxes[i], BaseContent.WhiteTex);
                     GUI.color = old;
-                    Widgets.DrawTextureFitted(_icons[i], BaseContent.BadTex, 1f);
+                    Designator? d = _designators[i];
+                    if (d != null)
+                    {
+                        d.DrawIcon(_icons[i], null, default);
+                    }
                 }
             }
             finally
@@ -113,8 +127,9 @@ internal sealed class ControlRunWindow : Window
     [DebugAction("Quick Menu", "control window", allowedGameStates = AllowedGameStates.Playing)]
     private static void Open()
     {
-        PerfCounters.ControlDraw.Reset();
-        PerfCounters.Enabled = true;
+        PerfCounters.Enable();
+        PerfCounters.Get(StatId.Control).Reset();
+        PerfCounters.Get(StatId.Control).MarkOpen();
         Find.WindowStack.Add(new ControlRunWindow());
         Log.Info("Quick Menu: control window open for " + (int)Seconds + " s; run 'perf report' afterwards.");
     }
