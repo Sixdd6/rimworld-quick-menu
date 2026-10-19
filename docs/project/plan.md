@@ -1308,6 +1308,9 @@ Each spike is time-boxed to one session of agent work; the UC-1 session is about
 7. **Frame Profiler overhead**: measured in UC-1 (T-15).
 8. **Picker removed (after UC-2)**: no picker, no search, no "+"/Add, no insert cursor; FR-7 is Won't. Pins come only from modifier+click in the architect menu; modifier+click on a wheel slot unpins.
 
+
+- **Decisions 11–13 (user, 2026-10-19)**: 11 — when only single entries of a dropdown are pinned, the dropdown button shows a **smaller, dimmer** marker (whole-dropdown pin = normal marker); 12 — marker in the **architect menu only** (not on copy/build buttons of selected things); 13 — pins hidden beyond the current capacity are **not** marked.
+
 ## Open questions (revision 2026-10-19)
 
 - **Question 8**: resolved — the menu stays open after an unpin (implemented in T-81, 00f1671).
