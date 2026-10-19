@@ -41,7 +41,7 @@ internal static class PinService
     /// </summary>
     internal static void Initialize() => Refresh();
 
-    /// <summary>Resolves every stored pin again. T-40 calls this after the Ideology part of the catalog is added.</summary>
+    /// <summary>Resolves every stored pin again. Runs by itself (via the stamp) after the Ideology part of the catalog changes or the catalog is rebuilt.</summary>
     internal static void Refresh()
     {
         try
@@ -197,6 +197,7 @@ internal static class PinService
 
     private static void EnsureCurrent()
     {
+        DesignatorCatalog.RefreshIdeology(); // O(1) when nothing changed; a change bumps the catalog version, so the stamp below differs
         long stamp = Stamp();
         if (_stamp != stamp && _failedStamp != stamp)
         {

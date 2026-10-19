@@ -69,6 +69,12 @@ internal static class SelfTest
         sb.AppendLine("buildMs=" + DesignatorCatalog.BuildTime.TotalMilliseconds.ToString("F2", CultureInfo.InvariantCulture)
             + " (budget 200) builds=" + DesignatorCatalog.BuildCount.ToString(CultureInfo.InvariantCulture)
             + " (P-12 expects 1) buildSiteDisabled=" + DesignatorCatalog.BuildSite.Disabled);
+        DesignatorCatalog.RefreshIdeology();
+        sb.AppendLine("ideology entries=" + DesignatorCatalog.IdeoEntryCount.ToString(CultureInfo.InvariantCulture)
+            + " rebuilds=" + DesignatorCatalog.IdeoRebuildCount.ToString(CultureInfo.InvariantCulture)
+            + " lastMs=" + DesignatorCatalog.IdeoBuildTime.TotalMilliseconds.ToString("F2", CultureInfo.InvariantCulture)
+            + " duplicateKeys=" + DesignatorCatalog.IdeoDuplicateKeyCount.ToString(CultureInfo.InvariantCulture)
+            + " siteDisabled=" + DesignatorCatalog.IdeoSite.Disabled);
         sb.AppendLine("complete=" + DesignatorCatalog.IsComplete + " skipped=" + DesignatorCatalog.SkippedCount.ToString(CultureInfo.InvariantCulture)
             + " duplicateKeys=" + DesignatorCatalog.DuplicateKeyCount.ToString(CultureInfo.InvariantCulture));
         var dupes = new BoundedLines(ExampleLimit);

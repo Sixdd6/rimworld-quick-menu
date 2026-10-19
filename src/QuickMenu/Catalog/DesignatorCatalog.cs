@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using QuickMenu.Core.Catalog;
 using QuickMenu.Core.Pins;
 using QuickMenu.Diagnostics;
 using RimWorld;
@@ -12,18 +13,26 @@ namespace QuickMenu.Catalog;
 
 /// <summary>
 /// Every architect designator, independent of the architect UI (ADR 0006). The static part is built once at
-/// startup, after defs are resolved; Ideology designators are added later (T-40). Built from
-/// <see cref="DesignationCategoryDef.AllResolvedDesignators"/>, dropdown elements flattened after their dropdown.
+/// startup, after defs are resolved, from <see cref="DesignationCategoryDef.AllResolvedDesignators"/>, dropdown elements
+/// flattened after their dropdown. The Ideology part (<see cref="DesignationCategoryDef.AllIdeoDesignators"/>) needs a loaded
+/// game and is appended after the static part by <see cref="RefreshIdeology"/> whenever its signature changes (T-40).
 /// </summary>
 [StaticConstructorOnStartup]
 internal static class DesignatorCatalog
 {
     internal static readonly PatchSite BuildSite = new("Catalog.Build");
+    internal static readonly PatchSite IdeoSite = new("Catalog.Ideology");
 
     private static readonly List<CatalogEntry> _entries = new();
     private static readonly Dictionary<PinKey, CatalogEntry> _byKey = new();
     private static readonly Dictionary<Designator, CatalogEntry> _byDesignator = new();
     private static readonly List<PinKey> _duplicateKeys = new();
+    private static readonly IdeoSignature _ideoSignature = new();
+    private static readonly List<PinKey> _ideoKeys = new();
+    private static readonly List<Designator> _ideoDesignators = new();
+    private static List<PinKey>? _modDropdownKeys;
+    private static int _staticCount;
+    private static int _staticSkipped;
 
     static DesignatorCatalog()
     {
@@ -45,6 +54,18 @@ internal static class DesignatorCatalog
 
     /// <summary>How many times <see cref="Rebuild"/> has run this session (budget P-12: expected 1).</summary>
     internal static int BuildCount { get; private set; }
+
+    /// <summary>How many times the Ideology part was rebuilt this session (once per game load or ideoligion change).</summary>
+    internal static int IdeoRebuildCount { get; private set; }
+
+    /// <summary>Wall-clock time of the last Ideology rebuild.</summary>
+    internal static TimeSpan IdeoBuildTime { get; private set; }
+
+    /// <summary>Number of Ideology entries currently in <see cref="Entries"/> (after the static part).</summary>
+    internal static int IdeoEntryCount => _entries.Count - _staticCount;
+
+    /// <summary>Ideology entries whose key was already taken by another entry (the first one keeps the key).</summary>
+    internal static int IdeoDuplicateKeyCount { get; private set; }
 
     /// <summary>Number of entries dropped from the key lookup because their key was already taken.</summary>
     internal static int DuplicateKeyCount => _duplicateKeys.Count;
@@ -90,6 +111,11 @@ internal static class DesignatorCatalog
             return exact;
         }
 
+        if (key.Kind == PinKeyKind.ModDropdown)
+        {
+            return ResolveModDropdown(key);
+        }
+
         if (key.Kind is not (PinKeyKind.BuildThing or PinKeyKind.BuildTerrain) || Current.Game == null)
         {
             return null;
@@ -123,6 +149,31 @@ internal static class DesignatorCatalog
         }
     }
 
+    /// <summary>
+    /// A mod dropdown whose stored key has no exact match: the loosest candidate by <see cref="ModDropdownMatcher"/> (the mod
+    /// added or removed a few elements). The stored key is not rewritten.
+    /// </summary>
+    private static CatalogEntry? ResolveModDropdown(PinKey stored)
+    {
+        List<PinKey> candidates = _modDropdownKeys ??= CollectModDropdownKeys();
+        PinKey? match = ModDropdownMatcher.Match(stored, candidates);
+        return match != null && _byKey.TryGetValue(match, out CatalogEntry? entry) ? entry : null;
+    }
+
+    private static List<PinKey> CollectModDropdownKeys()
+    {
+        var keys = new List<PinKey>();
+        foreach (CatalogEntry entry in _entries)
+        {
+            if (entry.Key.Kind == PinKeyKind.ModDropdown)
+            {
+                keys.Add(entry.Key);
+            }
+        }
+
+        return keys;
+    }
+
     /// <summary>An entry for a designator the catalog does not hold (Ideology, hidden right now). Not added to <see cref="Entries"/>.</summary>
     private static CatalogEntry AdHoc(PinKey key, Designator designator, BuildableDef def, bool forcedUnavailable)
     {
@@ -150,6 +201,11 @@ internal static class DesignatorCatalog
             _byKey.Clear();
             _byDesignator.Clear();
             _duplicateKeys.Clear();
+            _ideoKeys.Clear();
+            _ideoDesignators.Clear();
+            _modDropdownKeys = null;
+            IdeoDuplicateKeyCount = 0;
+            _ideoSignature.Update(null, null, 0); // the next RefreshIdeology rebuilds when a game is loaded
             SkippedCount = 0;
             ResolvedDesignatorCount = 0;
             TopLevelCount = 0;
@@ -175,16 +231,111 @@ internal static class DesignatorCatalog
             int index = 0;
             foreach (Node node in nodes)
             {
-                AddEntries(node, -1, keys, ref index);
+                AddEntries(node, -1, keys, ref index, ideo: false);
             }
 
             TopLevelCount = nodes.Count;
+            _staticCount = _entries.Count;
+            _staticSkipped = SkippedCount;
         }
         finally
         {
             Version++;
             stopwatch.Stop();
             BuildTime = stopwatch.Elapsed;
+        }
+    }
+
+    /// <summary>
+    /// Adds, replaces or removes the Ideology part when the (game, primary ideoligion, precept count) signature differs from
+    /// the last one seen. The unchanged case is a few reference reads and compares, with no allocation, so it is safe on every
+    /// menu open. A change calls <see cref="NotifyChanged"/>, so pins resolve again (a greyed Ideology pin becomes live without
+    /// reloading the save). Main thread only: game defs are not thread-safe.
+    /// </summary>
+    internal static void RefreshIdeology()
+    {
+        if (IdeoSite.Disabled || BuildSite.Disabled)
+        {
+            return;
+        }
+
+        try
+        {
+            Game? game = Current.Game;
+            Ideo? ideo = null;
+            int precepts = 0;
+            if (game != null && ModsConfig.IdeologyActive)
+            {
+                ideo = Faction.OfPlayerSilentFail?.ideos?.PrimaryIdeo;
+                precepts = ideo?.PreceptsListForReading.Count ?? 0;
+            }
+
+            if (_ideoSignature.Update(game, ideo, precepts))
+            {
+                RebuildIdeology(_ideoSignature.HasIdeo);
+            }
+        }
+        catch (Exception ex)
+        {
+            IdeoSite.Fail(ex);
+        }
+    }
+
+    private static void RebuildIdeology(bool build)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        try
+        {
+            foreach (PinKey key in _ideoKeys)
+            {
+                _byKey.Remove(key);
+            }
+
+            foreach (Designator designator in _ideoDesignators)
+            {
+                _byDesignator.Remove(designator);
+            }
+
+            _ideoKeys.Clear();
+            _ideoDesignators.Clear();
+            _entries.RemoveRange(_staticCount, _entries.Count - _staticCount);
+            IdeoDuplicateKeyCount = 0;
+            SkippedCount = _staticSkipped;
+            if (!build)
+            {
+                return;
+            }
+
+            var nodes = new List<Node>();
+            var categories = new List<DesignationCategoryDef>(DefDatabase<DesignationCategoryDef>.AllDefsListForReading);
+            categories.Sort(static (a, b) => a.order != b.order ? a.order.CompareTo(b.order) : string.CompareOrdinal(a.defName, b.defName));
+            var mods = new ModLookup();
+            foreach (DesignationCategoryDef category in categories)
+            {
+                foreach (Designator designator in category.AllIdeoDesignators)
+                {
+                    Node? node = MakeNode(designator, category, mods, depth: 0);
+                    if (node != null)
+                    {
+                        nodes.Add(node);
+                    }
+                }
+            }
+
+            IReadOnlyList<PinKey> keys = AssignKeys(nodes);
+            int index = 0;
+            foreach (Node node in nodes)
+            {
+                AddEntries(node, -1, keys, ref index, ideo: true);
+            }
+        }
+        finally
+        {
+            _modDropdownKeys = null;
+            IdeoRebuildCount++;
+            NotifyChanged();
+            stopwatch.Stop();
+            IdeoBuildTime = stopwatch.Elapsed;
         }
     }
 
@@ -228,21 +379,36 @@ internal static class DesignatorCatalog
         return descriptors;
     }
 
-    private static void AddEntries(Node node, int parentId, IReadOnlyList<PinKey> keys, ref int index)
+    private static void AddEntries(Node node, int parentId, IReadOnlyList<PinKey> keys, ref int index, bool ideo)
     {
         int id = _entries.Count;
         PinKey key = keys[index++];
         var entry = new CatalogEntry(id, parentId, node.Designator, key, node.Label, node.CategoryLabel, node.ModName, node.PackageId, node.Descriptor.Kind == DescriptorKind.Dropdown);
         _entries.Add(entry);
-        if (!_byKey.TryAdd(key, entry))
+        if (_byKey.TryAdd(key, entry))
+        {
+            if (ideo)
+            {
+                _ideoKeys.Add(key);
+            }
+        }
+        else if (ideo)
+        {
+            IdeoDuplicateKeyCount++;
+        }
+        else
         {
             _duplicateKeys.Add(key);
         }
 
-        _byDesignator.TryAdd(node.Designator, entry);
+        if (_byDesignator.TryAdd(node.Designator, entry) && ideo)
+        {
+            _ideoDesignators.Add(node.Designator);
+        }
+
         foreach (Node child in node.Children)
         {
-            AddEntries(child, id, keys, ref index);
+            AddEntries(child, id, keys, ref index, ideo);
         }
     }
 
