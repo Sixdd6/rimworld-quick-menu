@@ -4,8 +4,8 @@ using QuickMenu.Catalog;
 using QuickMenu.Core.Geometry;
 using QuickMenu.Core.Layout;
 using QuickMenu.Core.Pins;
-using QuickMenu.Diagnostics.Spike;
 using QuickMenu.Menu;
+using QuickMenu.Skeleton;
 using UnityEngine;
 using Verse;
 

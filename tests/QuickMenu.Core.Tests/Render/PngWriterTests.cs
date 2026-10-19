@@ -13,11 +13,6 @@ public class PngWriterTests
 {
     private static readonly byte[] _signature = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
 
-    /// <summary>Spike S-7 mask: the 256 px <c>Circle</c>, shipped for the ContentFinder probe (T-12).</summary>
-    internal const string SpikePngRelativePath = "mod/Textures/QuickMenu/Spike/SpikeCircle.png";
-
-    internal const int SpikeSize = 256;
-
     private sealed record Chunk(string Type, byte[] Data, uint Crc);
 
     // ---- Minimal independent PNG reader (test side) -------------------------------------------
@@ -151,18 +146,6 @@ public class PngWriterTests
         }
     }
 
-    private static string RepoRoot()
-    {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "QuickMenu.slnx")))
-        {
-            dir = dir.Parent;
-        }
-
-        Assert.NotNull(dir);
-        return dir.FullName;
-    }
-
     // ---- Tests ---------------------------------------------------------------------------------
 
     [Fact]
@@ -225,30 +208,5 @@ public class PngWriterTests
         Assert.Throws<ArgumentOutOfRangeException>(() => PngWriter.EncodeGrayAlpha(4, -1, new byte[4]));
         Assert.Throws<ArgumentException>(() => PngWriter.EncodeGrayAlpha(4, 4, new byte[15]));
         Assert.Throws<ArgumentNullException>(() => PngWriter.WriteGrayAlpha(null!, 4, 4, new byte[16]));
-    }
-
-    /// <summary>
-    /// The committed spike PNG must decode and match the rasterizer's 256 px circle.
-    /// Set <c>QM_EXPORT_MASKS=1</c> to (re)write it from the rasterizer first.
-    /// </summary>
-    [Fact]
-    public void SpikeCirclePng_DecodesAndMatchesTheRasterizer()
-    {
-        string path = Path.Combine(RepoRoot(), SpikePngRelativePath);
-        byte[] expected = MaskRasterizer.Circle(SpikeSize);
-
-        if (Environment.GetEnvironmentVariable("QM_EXPORT_MASKS") == "1")
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            using FileStream fs = File.Create(path);
-            PngWriter.WriteGrayAlpha(fs, SpikeSize, SpikeSize, expected);
-        }
-
-        Assert.True(File.Exists(path), $"{SpikePngRelativePath} is missing; run the tests with QM_EXPORT_MASKS=1");
-        (int w, int h, byte[] gray, byte[] alpha) = Decode(File.ReadAllBytes(path));
-        Assert.Equal(SpikeSize, w);
-        Assert.Equal(SpikeSize, h);
-        Assert.All(gray, g => Assert.Equal(255, g));
-        Assert.Equal(expected, alpha);
     }
 }

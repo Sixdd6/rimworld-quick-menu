@@ -4,7 +4,7 @@ using QuickMenu.Core.Geometry;
 using QuickMenu.Core.Layout;
 using QuickMenu.Core.Pins;
 using QuickMenu.Diagnostics;
-using QuickMenu.Diagnostics.Spike;
+using QuickMenu.Skeleton;
 using RimWorld;
 using RimWorld.Planet;
 using UnityEngine;

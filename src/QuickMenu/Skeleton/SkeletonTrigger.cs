@@ -2,7 +2,7 @@ using LudeonTK;
 using RimWorld;
 using Verse;
 
-namespace QuickMenu.Diagnostics.Spike;
+namespace QuickMenu.Skeleton;
 
 /// <summary>Walking-skeleton trigger: a mouse button index that a debug action cycles (spike S-2).</summary>
 internal static class SkeletonTrigger

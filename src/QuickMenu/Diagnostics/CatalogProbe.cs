@@ -9,13 +9,13 @@ using QuickMenu.Core.Pins;
 using RimWorld;
 using Verse;
 
-namespace QuickMenu.Diagnostics.Spike;
+namespace QuickMenu.Diagnostics;
 
 /// <summary>
-/// Spike S-5: the full catalog dump (one line per entry, so it is long) and the dev-only / unavailable-reason probes
-/// that <see cref="SelfTest"/> summarises. Spike-only; nothing here runs outside a debug action.
+/// S-5 diagnostics: the full catalog dump (one line per entry, so it is long) and the dev-only / unavailable-reason probes
+/// that <see cref="SelfTest"/> summarises. Dev-mode only; nothing here runs outside a debug action.
 /// </summary>
-internal static class CatalogDump
+internal static class CatalogProbe
 {
     private const int ChunkSize = 200;
 

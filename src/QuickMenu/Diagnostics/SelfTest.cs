@@ -6,7 +6,6 @@ using LudeonTK;
 using QuickMenu.Catalog;
 using QuickMenu.Core.Diagnostics;
 using QuickMenu.Core.Pins;
-using QuickMenu.Diagnostics.Spike;
 using QuickMenu.Pinning;
 using Verse;
 
@@ -99,7 +98,7 @@ internal static class SelfTest
         var failures = new BoundedLines(ExampleLimit);
         foreach (CatalogEntry e in DesignatorCatalog.Entries)
         {
-            string status = CatalogDump.RoundTripStatus(e);
+            string status = CatalogProbe.RoundTripStatus(e);
             if (status != "ok")
             {
                 failures.Add("#" + e.Id + " rt=" + status + ": " + e.Key.Value);
@@ -127,12 +126,12 @@ internal static class SelfTest
         var godCauses = new Dictionary<string, int>();
         foreach (CatalogEntry e in DesignatorCatalog.Entries)
         {
-            if (CatalogDump.VisibleText(e.Designator) == "false")
+            if (CatalogProbe.VisibleText(e.Designator) == "false")
             {
                 invisible++;
             }
 
-            string d = CatalogDump.DisabledText(e.Designator, out string reason);
+            string d = CatalogProbe.DisabledText(e.Designator, out string reason);
             if (d == "true")
             {
                 disabled++;
@@ -147,26 +146,26 @@ internal static class SelfTest
                 withReason++;
             }
 
-            CatalogDump.GodClass god = CatalogDump.ClassifyGod(e, out string cause);
+            CatalogProbe.GodClass god = CatalogProbe.ClassifyGod(e, out string cause);
             foreach (string part in cause.Split(';', StringSplitOptions.RemoveEmptyEntries))
             {
                 string name = part.Split('=')[0];
                 causes[name] = causes.GetValueOrDefault(name) + 1;
-                if (god == CatalogDump.GodClass.Explained)
+                if (god == CatalogProbe.GodClass.Explained)
                 {
                     godCauses[name] = godCauses.GetValueOrDefault(name) + 1;
                 }
             }
 
-            if (god == CatalogDump.GodClass.NoKnownCause)
+            if (god == CatalogProbe.GodClass.NoKnownCause)
             {
                 godOnly.Add(e.Key.Value);
             }
-            else if (god == CatalogDump.GodClass.Explained)
+            else if (god == CatalogProbe.GodClass.Explained)
             {
                 explained++;
             }
-            else if (CatalogDump.LooksDevOnly(e))
+            else if (CatalogProbe.LooksDevOnly(e))
             {
                 hinted++;
                 hints.Add(e.Key.Value);

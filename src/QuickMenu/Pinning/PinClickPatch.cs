@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Reflection;
 using HarmonyLib;
 using QuickMenu.Diagnostics;
-using QuickMenu.Diagnostics.Spike;
 using QuickMenu.Menu;
 using RimWorld;
 using UnityEngine;
@@ -60,26 +59,12 @@ internal static class PinClickPatch
         }
     }
 
-    // TODO(T-14): remove the ProcessInputProbe dependency when the real pin logic replaces the observe-only body.
     // TODO(T-27): add a re-entrancy guard; an override calling base.ProcessInput fires this prefix twice for one click.
+    // S-3 (ADR 0005): the Event is already used when this runs, so click vs hotkey and modifiers must come from UnityEngine.Input.
 
-    /// <summary>Observe-only prefix. Invoked on clicks and hotkeys only; one flag check when the probe is off.</summary>
+    /// <summary>Observe-only prefix, invoked on clicks and hotkeys only. Always runs the original. T-26 adds the pin logic.</summary>
     internal static bool Prefix(Designator __instance, Event __0)
     {
-        if (MenuActivation.Depth > 0 || Site.Disabled || !ProcessInputProbe.Enabled)
-        {
-            return true;
-        }
-
-        try
-        {
-            ProcessInputProbe.Record(__instance, __0);
-        }
-        catch (Exception ex)
-        {
-            Site.Fail(ex);
-        }
-
         return true;
     }
 
