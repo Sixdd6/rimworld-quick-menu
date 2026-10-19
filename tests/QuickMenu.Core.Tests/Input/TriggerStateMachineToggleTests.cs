@@ -62,7 +62,6 @@ public class TriggerStateMachineToggleTests
         Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseDown(_origin, Hit.Outside, 0)));
         Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseUp(_origin, Hit.Outside, SlotKind.Normal, 0)));
         Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseDown(_origin, Hit.Outside, 1)));
-        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.TriggerReleased(_origin)));
         Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MapLost()));
     }
 
@@ -292,14 +291,6 @@ public class TriggerStateMachineToggleTests
     {
         var m = Edit();
         Assert.Equal(MenuCommand.CloseFromEdit, m.Handle(TriggerEvent.TriggerPressed(_origin)));
-    }
-
-    [Fact]
-    public void Trigger_release_is_ignored_in_toggle_mode()
-    {
-        var m = Opened();
-        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.TriggerReleased(_origin)));
-        Assert.Equal(MenuState.Main, m.State);
     }
 
     [Fact]

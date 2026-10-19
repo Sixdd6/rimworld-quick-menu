@@ -22,22 +22,11 @@ public class TriggerStateMachineClosedAndUnknownTests
     }
 
     [Fact]
-    public void Map_lost_and_release_while_closed_do_nothing()
+    public void Map_lost_while_closed_does_nothing()
     {
-        var m = new TriggerStateMachine { HoldMode = true };
+        var m = new TriggerStateMachine();
 
         Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MapLost()));
-        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.TriggerReleased(_p, Hit.HubEdit)));
         Assert.Equal(MenuState.Closed, m.State);
-    }
-
-    [Fact]
-    public void Hold_release_off_the_hub_keeps_the_menu_open()
-    {
-        var m = new TriggerStateMachine { HoldMode = true };
-        m.Handle(TriggerEvent.TriggerPressed(_p));
-
-        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.TriggerReleased(_p, Hit.Outside)));
-        Assert.Equal(MenuState.Main, m.State);
     }
 }

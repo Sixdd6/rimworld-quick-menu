@@ -35,7 +35,7 @@ flowchart TD
     Edit -- modifier+click slot: unpin --> Edit
     Edit -- click hub (Done) / Esc --> Menu
     Edit -- right-click / click outside / trigger again / leave map --> Map
-    Menu -- Esc / click outside / right-click / trigger again / hold release over hub / leave map --> Map
+    Menu -- Esc / click outside / right-click / trigger again / leave map --> Map
     Arch[Any architect UI: vanilla, BAM, Mint] -- Ctrl/Alt+click designator --> Msg[Message: pinned / unpinned / full]
     Options[Options > Mod settings] --> Settings[Settings window]
     Settings -- binding button --> Capture[Binding capture dialog]
@@ -124,7 +124,6 @@ The same as S1, with a rounded panel instead of the disc and the hub in the cent
 - Material-variant dropdowns (FR-11a: every element has the same texture path and exactly one cost ingredient, all ingredients distinct, e.g. stone tiles and flagstones) show each sub-ring option with the icon of the material it costs, like the material ring; other dropdowns keep their own icons.
 - Material options show the material's icon in its stuff colour. The order is fixed; the last-used material is only highlighted with a 3 px accent rim.
 - **Back** (one level): Esc, right-click anywhere, a click on the satellite hub, or a click outside the satellite or sub-grid. On the main level, the same inputs close the menu.
-- **Hold mode**: hovering a sub-menu or material slot for **150 ms** opens its ring (the dwell stops rings from opening while the mouse passes over). Releasing over an option picks it. Releasing anywhere else closes everything.
 - **Satellites do not open in edit mode.**
 - Dropdown elements that are not `Visible` are left out of the 0/1/2+ count and the ring, as vanilla 1.7 `Designator_Dropdown.SetupFloatMenu` skips them (checked in the IL, 2026-10-19).
 
@@ -186,7 +185,6 @@ Rings are rasterized at `H` in screen px (like the slot rings at B); glyphs at `
 **Behaviour**
 - **Click** (left mouse down and up both inside the hit area): use mode → enter edit mode (S5); edit mode → Done (leave edit mode). The hub plays no hover sound (user decision, UC-2b: the menu opens with the pointer on the hub, and a sound on every open would be noise); `Mouseover_Command` plays only when the pointer enters a non-empty slot after open. Entering and leaving edit mode play no sound (Q-D3: sounds only for picking, pinning and rejects).
 - **Before edit mode ships (T-81 → T-44)**: the pencil is drawn with its normal, hover and pressed states so it clearly looks like a button, but a click does **nothing** (no sound, no message, no edit mode). No tooltip until T-44.
-- **Hold mode**: releasing the trigger over the hub **cancels** (closes the menu without an action), like releasing over empty space. A release never enters edit mode. While the hold trigger is still held, the hub shows **no hover highlight and no plate**, so it never looks as if releasing there would edit. A deliberate left-click while holding still enters edit mode.
 - **No hover delay (user decision, UC-2b, 2026-10-19)**: the mouse starts on the hub, and the hub highlight and the "Edit" plate show immediately on open, with no movement needed ("more snappy and responsive"). This replaces the earlier 4 px movement rule (`HoverMoveThreshold`, removed). Slots likewise react at once: highlight, plate, sound and tooltip.
 - **Label plate on hover**: "Edit" (use mode), "Done" (edit mode).
 - **Right-click on the hub**: the same as right-click anywhere (close in use and edit mode, back in a satellite).
@@ -194,7 +192,8 @@ Rings are rasterized at `H` in screen px (like the slot rings at B); glyphs at `
 #### S5. Edit mode (FR-9) and menu-level states. See [mockup](design/mockup-subring-grid-edit.png) (its "+" slots, insert cursor and caret are obsolete).
 **User decision 2026-10-19 (FR-7 Won't):** there is no in-menu picker, no Add, no "+" and no insert cursor. Pins are added **only** by modifier+click in the architect menu (FR-8). Edit mode is for **rearranging and unpinning** only. Empty slots stay empty (state 6) in use and edit mode.
 
-- **Enter**: click the hub (Edit, S4a). In hold mode the player clicks it while still holding the trigger. After that the menu stays open until Done, Esc, a click outside, right-click or the trigger, and releasing the trigger no longer closes it. A hold-mode **release** over the hub never enters edit mode.
+- **Trigger behaviour**: the trigger is press-to-toggle only. A hold-and-release mode and a trigger-mode setting were removed by the user on 2026-10-19 (spec FR-2).
+- **Enter**: click the hub (Edit, S4a). After that the menu stays open until Done, Esc, a click outside, right-click or the trigger.
 - **In edit mode**: the hub shows **Done** (check mark). The mouse gestures on slots are:
 
 | Gesture on a slot | Result |
@@ -223,7 +222,6 @@ Two columns inside `DoSettingsWindowContents` (about 860 × 580), using vanilla 
   - Mouse indices from ADR-0003: index 2 = middle, 3 = "Mouse 4" (default), 4 = "Mouse 5".
 - [Use middle mouse instead], hidden when the binding is already middle mouse.
 - Note (Tiny, `textMuted`): "Mice do not report their side buttons. If Mouse 4 does nothing, use the middle mouse button or bind a key. Middle mouse also drags the camera while held."
-- **Trigger mode**: ( ) Press to open, press again to close · ( ) Hold, release over a button.
 
 **Left column, "Pinning"**
 - **Pin with** [Ctrl ▾] "+ click on a build or order". Options: Ctrl, Alt, Shift.
@@ -287,8 +285,6 @@ All use vanilla `Messages.Message`, with `historical: false`:
 | Left-click hub (`HubEdit`) | enter edit mode (no-op until T-44) | back (the satellite's hub is the parent slot) | Done (leave edit mode) |
 | Left-click slot | activate or open sub-menu (occupied); nothing (empty) | pick option | nothing (drag to move; S5 table) |
 | Modifier+left-click slot | unpin (occupied or reserved; menu stays open); nothing on empty | same as a plain click | unpin (occupied or reserved); nothing on empty |
-| Trigger released (hold) over the hub | close (cancel, no action) | close everything (S3) | stay open |
-| Trigger released (hold) elsewhere | pick hovered slot or close | pick hovered option or close everything | stay open |
 | Trigger pressed again (toggle) | close | close | close |
 | Map changes / world view | close | close | close |
 
@@ -350,14 +346,14 @@ Target: **WCAG 2.2 AA** (text ≥ 4.5:1, UI parts ≥ 3:1). Every text pair pass
 
 ### Motion
 - No animation in v1. The menu appears in the trigger frame, and state changes are instant. RimWorld has no reduced-motion preference, so a lack of motion is the accessible default.
-- The only timed behaviour is the 150 ms hold-mode dwell. It is not animated.
+- Nothing is timed or animated: rings open on click and the hover highlight is immediate.
 
 ### Components
 | Component | States | Built from |
 |---|---|---|
 | Disc | normal, dimmed | `Disc` mask (gradient, tinted `discCentre`) + the **disc rim** texture: 2 px `accent` with 1 px `rimOutline` on each side, colours baked in, rasterized at the actual disc diameter in screen px (`Core.Render.DiscRim`) and rebuilt when B, rings in use or UI scale change. The stretched 128 px `Ring2` is not used for the rim. Dimmed: drawn with `GUI.color` α `dimmedMenu`. **Satellites draw the same disc and rim** at their own diameter `2·D_s` (§1.1), so a sub-menu reads as a menu of its own; their rim comes from `Textures.EnsureSatelliteRim(m)` (see §6) |
 | Grid panel | normal, dimmed | 9-slice `Panel` mask drawn with `Widgets.DrawAtlas`, tinted `discCentre` flat (a 9-slice cannot carry the radial fall-off; the darker end keeps slots readable) + 9-slice `PanelRim` (2 px band inside the rect) in `accent` over the same mask in `rimOutline` at the rect grown and shrunk by 1 px. The same panel serves the main grid, sub-grids and material grids (`PanelRenderer`, T-54); sub-grids have no hub and no underlay |
-| Hub (S4a) | One Edit button: Edit (use mode) / Done (edit mode), each normal, hover, pressed; hover reacts immediately on open (and none while a hold trigger is held, T-63) | `Circle` at `H` + hub rings 1/2/3 px rasterized at `H` + `IconEdit` / `IconDone` at `Hg` |
+| Hub (S4a) | One Edit button: Edit (use mode) / Done (edit mode), each normal, hover, pressed; hover reacts immediately on open | `Circle` at `H` + hub rings 1/2/3 px rasterized at `H` + `IconEdit` / `IconDone` at `Hg` |
 | Slot | S4 states 1–14 | `Circle` (fill), slot rings 1/2/3 px and dashed rasterized at B in screen px (`Textures.SlotRing1/2/3/Dashed`), badges at their drawn size (`Textures.Glyph`), `Command.DrawIcon` |
 | Plate (label, hint, help) | — | 9-slice `Plate` mask |
 | Binding row + capture dialog | bound, unbound, capturing, rejected, conflict warning | vanilla buttons and a dialog |
@@ -399,7 +395,6 @@ N/A, because the game's UI volume applies.
 - **Reading**: the instant label plate in Small font; short, plain hint and help text.
 - **Reduced motion**: there is no motion.
 - **Screen readers**: N/A, because IMGUI exposes no accessibility tree.
-- **Hold mode** has the toggle alternative (the default).
 - **Audio**: every sound has a visual counterpart.
 
 ## 6. Asset strategy and pipeline
@@ -441,7 +436,7 @@ N/A, because the game's UI volume applies.
 1. Per-frame drawing only while a menu or notice window is open (ADR-0007).
 2. Startup-time texture creation on the main thread (S-7).
 3. The window absorbs map clicks and draws above the map; dialogs draw above it (S-6).
-4. Raw polling of the trigger press and release, mouse indices 2–4 (ADR-0003).
+4. Raw polling of the trigger press, mouse indices 2–4 (ADR-0003).
 5. `Command.DrawIcon` for all designator icons (ADR-0007).
 6. Pure layout, hit testing, edge dodging and the mask rasterizer in Core (ADR-0002).
 7. The renderer takes an origin and a scale (for the settings preview).
@@ -515,7 +510,7 @@ Evidence: [uc4-material-ring-lastused.png](design/spikes/uc4-material-ring-lastu
 | 3 | Material dot (state 13) | The parent's dot is now #696969, a stuff colour, not `textMuted` (#A7B0B8). This confirms that the last-used material is remembered. Dark stuffs give a low-contrast dot (here about 2.9:1 vs `slotBg`), but the dot is supplementary: the ring in the open material ring carries the information. | Pass, no change |
 | 4 | Satellite see-through | The dimmed main wheel shows through the satellite (the main hub pencil at 6 o'clock, ghost ring-2 slots). This is the user's choice (T-86 declined). | Pass (user decision) |
 | 5 | Settings: size and structure | The window is the vanilla mod-settings window (about 900 × 700). Two columns, with the section headers ("Opening the menu", "Layout") on one baseline. The preview box measures exactly 410 × 270, and the wheel in it is 187 px across (the in-game B 64 wheel is 374 px, so 50 % is correct). Reset to defaults is at the bottom left. The missing-pins section is absent because no pins were missing. This is correct (S7: it shows only when missing pins exist), and UC-5 tests it. "Size" is a Fixed/Auto segmented control, not radio buttons. It is consistent with "Shape" and is accepted (S7 text updated below). | Pass |
-| 6 | Settings: left column empty space | About 300 px is empty between "Clear all pins…" and "Reset to defaults". The design also places the Trigger mode rows (T-64, M5), the Mint line and the missing-pins block in this column, so most of the gap is reserved. A bottom-anchored Reset is the vanilla pattern. | Accept, no change |
+| 6 | Settings: left column empty space | About 300 px is empty between "Clear all pins…" and "Reset to defaults". The design also places the Mint line and the missing-pins block in this column, so most of the gap is reserved. A bottom-anchored Reset is the vanilla pattern. | Accept, no change |
 | 7 | **Settings: selected segment** | The selected segment (Wheel, Fixed) uses only `Widgets.DrawHighlightSelected`: a lighter button fill (#866E3E vs #6B512F, about **1.5:1**). This looks like a hover lift, and the selection can be seen only by comparing the two buttons. S7 and §2 say that `accent` marks the selected segment. WCAG 1.4.11 needs 3:1 for a state indicator. | **Change (T-93)**: also draw a 2 px `accent` outline inside the selected segment (8.3:1 vs `windowBg`) |
 | 8 | **Settings: preview border** | The preview box border is pure white (#FFFFFF, the `Widgets.DrawBox` default, about 17:1 vs the window). It is the loudest line in the window, and it competes with the preview's `accent` rim. | **Change (T-93)**: draw the 1 px border in `slotBorder` (#56626E, about 2.8:1, decorative) |
 | 9 | **Settings: label alignment** | Row labels (Open menu with, Pin with, Shape, Size, Rings, Button size) are drawn top-anchored in the 30 px row, so they sit about 4 px above the centred button text. In the left column the controls start at different x positions: the binding button at +125 px and the Ctrl button at +90 px. | **Change (T-93)**: `TextAnchor.MiddleLeft` for row labels; one label width per column (the widest measured label in that column, at least 90) |

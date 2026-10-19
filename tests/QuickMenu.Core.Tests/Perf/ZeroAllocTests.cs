@@ -69,7 +69,7 @@ public class ZeroAllocTests
     [Fact]
     public void TriggerStateMachine_Handle_allocates_nothing()
     {
-        var m = new TriggerStateMachine { EditEnabled = true, HoldMode = true };
+        var m = new TriggerStateMachine { EditEnabled = true };
         var origin = new Vec2(100, 100);
         TriggerEvent[] events =
         {
@@ -81,7 +81,6 @@ public class ZeroAllocTests
             TriggerEvent.MouseUp(origin, Hit.HubEdit, SlotKind.Normal, 0),
             TriggerEvent.MouseDown(origin, Hit.Slot(2), 0),
             TriggerEvent.MouseUp(origin, Hit.Slot(2), SlotKind.Normal, 0, true),
-            TriggerEvent.TriggerReleased(origin, Hit.HubEdit),
             TriggerEvent.Escape(origin),
             TriggerEvent.MouseDown(origin, Hit.Outside, 1),
             TriggerEvent.MapLost(),

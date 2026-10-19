@@ -99,12 +99,4 @@ public class TriggerStateMachineEditModeTests
         m = Editing();
         Assert.Equal(MenuCommand.CloseFromEdit, m.Handle(TriggerEvent.TriggerPressed(_p)));
     }
-
-    [Fact]
-    public void Hold_release_never_enters_edit_and_does_not_close_in_edit()
-    {
-        var m = new TriggerStateMachine { HoldMode = true };
-        m.Handle(TriggerEvent.TriggerPressed(_p));
-        Assert.Equal(MenuCommand.Close, m.Handle(TriggerEvent.TriggerReleased(_p, Hit.HubEdit)));
-    }
 }

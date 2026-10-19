@@ -9,9 +9,6 @@ public enum TriggerEventKind
     /// <summary>The bound trigger went down.</summary>
     TriggerPressed = 0,
 
-    /// <summary>The bound trigger went up (used by hold mode; ignored in toggle mode).</summary>
-    TriggerReleased,
-
     /// <summary>A mouse button went down.</summary>
     MouseDown,
 
@@ -42,13 +39,6 @@ public readonly record struct TriggerEvent(
 {
     public static TriggerEvent TriggerPressed(Vec2 position) =>
         new(TriggerEventKind.TriggerPressed, position, Hit.Outside, 0, SlotKind.Normal);
-
-    public static TriggerEvent TriggerReleased(Vec2 position) =>
-        new(TriggerEventKind.TriggerReleased, position, Hit.Outside, 0, SlotKind.Normal);
-
-    /// <param name="hit">What the pointer is over at the release (hold mode).</param>
-    public static TriggerEvent TriggerReleased(Vec2 position, Hit hit) =>
-        new(TriggerEventKind.TriggerReleased, position, hit, 0, SlotKind.Normal);
 
     /// <param name="button">0 = left, 1 = right.</param>
     /// <param name="slotKind">When <paramref name="hit"/> is a slot: what the slot is (edit mode starts a drag from an occupied or reserved slot).</param>

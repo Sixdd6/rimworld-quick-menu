@@ -4,9 +4,7 @@ using QuickMenu.Core.Layout;
 namespace QuickMenu.Core.Input;
 
 /// <summary>
-/// Open/close/back/activate decisions (FR-2, FR-11..13, design.md S4a). Toggle mode by default; with
-/// <see cref="HoldMode"/> a <see cref="TriggerEventKind.TriggerReleased"/> over the hub cancels (T-81; the rest of hold
-/// mode is T-63). The hub is one target, Edit (Done in edit mode), and a click on it never closes the menu.
+/// Open/close/back/activate decisions (FR-2 press-to-toggle, FR-11..13, design.md S4a). The hub is one target, Edit (Done in edit mode), and a click on it never closes the menu.
 /// Left clicks act on mouse-up and only when the press began on the same target. Right-click acts on press.
 /// Allocation free.
 /// </summary>
@@ -28,9 +26,6 @@ public sealed class TriggerStateMachine
 
     /// <summary>True when a hub click enters edit mode (T-44; the default). When false a hub click does nothing and the menu stays open.</summary>
     public bool EditEnabled { get; set; } = true;
-
-    /// <summary>True when the trigger is held to use the menu and released to choose (FR-2).</summary>
-    public bool HoldMode { get; set; }
 
     public MenuCommand Handle(in TriggerEvent e)
     {
@@ -80,8 +75,6 @@ public sealed class TriggerStateMachine
                 return OnDown(e);
             case TriggerEventKind.MouseUp:
                 return OnUp(e);
-            case TriggerEventKind.TriggerReleased:
-                return HoldMode && State != MenuState.Edit && e.Hit.Kind == HitKind.HubEdit ? CloseAll() : MenuCommand.None;
             default:
                 return MenuCommand.None;
         }

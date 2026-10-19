@@ -19,7 +19,6 @@ internal sealed class QuickMenuSettings : ModSettings
 {
     internal int SchemaVersion = SettingsRules.SchemaVersion;
     private string _triggerText = SettingsRules.DefaultTrigger;
-    internal TriggerMode TriggerMode = TriggerMode.Toggle;
     internal MenuLayout Layout = MenuLayout.Wheel;
     internal SizingMode Sizing = SizingMode.Fixed;
     internal int Rings = SettingsRules.DefaultRings;
@@ -72,7 +71,6 @@ internal sealed class QuickMenuSettings : ModSettings
     internal void ResetOptions()
     {
         Trigger = TriggerBinding.TryParse(SettingsRules.DefaultTrigger, out TriggerBinding d) ? d : TriggerBinding.Mouse(3);
-        TriggerMode = TriggerMode.Toggle;
         Layout = MenuLayout.Wheel;
         Sizing = SizingMode.Fixed;
         Rings = SettingsRules.DefaultRings;
@@ -118,7 +116,6 @@ internal sealed class QuickMenuSettings : ModSettings
 
         SchemaVersion = LookInt(SchemaVersion, "schemaVersion", SettingsRules.SchemaVersion);
         Scribe_Values.Look(ref _triggerText, "trigger", SettingsRules.DefaultTrigger, forceSave: true);
-        TriggerMode = (TriggerMode)LookEnum(typeof(TriggerMode), TriggerMode, "triggerMode", TriggerMode.Toggle);
         Layout = (MenuLayout)LookEnum(typeof(MenuLayout), Layout, "layout", MenuLayout.Wheel);
         Sizing = (SizingMode)LookEnum(typeof(SizingMode), Sizing, "sizing", SizingMode.Fixed);
         Rings = LookInt(Rings, "rings", SettingsRules.DefaultRings);
@@ -192,12 +189,6 @@ internal sealed class QuickMenuSettings : ModSettings
         if (!TriggerBinding.TryParse(_triggerText, out _))
         {
             _triggerText = SettingsRules.DefaultTrigger;
-            changed = true;
-        }
-
-        if (!IsDefined(typeof(TriggerMode), TriggerMode))
-        {
-            TriggerMode = TriggerMode.Toggle;
             changed = true;
         }
 

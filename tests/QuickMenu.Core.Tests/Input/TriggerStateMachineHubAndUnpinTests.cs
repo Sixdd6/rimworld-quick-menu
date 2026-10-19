@@ -5,14 +5,14 @@ using Xunit;
 
 namespace QuickMenu.Core.Tests.Input;
 
-/// <summary>T-81: the hub is one Edit target that never closes the menu; pin-modifier+click unpins; hold release over the hub cancels.</summary>
+/// <summary>T-81: the hub is one Edit target that never closes the menu; pin-modifier+click unpins.</summary>
 public class TriggerStateMachineHubAndUnpinTests
 {
     private static readonly Vec2 _p = new(40, 40);
 
-    private static TriggerStateMachine Opened(bool hold = false, bool edit = true)
+    private static TriggerStateMachine Opened(bool edit = true)
     {
-        var m = new TriggerStateMachine { EditEnabled = edit, HoldMode = hold };
+        var m = new TriggerStateMachine { EditEnabled = edit };
         Assert.Equal(MenuCommand.Open, m.Handle(TriggerEvent.TriggerPressed(_p)));
         return m;
     }
@@ -24,10 +24,9 @@ public class TriggerStateMachineHubAndUnpinTests
     }
 
     [Fact]
-    public void Edit_is_enabled_and_hold_is_off_by_default()
+    public void Edit_is_enabled_by_default()
     {
         Assert.True(new TriggerStateMachine().EditEnabled);
-        Assert.False(new TriggerStateMachine().HoldMode);
     }
 
     [Theory]
@@ -111,43 +110,5 @@ public class TriggerStateMachineHubAndUnpinTests
         var m = Opened();
         Assert.Equal(MenuCommand.Unpin(5), Click(m, Hit.Slot(5), SlotKind.Disabled, modifier: true));
         Assert.Equal(MenuCommand.Reject(5), Click(m, Hit.Slot(5), SlotKind.Disabled));
-    }
-
-    [Fact]
-    public void Hold_release_over_the_hub_cancels_and_never_enters_edit()
-    {
-        var m = Opened(hold: true);
-        Assert.Equal(MenuCommand.Close, m.Handle(TriggerEvent.TriggerReleased(_p, Hit.HubEdit)));
-        Assert.Equal(MenuState.Closed, m.State);
-    }
-
-    [Fact]
-    public void Hold_release_over_the_hub_closes_everything_with_a_satellite_open()
-    {
-        var m = Opened(hold: true);
-        Click(m, Hit.Slot(2), SlotKind.Submenu);
-        Assert.Equal(MenuCommand.Close, m.Handle(TriggerEvent.TriggerReleased(_p, Hit.HubEdit)));
-        Assert.Equal(MenuState.Closed, m.State);
-    }
-
-    [Fact]
-    public void Hold_release_in_edit_mode_stays_open_and_toggle_mode_ignores_releases()
-    {
-        var m = Opened(hold: true);
-        Click(m, Hit.HubEdit);
-        Assert.Equal(MenuState.Edit, m.State);
-        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.TriggerReleased(_p, Hit.HubEdit)));
-        Assert.Equal(MenuState.Edit, m.State);
-
-        var toggle = Opened(hold: false);
-        Assert.Equal(MenuCommand.None, toggle.Handle(TriggerEvent.TriggerReleased(_p, Hit.HubEdit)));
-        Assert.Equal(MenuState.Main, toggle.State);
-    }
-
-    [Fact]
-    public void Hub_click_while_holding_still_enters_edit()
-    {
-        var m = Opened(hold: true);
-        Assert.Equal(MenuCommand.EnterEdit, Click(m, Hit.HubEdit));
     }
 }
