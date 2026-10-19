@@ -4,7 +4,7 @@
 - **Autonomy**: gated   <!-- gated | autonomous -->
 - **Specialists**: visual-designer (all-UI product), performance-engineer (NFR-1 per-frame budget)
 - **Current phase**: 5 Build
-- **Current milestone / task**: M5 — build done; UC-5 session (T-69)
+- **Current milestone / task**: M6 — starting (M5 approved 2026-10-19)
 - **Last updated**: 2026-10-19
 
 ## Phases
@@ -45,3 +45,4 @@ States: `not started` → `in progress` → `awaiting approval` → `done` (or `
 - 2026-10-19 — M2 approved by user (test review PASS, security audit PASS with lows fixed); M3 started.
 - 2026-10-19 — M3 approved: sub-rings, material ring (fixed order, highlight), material-variant icons, Ideology refresh, edit mode shell; UC-3 passed; security + test reviews passed. T-86 (satellite underlay) declined by user.
 - 2026-10-19 — M4 approved: drag rearrange, grid, Auto sizing, settings v2 + preview, empty hint; UC-4 passed; reviews passed. User decisions: hold mode dropped; FR-19 pin marker added for M6; UI scale check at 1.75.
+- 2026-10-19 — M5 approved: availability reasons, missing-mod pins, Mint/BAM detection + notices, Multiplayer audit, settings polish, hold mode removed, slider rebuild fix; pinning only in architect menus (vanilla, BAM, Mint). UC-5 passed; reviews passed.
