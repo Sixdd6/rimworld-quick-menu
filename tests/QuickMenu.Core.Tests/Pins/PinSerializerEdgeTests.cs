@@ -47,28 +47,75 @@ public class PinSerializerEdgeTests
     }
 
     [Fact]
-    public void Preserved_lines_keep_escapes_and_follow_the_board_lines_unchanged()
+    public void Opaque_lines_keep_escapes_and_their_slot_unchanged()
     {
         string[] lines = { "0|future:a\\|b|pk|la\\\\bel", "1|build:thing/Wall||W" };
         PinLoadResult r = PinSerializer.FromLines(lines);
 
         Assert.Equal(0, r.SkippedCount);
-        Assert.Equal(new[] { lines[0] }, r.Preserved);
+        Assert.Equal(PinKeyKind.Opaque, r.Board.Entries[0]!.Key.Kind);
 
-        List<string> back = PinSerializer.ToLines(r.Board, r.Preserved);
-        Assert.Equal(new[] { lines[1], lines[0] }, back);
+        List<string> back = PinSerializer.ToLines(r.Board);
+        Assert.Equal(lines, back);
 
         // Second generation is stable.
-        PinLoadResult r2 = PinSerializer.FromLines(back);
-        Assert.Equal(back, PinSerializer.ToLines(r2.Board, r2.Preserved));
+        Assert.Equal(back, PinSerializer.ToLines(PinSerializer.FromLines(back).Board));
     }
 
     [Fact]
-    public void Preserved_slot_is_reserved_against_later_duplicates()
+    public void Opaque_slot_is_reserved_against_later_duplicates()
     {
         PinLoadResult r = PinSerializer.FromLines(new[] { "2|future:x||", "2|build:thing/Wall||W" });
-        Assert.Single(r.Preserved);
+        Assert.Equal(PinKeyKind.Opaque, r.Board.Entries[2]!.Key.Kind);
         Assert.Equal(PinLineIssue.BadSlot, Assert.Single(r.Skipped).Issue);
+    }
+
+    private sealed class AllResolved : IPinResolver
+    {
+        public bool IsResolved(PinKey key) => true;
+    }
+
+    [Fact]
+    public void Opaque_slots_are_occupied_so_new_pins_skip_them_and_the_line_survives_save_and_reload()
+    {
+        PinLoadResult r = PinSerializer.FromLines(new[] { "0|build:thing/Wall||W", "2|future:x/Y||L" });
+        PinBoard board = r.Board;
+        board.Capacity = 4;
+
+        Assert.Equal(PinResult.Pinned, board.Toggle(PinKey.Build(PinKeyKind.BuildThing, "A")));
+        Assert.Equal(PinResult.Pinned, board.Toggle(PinKey.Build(PinKeyKind.BuildThing, "B")));
+        Assert.Equal(PinResult.Full, board.Toggle(PinKey.Build(PinKeyKind.BuildThing, "C")));
+
+        Assert.Equal("build:thing/A", board.Entries[1]!.Key.Value);
+        Assert.Equal("build:thing/B", board.Entries[3]!.Key.Value);
+        Assert.Equal(PinSlotState.Unresolved, board.VisibleSlots(new AllResolved())[2].State);
+
+        List<string> lines = PinSerializer.ToLines(board);
+        Assert.Equal("2|future:x/Y||L", lines[2]);
+        Assert.Equal(lines, PinSerializer.ToLines(PinSerializer.FromLines(lines).Board));
+    }
+
+    [Fact]
+    public void Opaque_entry_is_not_toggled_off_by_a_real_key_and_moves_with_its_slot_number_on_swap()
+    {
+        PinBoard board = PinSerializer.FromLines(new[] { "0|future:x||L", "1|build:thing/A||" }).Board;
+        board.Capacity = 3;
+
+        Assert.True(board.Swap(0, 2));
+        Assert.Equal(new[] { "1|build:thing/A||", "2|future:x||L" }, PinSerializer.ToLines(board));
+        Assert.Equal(1, board.CountUnresolved(new AllResolved()));
+        Assert.Equal(1, board.ForgetUnresolved(new AllResolved()));
+    }
+
+    [Theory]
+    [InlineData("0|order:X#1#2||L")]
+    [InlineData("0|build:thing/||L")]
+    [InlineData("0|moddrop:bad|p|l")]
+    public void Known_prefix_that_fails_to_parse_is_kept_as_opaque_not_dropped(string line)
+    {
+        PinLoadResult r = PinSerializer.FromLines(new[] { line });
+        Assert.Equal(0, r.SkippedCount);
+        Assert.Equal(new[] { line }, PinSerializer.ToLines(r.Board));
     }
 
     [Theory]
@@ -76,12 +123,10 @@ public class PinSerializerEdgeTests
     [InlineData("0|1x:x||")]
     [InlineData("0|:x||")]
     [InlineData("0|nocolon||")]
-    [InlineData("0|build:thing/||")]
     public void Not_a_valid_future_prefix_and_not_a_known_key_is_skipped(string line)
     {
         PinLoadResult r = PinSerializer.FromLines(new[] { line });
         Assert.Equal(1, r.SkippedCount);
-        Assert.Empty(r.Preserved);
     }
 
     [Theory]
@@ -124,7 +169,6 @@ public class PinSerializerEdgeTests
         string huge = "0|future:x||" + new string('a', 5000);
         PinLoadResult r = PinSerializer.FromLines(new[] { huge, "1|build:thing/Wall||x" });
         Assert.Equal(PinLineIssue.TooLong, Assert.Single(r.Skipped).Issue);
-        Assert.Empty(r.Preserved);
         Assert.NotNull(r.Board.Entries[1]);
     }
 

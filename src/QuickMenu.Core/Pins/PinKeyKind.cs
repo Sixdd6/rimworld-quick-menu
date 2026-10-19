@@ -17,4 +17,10 @@ public enum PinKeyKind
 
     /// <summary><c>moddrop:&lt;Type.FullName&gt;@&lt;category&gt;~&lt;child&gt;,...</c></summary>
     ModDropdown,
+
+    /// <summary>
+    /// A stored line this version cannot interpret (unknown or unparseable key). Its <see cref="PinKey.Value"/> is the
+    /// raw text after the slot, written back unchanged. Never produced by <see cref="PinKey.TryParse"/>; never resolved.
+    /// </summary>
+    Opaque,
 }

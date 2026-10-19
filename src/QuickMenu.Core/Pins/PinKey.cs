@@ -61,6 +61,10 @@ public sealed class PinKey : IEquatable<PinKey>
         return new PinKey(kind, defName, null, null, null, prefix + Esc(defName, nameof(defName)));
     }
 
+    /// <summary>Wraps the raw <c>key|packageId|label</c> text of a stored line this version cannot read.</summary>
+    internal static PinKey Opaque(string rawFields) =>
+        new(PinKeyKind.Opaque, rawFields, null, null, null, rawFields);
+
     public static PinKey Dropdown(string groupDefName) =>
         new(PinKeyKind.Dropdown, groupDefName, null, null, null, "dropdown:" + Esc(groupDefName, nameof(groupDefName)));
 

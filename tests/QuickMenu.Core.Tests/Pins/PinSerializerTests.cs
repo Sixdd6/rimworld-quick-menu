@@ -67,8 +67,7 @@ public class PinSerializerTests
         PinLoadResult r = PinSerializer.FromLines(new[] { "0|build:thing/Wall||W", unknown });
 
         Assert.Equal(0, r.SkippedCount);
-        Assert.Equal(new[] { unknown }, r.Preserved);
-        List<string> back = PinSerializer.ToLines(r.Board, r.Preserved);
+        List<string> back = PinSerializer.ToLines(r.Board);
         Assert.Equal(new[] { "0|build:thing/Wall||W", unknown }, back);
     }
 
@@ -80,8 +79,6 @@ public class PinSerializerTests
     [InlineData("x|build:thing/X||l")]
     [InlineData("-1|build:thing/X||l")]
     [InlineData("01|build:thing/X||l")]
-    [InlineData("0|build:thing/|p|l")]
-    [InlineData("0|moddrop:bad|p|l")]
     [InlineData("0||p|l")]
     [InlineData("0|Build:thing/X||l")]
     [InlineData("0|build:thing/X||bad\\x")]
@@ -93,7 +90,6 @@ public class PinSerializerTests
         Assert.Equal(1, r.SkippedCount);
         Assert.Equal(new SkippedPinLine(1, PinLineIssue.Malformed), r.Skipped[0]);
         Assert.Equal("G", r.Board.Entries[1]!.Label);
-        Assert.Empty(r.Preserved);
     }
 
     [Fact]

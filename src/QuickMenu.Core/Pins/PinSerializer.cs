@@ -28,18 +28,17 @@ public readonly record struct SkippedPinLine(int LineIndex, PinLineIssue Issue);
 /// <summary>Outcome of <see cref="PinSerializer.FromLines"/>.</summary>
 public sealed class PinLoadResult
 {
-    internal PinLoadResult(PinBoard board, IReadOnlyList<string> preserved, IReadOnlyList<SkippedPinLine> skipped)
+    internal PinLoadResult(PinBoard board, IReadOnlyList<SkippedPinLine> skipped)
     {
         Board = board;
-        Preserved = preserved;
         Skipped = skipped;
     }
 
-    /// <summary>The loaded pins (capacity 0; the caller sets the capacity from settings).</summary>
+    /// <summary>
+    /// The loaded pins (capacity 0; the caller sets the capacity from settings). Lines this version cannot read
+    /// are held as <see cref="PinKeyKind.Opaque"/> entries in their slots and written back unchanged.
+    /// </summary>
     public PinBoard Board { get; }
-
-    /// <summary>Well-formed lines with a key prefix this version does not know. Pass them back to <see cref="PinSerializer.ToLines"/>.</summary>
-    public IReadOnlyList<string> Preserved { get; }
 
     /// <summary>Lines that were dropped, for the caller to log once.</summary>
     public IReadOnlyList<SkippedPinLine> Skipped { get; }
@@ -61,8 +60,8 @@ public static class PinSerializer
     private const char Sep = '|';
     private static readonly string[] _knownPrefixes = { "build:thing/", "build:terrain/", "dropdown:", "order:", "moddrop:" };
 
-    /// <summary>Writes the board, then the preserved lines unchanged. Slots are written in ascending order.</summary>
-    public static List<string> ToLines(PinBoard board, IReadOnlyList<string>? preserved = null)
+    /// <summary>Writes the board in ascending slot order; opaque entries are written back unchanged.</summary>
+    public static List<string> ToLines(PinBoard board)
     {
         ArgumentNullException.ThrowIfNull(board);
         var lines = new List<string>();
@@ -76,17 +75,20 @@ public static class PinSerializer
 
             var sb = new StringBuilder();
             sb.Append(i.ToString(CultureInfo.InvariantCulture)).Append(Sep);
-            Append(sb, e.Key.Value);
-            sb.Append(Sep);
-            Append(sb, e.PackageId ?? string.Empty);
-            sb.Append(Sep);
-            Append(sb, e.Label);
-            lines.Add(sb.ToString());
-        }
+            if (e.Key.Kind == PinKeyKind.Opaque)
+            {
+                sb.Append(e.Key.Value);
+            }
+            else
+            {
+                Append(sb, e.Key.Value);
+                sb.Append(Sep);
+                Append(sb, e.PackageId ?? string.Empty);
+                sb.Append(Sep);
+                Append(sb, e.Label);
+            }
 
-        if (preserved != null)
-        {
-            lines.AddRange(preserved);
+            lines.Add(sb.ToString());
         }
 
         return lines;
@@ -96,22 +98,21 @@ public static class PinSerializer
     public static PinLoadResult FromLines(IReadOnlyList<string?>? lines)
     {
         var board = new PinBoard(0);
-        var preserved = new List<string>();
         var skipped = new List<SkippedPinLine>();
         var usedSlots = new HashSet<int>();
         for (int i = 0; lines != null && i < lines.Count; i++)
         {
-            PinLineIssue? issue = TryLoad(lines[i], board, preserved, usedSlots);
+            PinLineIssue? issue = TryLoad(lines[i], board, usedSlots);
             if (issue is { } why)
             {
                 skipped.Add(new SkippedPinLine(i, why));
             }
         }
 
-        return new PinLoadResult(board, preserved, skipped);
+        return new PinLoadResult(board, skipped);
     }
 
-    private static PinLineIssue? TryLoad(string? line, PinBoard board, List<string> preserved, HashSet<int> usedSlots)
+    private static PinLineIssue? TryLoad(string? line, PinBoard board, HashSet<int> usedSlots)
     {
         if (line == null)
         {
@@ -146,9 +147,11 @@ public static class PinSerializer
             return null;
         }
 
-        if (IsUnknownPrefix(keyText))
+        if (IsUnknownPrefix(keyText) || IsKnownPrefix(keyText))
         {
-            preserved.Add(line);
+            // Written by a newer version (or a key form this one cannot read): keep the slot and the text.
+            string raw = line[(line.IndexOf(Sep, StringComparison.Ordinal) + 1)..];
+            board.SetSlot(slot, new PinEntry(PinKey.Opaque(raw), f[3], f[2].Length == 0 ? null : f[2]));
             usedSlots.Add(slot);
             return null;
         }
@@ -156,20 +159,25 @@ public static class PinSerializer
         return PinLineIssue.Malformed;
     }
 
-    private static bool IsUnknownPrefix(string key)
+    private static bool IsKnownPrefix(string key)
     {
-        int colon = key.IndexOf(':', StringComparison.Ordinal);
-        if (colon <= 0)
-        {
-            return false;
-        }
-
         foreach (string p in _knownPrefixes)
         {
             if (key.StartsWith(p, StringComparison.Ordinal))
             {
-                return false;
+                return true;
             }
+        }
+
+        return false;
+    }
+
+    private static bool IsUnknownPrefix(string key)
+    {
+        int colon = key.IndexOf(':', StringComparison.Ordinal);
+        if (colon <= 0 || IsKnownPrefix(key))
+        {
+            return false;
         }
 
         for (int i = 0; i < colon; i++)
@@ -240,6 +248,76 @@ public static class PinSerializer
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Checks that a pin written to <paramref name="slot"/> loads back (line length, child count) and shortens the
+    /// label, or drops the package id, to fit. The key is never altered. False when the key alone cannot be stored.
+    /// </summary>
+    internal static bool TryFit(int slot, PinKey key, string? packageId, string label, out string? fitPackage, out string fitLabel)
+    {
+        fitPackage = packageId;
+        fitLabel = label;
+        if (key.Kind == PinKeyKind.ModDropdown && key.Children!.Count > MaxModDropdownChildren)
+        {
+            return false;
+        }
+
+        int budget = MaxLineLength - Digits(slot) - 3 - EscapedLength(key.Value);
+        if (budget < 0)
+        {
+            return false;
+        }
+
+        int pkgLength = EscapedLength(packageId ?? string.Empty);
+        if (pkgLength > budget)
+        {
+            fitPackage = null;
+            pkgLength = 0;
+        }
+
+        budget -= pkgLength;
+        int used = 0;
+        int keep = 0;
+        while (keep < label.Length)
+        {
+            int cost = label[keep] is Escape or Sep ? 2 : 1;
+            if (used + cost > budget)
+            {
+                break;
+            }
+
+            used += cost;
+            keep++;
+        }
+
+        if (keep < label.Length)
+        {
+            if (keep > 0 && char.IsHighSurrogate(label[keep - 1]))
+            {
+                keep--;
+            }
+
+            fitLabel = label[..keep];
+        }
+
+        return true;
+    }
+
+    private static int Digits(int n) => n < 10 ? 1 : n < 100 ? 2 : n < 1000 ? 3 : 4;
+
+    private static int EscapedLength(string s)
+    {
+        int n = s.Length;
+        foreach (char c in s)
+        {
+            if (c is Escape or Sep)
+            {
+                n++;
+            }
+        }
+
+        return n;
     }
 
     private static void Append(StringBuilder sb, string field)

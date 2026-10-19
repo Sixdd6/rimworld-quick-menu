@@ -6,17 +6,19 @@ namespace QuickMenu.Core.Pins;
 /// <summary>
 /// Ordered pin slots with Fixed sizing semantics (FR-5, FR-9, FR-14, FR-15). A slot holds a pin or is
 /// empty. Slots at or beyond <see cref="Capacity"/> are hidden but kept, and return when it grows.
-/// Unresolved pins are never altered except by <see cref="Clear"/>, <see cref="Toggle"/> on their key
+/// Unresolved pins (including opaque lines from a newer version) are never altered except by <see cref="Clear"/>, <see cref="Toggle"/> on their key
 /// and <see cref="ForgetUnresolved"/>. Contains no game types.
 /// </summary>
 public sealed class PinBoard
 {
     private readonly List<PinEntry?> _slots = new();
+    private readonly IReadOnlyList<PinEntry?> _view;
     private int _capacity;
     private int? _cursor;
 
     public PinBoard(int capacity)
     {
+        _view = _slots.AsReadOnly();
         Capacity = capacity;
     }
 
@@ -28,14 +30,18 @@ public sealed class PinBoard
         {
             ArgumentOutOfRangeException.ThrowIfNegative(value);
             _capacity = value;
+            if (_cursor >= value)
+            {
+                _cursor = null;
+            }
         }
     }
 
     /// <summary>Insert cursor slot, or null.</summary>
-    public int? Cursor => _cursor;
+    public int? Cursor => _cursor is { } c && c < _capacity ? c : null;
 
     /// <summary>All stored slots including hidden ones; trailing empties are trimmed.</summary>
-    public IReadOnlyList<PinEntry?> Entries => _slots;
+    public IReadOnlyList<PinEntry?> Entries => _view;
 
     /// <summary>Puts <paramref name="entry"/> into <paramref name="index"/>, replacing the content; used when loading.</summary>
     public void SetSlot(int index, PinEntry? entry)
@@ -70,13 +76,18 @@ public sealed class PinBoard
             }
         }
 
-        int target = _cursor is { } c && IsFree(c) ? c : FirstFree();
+        int target = _cursor is { } c && c < _capacity && IsFree(c) ? c : FirstFree();
         if (target < 0)
         {
             return PinResult.Full;
         }
 
-        SetSlot(target, new PinEntry(key, label, packageId));
+        if (!PinSerializer.TryFit(target, key, packageId, label ?? string.Empty, out string? fitPackage, out string fitLabel))
+        {
+            return PinResult.Rejected;
+        }
+
+        SetSlot(target, new PinEntry(key, fitLabel, fitPackage));
         return PinResult.Pinned;
     }
 
@@ -122,7 +133,7 @@ public sealed class PinBoard
             PinEntry? e = At(i);
             PinSlotState state = e is null
                 ? PinSlotState.Empty
-                : resolver.IsResolved(e.Key) ? PinSlotState.Resolved : PinSlotState.Unresolved;
+                : IsResolved(resolver, e.Key) ? PinSlotState.Resolved : PinSlotState.Unresolved;
             result[i] = new PinSlot(i, state, e);
         }
 
@@ -136,7 +147,7 @@ public sealed class PinBoard
         int n = 0;
         foreach (PinEntry? e in _slots)
         {
-            if (e is not null && !resolver.IsResolved(e.Key))
+            if (e is not null && !IsResolved(resolver, e.Key))
             {
                 n++;
             }
@@ -152,7 +163,7 @@ public sealed class PinBoard
         int n = 0;
         for (int i = 0; i < _slots.Count; i++)
         {
-            if (_slots[i] is { } e && !resolver.IsResolved(e.Key))
+            if (_slots[i] is { } e && !IsResolved(resolver, e.Key))
             {
                 _slots[i] = null;
                 n++;
@@ -162,6 +173,9 @@ public sealed class PinBoard
         Trim();
         return n;
     }
+
+    private static bool IsResolved(IPinResolver resolver, PinKey key) =>
+        key.Kind != PinKeyKind.Opaque && resolver.IsResolved(key);
 
     private PinEntry? At(int i) => i < _slots.Count ? _slots[i] : null;
 
