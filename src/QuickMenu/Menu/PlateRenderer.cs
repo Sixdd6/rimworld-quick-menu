@@ -8,6 +8,7 @@ namespace QuickMenu.Menu;
 /// <summary>
 /// The label plate under the menu (design.md §1.1, S1 step 4): 9-slice <c>Plate</c> mask in <c>plate</c>, centred on
 /// cx, top = <c>cy + D + plateGap</c>, width = text + 12 (max 2 D), the cached label in Small <c>text</c>, centred.
+/// For a grid model (<see cref="WheelModel.Panel"/>) the plate sits under the panel, at most as wide as the panel.
 /// Labels are truncated to the plate once per open (<see cref="WheelModel.Prepare"/>).
 /// </summary>
 internal static class PlateRenderer
@@ -36,7 +37,7 @@ internal static class PlateRenderer
         }
 
         using var scope = new MeasureScope(StatId.WindowPlate);
-        Rect rect = MenuRenderer.ToRect(transform.Rect(WheelVisuals.PlateRect(model.Center, model.DiscRadius, width, model.PlateHeight)));
+        Rect rect = MenuRenderer.ToRect(transform.Rect(model.PlateRect(width)));
         if (Textures.Ready)
         {
             MenuRenderer.Tint(QMStyle.Plate);

@@ -126,6 +126,24 @@ internal sealed class WheelModel
     /// <summary>Material dot colour of slot <paramref name="index"/> (S4 state 13), set by <see cref="SetDecor"/>.</summary>
     internal Color MaterialDotColor(int index) => _dotColors[index];
 
+    /// <summary>
+    /// The grid panel (main grid, sub-grid or material grid; T-54), or null for a wheel. Set with <see cref="SetPanel"/>
+    /// before <see cref="Prepare"/>: it moves the label plate under the panel and sizes the labels to the panel.
+    /// </summary>
+    internal Rect2? Panel { get; private set; }
+
+    /// <summary>
+    /// Makes this a grid model drawn by <see cref="GridRenderer"/>: <paramref name="panel"/> is the panel rect from the
+    /// grid layout (main grid) or <c>PlacedSubGrid.Panel</c> (sub-grid, material grid), in the same coordinates as
+    /// <see cref="Slots"/>. Once per open, before <see cref="Prepare"/>.
+    /// </summary>
+    internal void SetPanel(Rect2 panel) => Panel = panel;
+
+    /// <summary>The label plate for a label of <paramref name="textWidth"/>: under the disc (wheel) or the panel (grid).</summary>
+    internal Rect2 PlateRect(float textWidth) => Panel is { } panel
+        ? PanelVisuals.PlateRect(panel, textWidth, PlateHeight)
+        : WheelVisuals.PlateRect(Center, DiscRadius, textWidth, PlateHeight);
+
     /// <summary>True for a satellite model (<see cref="PrepareSatellite"/>): it draws the satellite rim.</summary>
     internal bool IsSatellite { get; private set; }
 
@@ -258,7 +276,7 @@ internal sealed class WheelModel
         try
         {
             Text.Font = GameFont.Small;
-            float max = WheelVisuals.PlateMaxTextWidth(DiscRadius);
+            float max = Panel is { } panel ? PanelVisuals.PlateMaxTextWidth(panel) : WheelVisuals.PlateMaxTextWidth(DiscRadius);
             for (int i = 0; i < SlotCount; i++)
             {
                 _labels[i] = Fit(_labels[i], max, out _labelWidths[i]);

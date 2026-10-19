@@ -54,27 +54,37 @@ internal static class MenuRenderer
         {
             SetDimmed(dimmed);
             DrawDisc(model, transform);
-            for (int i = 0; i < model.SlotCount; i++)
-            {
-                SlotRenderer.Draw(model, i, WheelVisuals.Slot(i, model.Kinds[i], hover, pressed), transform);
-            }
-
-            HubRenderer.Draw(model, transform, WheelVisuals.Hub(hover, pressed));
-            if (!dimmed)
-            {
-                PlateRenderer.Draw(model, transform, WheelVisuals.Plate(hover, model.Kinds, model.SlotCount), hover.Index);
-            }
-            else if (openParent < model.SlotCount)
-            {
-                // State 14: the open parent is drawn in full opacity above the dimmed menu.
-                SetDimmed(false);
-                SlotRenderer.DrawAt(model, openParent, model.Slots[openParent].Center, SlotVisualState.Normal, model.Decor(openParent) | SlotDecor.OpenParent, transform);
-            }
+            DrawBody(model, transform, hover, pressed, openParent);
         }
         finally
         {
             SetDimmed(false);
             GUI.color = old;
+        }
+    }
+
+    /// <summary>
+    /// Slots, hub, and the plate or the open parent: everything of a menu above its background (disc or panel), the
+    /// same for the wheel and the grid. Call inside <see cref="SetDimmed"/> with the hits already passed through
+    /// <see cref="WheelVisuals.Interactive"/>.
+    /// </summary>
+    internal static void DrawBody(WheelModel model, in RenderTransform transform, Hit hover, Hit pressed, int openParent)
+    {
+        for (int i = 0; i < model.SlotCount; i++)
+        {
+            SlotRenderer.Draw(model, i, WheelVisuals.Slot(i, model.Kinds[i], hover, pressed), transform);
+        }
+
+        HubRenderer.Draw(model, transform, WheelVisuals.Hub(hover, pressed));
+        if (openParent < 0)
+        {
+            PlateRenderer.Draw(model, transform, WheelVisuals.Plate(hover, model.Kinds, model.SlotCount), hover.Index);
+        }
+        else if (openParent < model.SlotCount)
+        {
+            // State 14: the open parent is drawn in full opacity above the dimmed menu.
+            SetDimmed(false);
+            SlotRenderer.DrawAt(model, openParent, model.Slots[openParent].Center, SlotVisualState.Normal, model.Decor(openParent) | SlotDecor.OpenParent, transform);
         }
     }
 
@@ -90,7 +100,8 @@ internal static class MenuRenderer
 
     private static float _alpha = 1f;
 
-    private static void SetDimmed(bool dimmed)
+    /// <summary>Starts or ends dimmed drawing (<c>dimmedMenu</c>) for every <see cref="Tint"/> after it.</summary>
+    internal static void SetDimmed(bool dimmed)
     {
         Dimmed = dimmed;
         _alpha = WheelVisuals.MenuAlpha(dimmed);
