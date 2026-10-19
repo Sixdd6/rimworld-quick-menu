@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using QuickMenu.Core.Diagnostics;
 using QuickMenu.Core.Input;
 using QuickMenu.Menu;
 using QuickMenu.Settings;
@@ -14,12 +15,24 @@ namespace QuickMenu.Compat;
 /// </summary>
 internal static class NoticeRunner
 {
+    internal static readonly Diagnostics.PatchSite Site = new("Compat.Notice");
+
     internal static bool Pending { get; private set; } = true;
+
+    /// <summary>Lets <see cref="Tick"/> run again (dev fault injection only).</summary>
+    internal static void Rearm() => Pending = true;
 
     internal static void Tick()
     {
+        if (Site.Disabled)
+        {
+            Pending = false;
+            return;
+        }
+
         try
         {
+            Diagnostics.FaultInjection.Check(FaultPoint.Notice);
             if (Current.ProgramState != ProgramState.Playing)
             {
                 return;
@@ -55,7 +68,7 @@ internal static class NoticeRunner
         catch (Exception ex)
         {
             Pending = false;
-            Diagnostics.Log.LogOnce("Compat.Notice", $"Showing the notice failed: {ex}");
+            Site.Fail(ex);
         }
     }
 

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Reflection;
 using HarmonyLib;
 using QuickMenu.Catalog;
+using QuickMenu.Core.Diagnostics;
 using QuickMenu.Core.Input;
 using QuickMenu.Core.Pins;
 using QuickMenu.Diagnostics;
@@ -85,6 +86,7 @@ internal static class PinClickPatch
         using var scope = new MeasureScope(StatId.PinPrefix);
         try
         {
+            FaultInjection.Check(FaultPoint.PinPrefix);
             PinModifier modifier = QuickMenuMod.EffectiveModifier;
             if (!TryBuildInput(__0, modifier, out PinClickInput input)
                 || PinClickClassifier.Classify(input, modifier) != PinClickAction.Pin)

@@ -12,6 +12,7 @@ using RimWorld;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
+using FaultPoint = QuickMenu.Core.Diagnostics.FaultPoint;
 using GridLayout = QuickMenu.Core.Layout.GridLayout;
 
 namespace QuickMenu.Menu;
@@ -65,6 +66,7 @@ internal static class MenuController
 
         try
         {
+            FaultInjection.Check(FaultPoint.MenuOpen);
             if (_window != null && !Find.WindowStack.IsOpen(_window))
             {
                 Reset();
@@ -454,11 +456,18 @@ internal static class MenuController
 
     private static void Reset()
     {
-        HelpPanelRenderer.Clear();
-        FlushEdit(); // every way out of the menu (Done, Esc, outside click, a fault, an external close) ends the edit session
         _window = null;
         _machine = null;
         _content = null;
         _satellite = null;
+        try
+        {
+            HelpPanelRenderer.Clear();
+            FlushEdit(); // every way out of the menu (Done, Esc, outside click, a fault, an external close) ends the edit session
+        }
+        catch (System.Exception ex)
+        {
+            Diagnostics.Log.LogOnce("Menu.Reset", $"Ending the menu session failed: {ex}");
+        }
     }
 }

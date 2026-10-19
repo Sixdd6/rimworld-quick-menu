@@ -1,5 +1,7 @@
 using System;
+using QuickMenu.Core.Diagnostics;
 using QuickMenu.Core.Input;
+using QuickMenu.Diagnostics;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -14,6 +16,8 @@ namespace QuickMenu.Settings;
 /// </summary>
 internal sealed class BindingCaptureWindow : Window
 {
+    internal static readonly PatchSite Site = new("BindingCaptureWindow");
+
     private readonly Action<TriggerBinding> _onCaptured;
     private readonly string _title = "QuickMenu.Capture.Title".Translate();
     private readonly string _body = "QuickMenu.Capture.Body".Translate();
@@ -39,18 +43,65 @@ internal sealed class BindingCaptureWindow : Window
 
     public override void WindowUpdate()
     {
-        base.WindowUpdate();
-        for (int button = TriggerBinding.MinMouseButton; button <= TriggerBinding.MaxMouseButton; button++)
+        if (Site.Disabled)
         {
-            if (UnityEngine.Input.GetMouseButtonDown(button))
+            CloseSafely();
+            return;
+        }
+
+        try
+        {
+            base.WindowUpdate();
+            for (int button = TriggerBinding.MinMouseButton; button <= TriggerBinding.MaxMouseButton; button++)
             {
-                Apply(BindingCapture.DecideMouse(button));
-                return;
+                if (UnityEngine.Input.GetMouseButtonDown(button))
+                {
+                    Apply(BindingCapture.DecideMouse(button));
+                    return;
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            Site.Fail(ex);
+            CloseSafely();
         }
     }
 
     public override void DoWindowContents(Rect inRect)
+    {
+        if (Site.Disabled)
+        {
+            CloseSafely();
+            return;
+        }
+
+        using GuiStateScope guiState = GuiStateScope.Save();
+        try
+        {
+            FaultInjection.Check(FaultPoint.BindingCaptureWindow);
+            Draw(inRect);
+        }
+        catch (Exception ex)
+        {
+            Site.Fail(ex);
+            CloseSafely();
+        }
+    }
+
+    private void CloseSafely()
+    {
+        try
+        {
+            Close();
+        }
+        catch (Exception ex)
+        {
+            QuickMenu.Diagnostics.Log.LogOnce("BindingCaptureWindow.Close", $"Closing the capture window failed: {ex}");
+        }
+    }
+
+    private void Draw(Rect inRect)
     {
         Text.Font = GameFont.Medium;
         Widgets.Label(new Rect(inRect.x, inRect.y, inRect.width, 32f), _title);

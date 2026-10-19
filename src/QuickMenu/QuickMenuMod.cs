@@ -83,10 +83,18 @@ public sealed class QuickMenuMod : Mod
         long jitMethodsAfterGet = JitInfo.GetCompiledMethodCount(currentThread: true);
 
         long ownStart = Stopwatch.GetTimestamp();
-        _settings.ApplyCapacity();
-        Compat.ModDetection.Detect();
-        _mintActive = Compat.ModDetection.Mint;
-        RefreshEffectiveModifier();
+        try
+        {
+            _settings.ApplyCapacity();
+            Compat.ModDetection.Detect();
+            _mintActive = Compat.ModDetection.Mint;
+            RefreshEffectiveModifier();
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Log.LogOnce("Mod.Startup", $"Startup checks failed, defaults are used: {ex}");
+        }
+
         long ownTicks = Stopwatch.GetTimestamp() - ownStart;
         long settingsTicks = getTicks + ownTicks;
         PerfStartup.NoteSettings(

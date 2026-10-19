@@ -1,5 +1,6 @@
 using System;
 using HarmonyLib;
+using QuickMenu.Core.Diagnostics;
 using QuickMenu.Core.Input;
 using QuickMenu.Diagnostics;
 using QuickMenu.Menu;
@@ -50,6 +51,7 @@ internal static class DropdownEntryPatch
 
         try
         {
+            FaultInjection.Check(FaultPoint.DropdownPostfix);
             __result = new EntryAction(__1, __result).Run;
         }
         catch (Exception ex)

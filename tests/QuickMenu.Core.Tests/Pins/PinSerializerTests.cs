@@ -93,6 +93,16 @@ public class PinSerializerTests
     }
 
     [Fact]
+    public void CorruptFile_MixOfGarbageNullAndUnknownLines_LoadsValidOnesAndKeepsUnknownVerbatim()
+    {
+        const string unknown = "3|future:thing/X|some.mod|Label";
+        PinLoadResult r = PinSerializer.FromLines(new string?[] { "\u0000\u0001", null, "0|build:thing/Wall||W", "not a pin", unknown, "" });
+
+        Assert.Equal(4, r.SkippedCount);
+        Assert.Equal(new[] { "0|build:thing/Wall||W", unknown }, PinSerializer.ToLines(r.Board));
+    }
+
+    [Fact]
     public void NullLineAndNullList_DoNotThrow()
     {
         Assert.Equal(1, PinSerializer.FromLines(new string?[] { null }).SkippedCount);

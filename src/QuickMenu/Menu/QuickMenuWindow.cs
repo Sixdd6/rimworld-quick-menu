@@ -9,6 +9,7 @@ using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
+using FaultPoint = QuickMenu.Core.Diagnostics.FaultPoint;
 using Log = QuickMenu.Diagnostics.Log;
 
 namespace QuickMenu.Menu;
@@ -143,8 +144,10 @@ internal sealed class QuickMenuWindow : Window
             return;
         }
 
+        using GuiStateScope guiState = GuiStateScope.Save();
         try
         {
+            FaultInjection.Check(FaultPoint.WindowDraw);
             if (_model == null && !BuildContent())
             {
                 return;

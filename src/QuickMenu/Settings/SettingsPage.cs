@@ -80,7 +80,7 @@ internal static class SettingsPage
     private static int _slotsFor = -1;
     private static string _slotsText = string.Empty;
 
-    private static readonly Diagnostics.PatchSite _site = new("Settings.Page");
+    internal static readonly Diagnostics.PatchSite Site = new("Settings.Page");
     private static readonly Listing_Standard _leftListing = new();
     private static readonly Listing_Standard _rightListing = new();
 
@@ -89,15 +89,17 @@ internal static class SettingsPage
     {
         try
         {
-            if (!_site.Disabled)
+            if (!Site.Disabled)
             {
+                using Diagnostics.GuiStateScope guiState = Diagnostics.GuiStateScope.Save();
+                Diagnostics.FaultInjection.Check(Core.Diagnostics.FaultPoint.SettingsPage);
                 DrawPage(inRect);
                 return;
             }
         }
         catch (Exception ex)
         {
-            _site.Fail(ex);
+            Site.Fail(ex);
         }
 
         try

@@ -1,4 +1,7 @@
+using System;
+using QuickMenu.Core.Diagnostics;
 using QuickMenu.Core.Input;
+using QuickMenu.Diagnostics;
 using UnityEngine;
 using Verse;
 
@@ -10,6 +13,8 @@ namespace QuickMenu.Menu;
 /// </summary>
 internal sealed class FirstRunNoticeWindow : Window
 {
+    internal static readonly PatchSite Site = new("FirstRunNoticeWindow.DoWindowContents");
+
     private readonly string _title = "QuickMenu.Notice.FirstRun.Title".Translate();
     private readonly string _body = "QuickMenu.Notice.FirstRun.Body".Translate();
     private readonly string? _mintLine;
@@ -41,6 +46,39 @@ internal sealed class FirstRunNoticeWindow : Window
     }
 
     public override void DoWindowContents(Rect inRect)
+    {
+        if (Site.Disabled)
+        {
+            CloseSafely();
+            return;
+        }
+
+        using GuiStateScope guiState = GuiStateScope.Save();
+        try
+        {
+            FaultInjection.Check(FaultPoint.FirstRunWindow);
+            Draw(inRect);
+        }
+        catch (Exception ex)
+        {
+            Site.Fail(ex);
+            CloseSafely();
+        }
+    }
+
+    private void CloseSafely()
+    {
+        try
+        {
+            Close();
+        }
+        catch (Exception ex)
+        {
+            QuickMenu.Diagnostics.Log.LogOnce("FirstRunNoticeWindow.Close", $"Closing the first-run notice failed: {ex}");
+        }
+    }
+
+    private void Draw(Rect inRect)
     {
         Text.Font = GameFont.Medium;
         Widgets.Label(new Rect(inRect.x, inRect.y, inRect.width, 32f), _title);

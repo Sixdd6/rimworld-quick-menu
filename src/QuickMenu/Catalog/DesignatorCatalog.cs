@@ -7,6 +7,7 @@ using QuickMenu.Core.Pins;
 using QuickMenu.Diagnostics;
 using RimWorld;
 using Verse;
+using FaultPoint = QuickMenu.Core.Diagnostics.FaultPoint;
 using Log = QuickMenu.Diagnostics.Log;
 
 namespace QuickMenu.Catalog;
@@ -271,6 +272,7 @@ internal static class DesignatorCatalog
 
         try
         {
+            FaultInjection.Check(FaultPoint.CatalogIdeology);
             Game? game = Current.Game;
             if (game == null)
             {

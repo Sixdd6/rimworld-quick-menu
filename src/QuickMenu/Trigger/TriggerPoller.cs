@@ -1,4 +1,5 @@
 using System;
+using QuickMenu.Core.Diagnostics;
 using QuickMenu.Core.Input;
 using QuickMenu.Diagnostics;
 using QuickMenu.Pinning;
@@ -42,6 +43,7 @@ internal static class TriggerPoller
 
         try
         {
+            FaultInjection.Check(FaultPoint.TriggerPoller);
             if (PerfCounters.Enabled && PerfCounters.ReportPending)
             {
                 PerfCounters.PrintPendingReport(); // deferred 10,000-frame report, outside the measured scope

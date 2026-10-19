@@ -9,6 +9,7 @@ using QuickMenu.Core.Settings;
 using QuickMenu.Diagnostics;
 using UnityEngine;
 using Verse;
+using FaultPoint = QuickMenu.Core.Diagnostics.FaultPoint;
 using Log = QuickMenu.Diagnostics.Log;
 
 namespace QuickMenu.Menu;
@@ -220,6 +221,7 @@ internal static class Textures
 
         try
         {
+            FaultInjection.Check(FaultPoint.TexturesSized);
             TextureSizing next = TextureSizing.Create(buttonSize, ringsInUse, Prefs.UIScale);
             SizedGroups groups = TextureSizing.Changed(_sizing, next);
             if (groups == SizedGroups.None)

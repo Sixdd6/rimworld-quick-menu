@@ -10,6 +10,7 @@ using QuickMenu.Menu;
 using QuickMenu.Pinning;
 using UnityEngine;
 using Verse;
+using FaultPoint = QuickMenu.Core.Diagnostics.FaultPoint;
 
 namespace QuickMenu.Settings;
 
@@ -55,6 +56,7 @@ internal static class LayoutPreview
 
         try
         {
+            FaultInjection.Check(FaultPoint.SettingsPreview);
             // The page was closed since the last frame: forget what the gate believes is built, so the first
             // frame of this opening checks the textures against the current settings (menus opened meanwhile may have resized them).
             int frame = Time.frameCount;
