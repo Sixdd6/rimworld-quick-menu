@@ -2,6 +2,7 @@ using System;
 using System.Runtime.CompilerServices;
 using HarmonyLib;
 using QuickMenu.Diagnostics;
+using QuickMenu.Menu;
 using QuickMenu.Pinning;
 using QuickMenu.Trigger;
 using RimWorld;
@@ -31,6 +32,7 @@ public sealed class QuickMenuMod : Mod
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ApplyPatches()
     {
+        TriggerPoller.OpenRequested = MenuController.Open;
         var harmony = new Harmony(HarmonyId);
         ApplyPostfix(harmony, TriggerPoller.Site, typeof(UIRoot_Play), nameof(UIRoot_Play.UIRootUpdate), typeof(TriggerPoller), nameof(TriggerPoller.Postfix));
         PatchGuard.Run(PinClickPatch.Site, () => PinClickPatch.Apply(harmony));
