@@ -40,9 +40,12 @@ Architecture facts that shape the budgets (from architecture.md section 3, 6, 7 
 | P-16 | Pin lines parse (`PinSerializer.FromLines`), 200 pins | <= 5 ms | NFR-1 | Out of game: BenchmarkDotNet. | CI | not measured | pending |
 | P-17 | Settings save: `PinSerializer.ToLines` for 200 pins | <= 5 ms; plus `WriteSettings` on the main thread <= 20 ms (in game). Written on change only, never per frame | NFR-1 | CI for the pure part. In game: Stopwatch around `WriteSettings`, and a counter of writes per edit session (see R-7). | CI plus in game | not measured | pending |
 | P-18 | Mod startup cost: settings load, Mint/BAM/MP detection, Harmony patching (postfix plus every `ProcessInput` override across all loaded assemblies) | <= 150 ms with the vanilla set, <= 300 ms on the user's large list | NFR-1 | In game: Stopwatch in the `Mod` constructor (self-test also reports the patch count). I raised this from my first draft because patching N overrides by reflection scales with the mod list. | In game | not measured | pending |
+| P-19 | Pin-marker hook (FR-19, ADR 0009), cost per gizmo draw call of the `Command.GizmoOnGUIInt` postfix, for pinned and not-pinned designators and for non-designator gizmos (pawn and building command bars), and the pinned-set lookup; in-game total with the architect menu open on the largest category | Per call: <= 100 ns and 0 bytes on the non-pinned fast path (pinned path: the lookup itself is the same 100 ns and 0 bytes; the draw call itself is IMGUI texture drawing, measured in game only). In game: <= 10 us per frame total hook cost with the architect menu open on the largest category | NFR-1 | Out of game: Core Perf-trait test and BenchmarkDotNet on `PinnedSet` lookup (hit, miss, null; T-90). In game: dev-mode call counter plus `MeasureScope` around the hook body, reported by "Quick Menu: perf report" as calls per frame and us per frame (T-91). | CI (lookup) plus in game | not measured | pending |
 
 Notes:
 - P-1 and P-3 are floors of "no measurable cost". If measured values are far below target, tighten them.
+- **P-1 and the marker hook (P-19)**: the `GizmoOnGUIInt` postfix runs only while gizmos are drawn (architect menu open, or a command bar of a selected thing shown). It is not part of the closed-menu cost in P-1 on a map with nothing selected, and P-1 stays the poller alone. With a command bar shown, the hook's fast path adds to the frame and is accounted under P-19, not P-1. Vanilla draws once per Repaint plus once per input event; BAM and Mint also call during Layout, so the in-game counter must report calls per frame, not assume one.
+- **P-19 derivation**: 10 us per frame is about 100 calls at 100 ns, above the largest expected architect category (about 75 buttons visible, plus up to a few dozen on a command bar) with Layout-event calls included. The Core floor is tiny (a `Dictionary` identity lookup, tens of ns), so tighten once measured.
 - Frame Profiler overhead is unknown to me. Treat its numbers as attribution (who costs what) and use the Stopwatch scopes for absolute values until the profiler's own overhead is known (see question 4).
 
 ## 2. Workload model
@@ -118,15 +121,26 @@ Principle: gate on what is deterministic; keep time gates loose because shared r
 | Budget | Gate | Threshold | Notes |
 |---|---|---|---|
 | P-2, P-3, P-9 | Zero-allocation tests (Core hot paths: trigger decision, modifier policy, layout/hit-test/state-machine per-frame calls; the search gate P-14 is dropped) | exactly 0 bytes | Strict, every PR |
+| P-19 (Core lookup) | Perf-trait zero-allocation and time test on `PinnedSet<T>.Lookup` (T-90), see below | 0 bytes strict; fail above 5 x 100 ns per call (500 ns) | Same style as P-3. Every PR via `scripts/perf.sh` |
 | P-5 | Allocation test on `PinBoard.Toggle` | <= 2 KB per call | Strict |
 | ~~P-11a, P-11b, P-13~~ | **Dropped** (no search index, 2026-10-19) | — | |
 | P-10, P-16, P-17 (pure part) | Perf-trait tests | fail > 5x the budget | Catches accidental O(n^2), not small drift |
 | ~~Scaling~~ | ~~W-1x / W-1 ratio of build time~~ **Dropped** with W-1x (2026-10-19) | — | |
 | Benchmarks | BenchmarkDotNet suite compiles in CI (not run for gating); a manual workflow can run it | | Keeps it from rotting |
 
+**What T-90 must assert for P-19** (`[Trait("Category", "Perf")]`, Release, no coverage, in `tests/QuickMenu.Core.Tests`, class names like `PinnedSetPerfTests`):
+1. Build a `PinnedSet<object>` with 200 pinned instances (reference identity) plus 2,000 non-pinned instances created beforehand (the largest realistic catalog). Warm up 1,000 calls so JIT and tiering are done.
+2. Allocation: over 100,000 calls each of `Lookup(pinnedInstance)` (hit), `Lookup(otherInstance)` (miss), and `Lookup(null)`, `GC.GetAllocatedBytesForCurrentThread()` before and after differ by exactly 0. Also assert 0 bytes for the empty-set case (`IsEmpty` / miss on an empty set), which is the common state.
+3. Time: the same loops, total elapsed divided by calls, median of 5 repeats, must be below 500 ns per call (5 x the 100 ns budget). Accumulate the returned marks into a sink so the JIT cannot drop the calls.
+4. Rebuild: a second `Rebuild` with the same size must not grow storage (allocation after the first build <= 2 KB; this only guards against a new dictionary per rebuild, it is not a hot path) and `Lookup` stays 0 bytes after it.
+5. Mark identity: assert the lookup keys on reference identity (two equal-by-`Equals` but distinct instances do not collide).
+The BenchmarkDotNet class (`PinnedSetBenchmarks`, hit/miss/null, with `--memory`) is compiled in CI and run manually via `scripts/perf.sh --bench`; target is <= 100 ns and 0 B allocated in the Allocated column.
+
+**P-19 in-game steps** (T-91, recorded in section 5 at UC-6): dev mode, "Quick Menu: perf report" reset, open the architect menu on the largest category (stress setup, 2,850 entries) with 5 pins visible, hold for 600 frames after a 120-frame warm-up, read calls per frame and us per frame for the hook; repeat in vanilla and BAM, and once with a pawn command bar shown (menu closed) to confirm the non-designator fast path. Pass: <= 10 us per frame (median), 0 bytes per call on the fast path in the report.
+
 The coverage gate (>= 90% of Core, architecture section 9) and the Perf gates must be **separate CI steps**: coverage instrumentation slows code and adds allocations.
 
-**Manual only** (need the real game): P-1, P-2 (in-game half), P-4, P-6, P-7a/b/c, P-8, P-9 (in-game half), P-11c, P-12, P-17 (in-game half), P-18. Run per milestone and before release (section 5).
+**Manual only** (need the real game): P-1, P-2 (in-game half), P-4, P-6, P-7a/b/c, P-8, P-9 (in-game half), P-11c, P-12, P-17 (in-game half), P-18, P-19 (in-game half). Run per milestone and before release (section 5).
 
 ## 5. Results log
 | Date | Build / commit | Metric | Value | Change vs baseline | Notes |
