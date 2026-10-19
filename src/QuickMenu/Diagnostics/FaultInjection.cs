@@ -64,7 +64,7 @@ internal static class FaultInjection
         new(FaultPoint.PinMarker, Pinning.PinMarkerPatch.Site, "open the architect menu with at least one pin; buttons keep drawing and working without markers"),
         new(FaultPoint.TexturesPinMarker, Textures.PinMarkerSite, "open the architect menu with at least one pin; the marker textures are skipped, buttons keep drawing without markers"),
         new(FaultPoint.DropdownMarkerMap, Pinning.DropdownMarkerPatch.Site, "open an architect dropdown (the chair or floor button); the list opens and works without markers"),
-        new(FaultPoint.DropdownMarkerDraw, Pinning.DropdownMarkerPatch.Site, "open an architect dropdown with a pinned entry; the list keeps drawing and working without markers"),
+        new(FaultPoint.DropdownMarkerDraw, Pinning.DropdownMarkerPatch.DrawSite, "open an architect dropdown with a pinned entry; the list keeps drawing and working without markers"),
         new(FaultPoint.BindingCaptureWindow, BindingCaptureWindow.Site, "opens the key capture window; it closes itself", () => Find.WindowStack.Add(new BindingCaptureWindow(_ => { }))),
     };
 

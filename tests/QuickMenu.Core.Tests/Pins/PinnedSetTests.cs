@@ -105,9 +105,86 @@ public class PinnedSetTests
         var r = new Resolver();
         var set = new PinnedSet<Obj, Def>();
         var board = PinSerializer.FromLines(new[] { "0|future:a|pk|x", "1|build:thing/Gone||G" }).Board;
+        board.Capacity = 2;
         Assert.Equal(PinKeyKind.Opaque, board.Entries[0]!.Key.Kind);
+        var spy = new Spy();
+        set.Rebuild(board, spy);
+        Assert.Equal(1, spy.Calls);
+        Assert.Equal(PinKeyKind.BuildThing, spy.Keys[0].Kind);
         set.Rebuild(board, r);
         Assert.True(set.IsEmpty);
+    }
+
+    [Fact]
+    public void HasDefs_is_true_only_when_a_def_entry_exists()
+    {
+        var set = new PinnedSet<Obj, Def>();
+        Assert.False(set.HasDefs);
+        set.Rebuild(new[] { new PinTarget<Obj, Def>(new Obj()) });
+        Assert.False(set.HasDefs);
+        set.Rebuild(new[] { new PinTarget<Obj, Def>(new Obj(), null, new Def()) });
+        Assert.True(set.HasDefs);
+        set.Rebuild(new List<PinTarget<Obj, Def>>());
+        Assert.False(set.HasDefs);
+    }
+
+    private sealed class ResolvedSet : IPinResolver
+    {
+        public HashSet<string> Values { get; } = new();
+
+        public bool IsResolved(PinKey key) => Values.Contains(key.Value);
+    }
+
+    [Theory]
+    [InlineData(SizingMode.Fixed)]
+    [InlineData(SizingMode.Auto)]
+    public void Collected_targets_equal_the_visible_resolved_slots(SizingMode mode)
+    {
+        for (int seed = 1; seed <= 40; seed++)
+        {
+            var rng = new System.Random(seed);
+            var board = new PinBoard(rng.Next(1, 6));
+            board.Mode = mode;
+            int count = rng.Next(0, 12);
+            var resolver = new Resolver();
+            var resolved = new ResolvedSet();
+            var instances = new Dictionary<string, Obj>();
+            for (int i = 0; i < count; i++)
+            {
+                if (rng.Next(4) == 0)
+                {
+                    continue; // gap
+                }
+
+                PinKey key = Thing("T" + seed + "_" + i);
+                board.SetSlot(i, new PinEntry(key));
+                if (rng.Next(3) != 0)
+                {
+                    resolved.Values.Add(key.Value);
+                    var obj = new Obj();
+                    instances[key.Value] = obj;
+                    resolver.Add(key, new PinTarget<Obj, Def>(obj));
+                }
+            }
+
+            var expected = new HashSet<Obj>(ReferenceEqualityComparer.Instance);
+            foreach (PinSlot slot in board.VisibleSlots(resolved))
+            {
+                if (slot.State == PinSlotState.Resolved)
+                {
+                    expected.Add(instances[slot.Entry!.Key.Value]);
+                }
+            }
+
+            var set = new PinnedSet<Obj, Def>();
+            set.Rebuild(board, resolver);
+            foreach (Obj obj in instances.Values)
+            {
+                Assert.Equal(expected.Contains(obj) ? PinMark.Full : PinMark.None, set.Lookup(obj));
+            }
+
+            Assert.Equal(expected.Count == 0, set.IsEmpty);
+        }
     }
 
     [Fact]
@@ -124,7 +201,13 @@ public class PinnedSetTests
     {
         public int Calls { get; private set; }
 
-        public void Resolve(PinKey key, List<PinTarget<Obj, Def>> into) => Calls++;
+        public List<PinKey> Keys { get; } = new();
+
+        public void Resolve(PinKey key, List<PinTarget<Obj, Def>> into)
+        {
+            Calls++;
+            Keys.Add(key);
+        }
     }
 
     [Fact]

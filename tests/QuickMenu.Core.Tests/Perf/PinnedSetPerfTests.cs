@@ -77,6 +77,31 @@ public class PinnedSetPerfTests
     }
 
     [Fact]
+    public void IsEmpty_and_empty_set_lookup_allocate_zero_bytes()
+    {
+        var empty = new PinnedSet<Item, Def>();
+        var probe = new Item();
+        var def = new Def();
+        int sink = 0;
+        for (int i = 0; i < Warmup; i++)
+        {
+            sink += empty.IsEmpty ? 1 : 0;
+            sink += (int)empty.Lookup(probe, def);
+        }
+
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        for (int i = 0; i < Calls; i++)
+        {
+            sink += empty.IsEmpty ? 1 : 0;
+            sink += (int)empty.Lookup(probe, def);
+            sink += (int)empty.Lookup(probe);
+        }
+
+        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
+        Assert.NotEqual(-1, sink);
+    }
+
+    [Fact]
     public void Lookups_stay_under_five_times_the_100ns_budget()
     {
         var (set, m, o, d) = Fixture();

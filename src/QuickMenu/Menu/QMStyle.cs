@@ -47,7 +47,7 @@ internal static class QMStyle
     /// <summary>Architect pin marker, full and entry (design.md §2 "Architect pin marker"): <c>accent</c>.</summary>
     internal static readonly Color PinMarker = ToColor(StyleTokens.PinMarker);
 
-    /// <summary>Partial pin marker (only single entries of a dropdown pinned): the dimmer <c>#2E9ACB</c>.</summary>
+    /// <summary>Partial pin marker (only single entries of a dropdown pinned): white <c>#FFFFFF</c> (user decision 14).</summary>
     internal static readonly Color PinMarkerPartial = ToColor(StyleTokens.PinMarkerPartial);
 
     /// <summary>Outline mask under the pin marker: black α 0.85.</summary>

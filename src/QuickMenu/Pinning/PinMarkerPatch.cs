@@ -16,7 +16,7 @@ namespace QuickMenu.Pinning;
 /// It draws the pin marker on a pinned designator, only on Repaint and only while an architect menu is drawing
 /// (<see cref="ArchitectDrawContext"/>), never on the command bar of a selected thing. The fast path for the many other
 /// commands is a few comparisons and allocates nothing. The set is never rebuilt on the per-gizmo path; once per frame the
-/// pin service re-validates itself (an O(1) stamp compare), which rebuilds the set only after a game load or an Ideology change.
+/// pin service re-validates itself (an allocation-free check, O(ideoligion count)), which rebuilds the set only after a game load or an Ideology change.
 /// </summary>
 internal static class PinMarkerPatch
 {
@@ -59,14 +59,22 @@ internal static class PinMarkerPatch
         {
             using var scope = new MeasureScope(StatId.PinMarker);
             FaultInjection.Check(FaultPoint.PinMarker);
+            if (__instance is not Designator designator)
+            {
+                return;
+            }
+
             int frame = Time.frameCount;
             if (frame != _lastFrame)
             {
                 _lastFrame = frame;
-                PinService.Revalidate();
+                if (PinService.Board.Entries.Count != 0)
+                {
+                    PinService.Revalidate(); // before IsEmpty: Ideology-only pins leave the set empty until re-resolved
+                }
             }
 
-            if (PinnedDesignators.IsEmpty || __instance is not Designator designator || Event.current.type != EventType.Repaint)
+            if (PinnedDesignators.IsEmpty || Event.current.type != EventType.Repaint)
             {
                 return;
             }

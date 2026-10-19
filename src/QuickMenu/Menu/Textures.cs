@@ -65,7 +65,7 @@ internal readonly struct SizedTexture
 /// 1 UI px outline for each <see cref="PinMarkerKind"/>, rasterized at their drawn size in screen px. They depend only on
 /// the UI scale and are drawn on the game's architect buttons, so they do not wait for a menu open: built at startup
 /// (<see cref="Prewarm"/>), checked by <see cref="EnsurePinMarkers"/> (a float compare; the marker hook calls it once per
-/// frame) and rebuilt only when the UI scale changed. Their own fault site <see cref="PinMarkerSite"/> keeps a marker
+/// pinned draw) and rebuilt only when the UI scale changed. Their own fault site <see cref="PinMarkerSite"/> keeps a marker
 /// failure away from the menu textures and the other way round.</para>
 /// </remarks>
 [StaticConstructorOnStartup]
@@ -130,6 +130,11 @@ internal static class Textures
             for (int i = 0; i < MaskSet.Count; i++)
             {
                 MaskId id = (MaskId)i;
+                if (id == MaskId.PinMarker)
+                {
+                    continue; // rasterized at its drawn size by EnsurePinMarkers; the static 64 px mask would be unused
+                }
+
                 MaskSpec spec = MaskSet.Spec(id);
                 MaskSet.Render(id, _scratch);
                 _masks[i] = UploadMask(spec.Width, spec.Height, spec.Name);
@@ -210,7 +215,7 @@ internal static class Textures
 
     /// <summary>
     /// Makes the pin-marker textures match the current UI scale and returns whether they can be drawn. Cheap when nothing
-    /// changed (one float compare, no allocation), so the marker hook may call it once per frame; it rebuilds (6 small
+    /// changed (one float compare, no allocation), so the marker hook may call it once per pinned draw; it rebuilds (6 small
     /// textures) only after a UI-scale change. Never throws: a failure disables <see cref="PinMarkerSite"/> and returns false.
     /// </summary>
     internal static bool EnsurePinMarkers()

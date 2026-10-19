@@ -25,6 +25,9 @@ public sealed class PinnedSet<TObj, TDef>
     /// <summary>True when nothing is marked (a cheap early-out for the draw hook).</summary>
     public bool IsEmpty => _objects.Count == 0 && _defs.Count == 0;
 
+    /// <summary>True when at least one build def is marked (lets the adapter skip the def probe).</summary>
+    public bool HasDefs => _defs.Count != 0;
+
     /// <summary>The mark of <paramref name="instance"/> by identity (<see cref="PinMark.None"/> for null or unknown).</summary>
     public PinMark Lookup(TObj? instance) =>
         instance is not null && _objects.TryGetValue(instance, out PinMark m) ? m : PinMark.None;

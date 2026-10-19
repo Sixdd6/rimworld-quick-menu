@@ -11,7 +11,7 @@ public enum PinMark
     /// <summary>The object itself is pinned: the normal marker.</summary>
     Full,
 
-    /// <summary>Only some entries of this dropdown are pinned: a smaller, dimmer marker.</summary>
+    /// <summary>Only some entries of this dropdown are pinned: a smaller white marker (user decision 14).</summary>
     Partial,
 }
 

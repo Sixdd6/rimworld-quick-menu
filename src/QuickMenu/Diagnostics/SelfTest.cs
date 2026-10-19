@@ -110,8 +110,42 @@ internal static class SelfTest
             + (DropdownMarkerPatch.MapPatched ? "patched" : "failed")
             + " row=" + (DropdownMarkerPatch.RowPatched ? "patched" : "failed")
             + " grid=" + (DropdownMarkerPatch.GridPatched ? "patched" : "failed")
-            + " siteDisabled=" + DropdownMarkerPatch.Site.Disabled
+            + " mapSiteDisabled=" + DropdownMarkerPatch.Site.Disabled
+            + " drawSiteDisabled=" + DropdownMarkerPatch.DrawSite.Disabled
             + " mappedOptions=" + DropdownMarkerPatch.MappedCount.ToString(CultureInfo.InvariantCulture));
+        AppendOwnGizmoDrawers(sb);
+    }
+
+    /// <summary>
+    /// ADR 0009: Designator subclasses that declare their own <c>GizmoOnGUIInt</c> override may not reach the base method our
+    /// marker postfix is on, so they may get no pin marker. Runtime types of the catalog's designators, deduplicated.
+    /// </summary>
+    private static void AppendOwnGizmoDrawers(StringBuilder sb)
+    {
+        var seen = new HashSet<Type>();
+        var found = new BoundedLines(ExampleLimit);
+        const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public
+            | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.DeclaredOnly;
+        foreach (CatalogEntry e in DesignatorCatalog.Entries)
+        {
+            Type? type = e.Designator.GetType();
+            if (!seen.Add(type))
+            {
+                continue;
+            }
+
+            for (Type? t = type; t != null && t != typeof(Designator); t = t.BaseType)
+            {
+                if (t.GetMethod("GizmoOnGUIInt", flags, null, new[] { typeof(UnityEngine.Rect), typeof(GizmoRenderParms) }, null) != null)
+                {
+                    found.Add(type.FullName + " (declared by " + t.FullName + ")");
+                    break;
+                }
+            }
+        }
+
+        sb.AppendLine("designator types with their own GizmoOnGUIInt (may get no pin marker): " + found.Total.ToString(CultureInfo.InvariantCulture) + " of " + seen.Count.ToString(CultureInfo.InvariantCulture) + " types");
+        Append(sb, "own GizmoOnGUIInt", found);
     }
 
     private static void RoundTrip(StringBuilder sb)

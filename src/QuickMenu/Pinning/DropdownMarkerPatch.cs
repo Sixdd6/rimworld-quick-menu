@@ -15,17 +15,20 @@ using Log = QuickMenu.Diagnostics.Log;
 namespace QuickMenu.Pinning;
 
 /// <summary>
-/// Fifth patch site (ADR 0009, FR-19): the pin marker on pinned single entries of an open dropdown list. Three postfixes share
-/// one fault site. 5a runs after <c>Designator_Dropdown.ProcessInput</c> added the float menu or float grid and, while an architect
+/// Fifth patch site (ADR 0009, FR-19): the pin marker on pinned single entries of an open dropdown list. The map fill (5a) has its own
+/// fault site; the two draw postfixes share another. 5a runs after <c>Designator_Dropdown.ProcessInput</c> added the float menu or float grid and, while an architect
 /// menu is open, maps every option object to the entry designator its action wraps (our <c>EntryAction</c>; this happens before
 /// Dubs Mint Menus rewraps the actions, and Mint keeps the option objects). 5b and 5c are postfixes on
 /// <c>FloatMenuOption.DoGUI</c> and <c>FloatMenuGridOption.OnGUI</c>: one reference-identity lookup per option, then the pinned
 /// lookup, then the draw (Repaint only), all allocation-free. A whole-dropdown pin marks no entries. The map holds the options of
-/// the most recent architect dropdown only, and is replaced on the next open.
+/// the most recent architect dropdown only, and is cleared when that menu closes (chained <c>onCloseCallback</c>) and replaced on the next open.
 /// </summary>
 internal static class DropdownMarkerPatch
 {
     internal static readonly PatchSite Site = new("DropdownMarkerPatch");
+
+    /// <summary>Own fault site for the draw postfixes (5b, 5c), so map and draw faults can both be injected in one session.</summary>
+    internal static readonly PatchSite DrawSite = new("DropdownMarkerPatch.Draw");
 
     private static readonly Dictionary<object, Row> _map = new(ReferenceEqualityComparer.Instance);
     private static Window? _mappedMenu;
@@ -118,6 +121,7 @@ internal static class DropdownMarkerPatch
 
             _map.Clear();
             _mappedMenu = menu;
+            ChainOnClose(menu);
             if (menu is FloatMenu floatMenu && _menuOptions != null)
             {
                 foreach (FloatMenuOption option in _menuOptions(floatMenu))
@@ -139,10 +143,43 @@ internal static class DropdownMarkerPatch
         }
     }
 
+    /// <summary>Clears the map when <paramref name="menu"/> closes, keeping the previous callback. Runs once per open: allocation is fine.</summary>
+    private static void ChainOnClose(Window menu)
+    {
+        switch (menu)
+        {
+            case FloatMenu floatMenu:
+                Action? previous = floatMenu.onCloseCallback;
+                floatMenu.onCloseCallback = () =>
+                {
+                    previous?.Invoke();
+                    ClearIfMapped(floatMenu);
+                };
+                break;
+            case FloatMenuGrid grid:
+                Action? previousGrid = grid.onCloseCallback;
+                grid.onCloseCallback = () =>
+                {
+                    previousGrid?.Invoke();
+                    ClearIfMapped(grid);
+                };
+                break;
+        }
+    }
+
+    private static void ClearIfMapped(Window menu)
+    {
+        if (ReferenceEquals(_mappedMenu, menu))
+        {
+            _map.Clear();
+            _mappedMenu = null;
+        }
+    }
+
     /// <summary>5b. Parameters are bound by index: the game's own names are not part of our contract.</summary>
     internal static void RowPostfix(FloatMenuOption __instance, Rect __0)
     {
-        if (Site.Disabled || _map.Count == 0)
+        if (DrawSite.Disabled || _map.Count == 0)
         {
             return;
         }
@@ -180,14 +217,14 @@ internal static class DropdownMarkerPatch
         }
         catch (Exception ex)
         {
-            Site.Fail(ex);
+            DrawSite.Fail(ex);
         }
     }
 
     /// <summary>5c.</summary>
     internal static void GridPostfix(FloatMenuGridOption __instance, Rect __0)
     {
-        if (Site.Disabled || _map.Count == 0)
+        if (DrawSite.Disabled || _map.Count == 0)
         {
             return;
         }
@@ -211,7 +248,7 @@ internal static class DropdownMarkerPatch
         }
         catch (Exception ex)
         {
-            Site.Fail(ex);
+            DrawSite.Fail(ex);
         }
     }
 

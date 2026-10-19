@@ -71,7 +71,7 @@ internal static class PinService
     }
 
     /// <summary>
-    /// Re-validates the resolved cache and so the pin marker set (once per frame from the marker hook): an O(1) stamp compare
+    /// Re-validates the resolved cache and so the pin marker set (once per frame from the marker hook): an allocation-free compare (O(ideoligion count))
     /// that resolves, and rebuilds the set, only after a game load, a catalog rebuild or an Ideology change.
     /// </summary>
     internal static void Revalidate() => EnsureCurrent();

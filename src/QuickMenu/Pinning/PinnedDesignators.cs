@@ -29,7 +29,7 @@ internal static class PinnedDesignators
 
     /// <summary>The mark of a designator drawn as a button: identity first, then the def of a build designator (BAM copies). Allocation-free.</summary>
     internal static PinMark Lookup(Designator designator) =>
-        _set.Lookup(designator, designator is Designator_Build build ? build.PlacingDef : null);
+        _set.HasDefs && designator is Designator_Build build ? _set.Lookup(designator, build.PlacingDef) : _set.Lookup(designator);
 
     /// <summary>
     /// The mark of a single entry inside an open dropdown list: its own identity only (never the def map, never its parent), so a
