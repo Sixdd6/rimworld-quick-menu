@@ -1,6 +1,6 @@
 # Performance: rimworld-quick-menu
 
-- **Status**: approved (2026-10-19). Targets approved; no measurements exist yet.
+- **Status**: approved (2026-10-19). Targets approved; first in-game baseline (UC-1, setups a and b) logged in section 5.
 
 Source: spec NFR-1 (performance) and NFR-8 (testability). All numeric targets are **proposed**; they are my reading of NFR-1 and need user confirmation (section 7).
 
@@ -132,7 +132,28 @@ The coverage gate (>= 90% of Core, architecture section 9) and the Perf gates mu
 ## 5. Results log
 | Date | Build / commit | Metric | Value | Change vs baseline | Notes |
 |---|---|---|---|---|---|
-| | | | | | No measurements yet. First baseline when Core and the self-test exist. |
+| 2026-10-19 | f721375 (UC-1 skeleton) | P-1 closed poller, per frame | median 0.15 us (self-test), 0.12 us (perf report, 35,844 frames); p99 0.54 / 0.27 us; max 281 / 311 us | baseline | **PASS** (limit 50% of 10 us = 5 us; goal 2 us also met). Setup (a), 8 mods, 454 entries. 10,000-frame sample, single run. Scope covers the postfix body only, not the Harmony wrapper. **Frame Profiler cross-check NOT done** (still open). Max outliers: see note 3. |
+| 2026-10-19 | f721375 | P-2 closed allocations | 0 bytes over 10,000 frames | baseline | **PASS** (target 0). Setup (a). |
+| 2026-10-19 | f721375 | P-4 idle `ProcessInput` calls | 0 over 4,042 frames of hovering | baseline | **PASS** (target 0). Setup (a), 8 mods, 454 entries; BAM clicks do reach our prefix (setup b). **R-1 stays closed.** Idle count with BAM loaded: see note 4. |
+| 2026-10-19 | f721375 | P-6 open latency | 21/21 opens drawn in the trigger frame (`same=True`) | baseline | **PASS** (target same frame). Setup (a). The 30 fps variant of the check was not run. |
+| 2026-10-19 | f721375 | P-7a warm open path | median 158.8 us; first open 1,213 us; max 1,213 us (21 opens); bytes median 57.7 KB, max 72.0 KB | baseline | **PASS** (limit 50% of 3 ms = 1.5 ms; first open at 81% of that limit). Skeleton, no pins, catalog already built; re-measure with 40 pins at UC-2. Allocation: note 1. |
+| 2026-10-19 | f721375 | P-8 open draw + input per frame | median 3.03 us; p99 11.27 us; max 386.7 us (4,054 steady frames) | baseline | **PASS** (limit 0.5 ms) but **not representative**: skeleton wheel has 2 slots. Control window (2 slots, same calls): median 2.80 us. Re-measure with the real wheel (40 pins, sub-ring, grid, max size) at UC-2. |
+| 2026-10-19 | f721375 | P-9 open allocations per frame | steady: 32 B/frame (control 32 B/frame, +0); first frame after open: max 65,672 B (control 328 B) | baseline | Steady state **PASS** (limit 50% of 512 B over control = 256 B; +0). First-frame-after-open **FAIL** vs the 8 KB budget (8x over); see note 1. Same 2-slot caveat as P-8. |
+| 2026-10-19 | f721375 | P-11c catalog + index build | (a) 5.19 ms, 454 entries, 8 mods; (b) 5.33 ms, 718 entries, 10 mods | baseline | **PASS** (limit 50% of 200 ms = 100 ms; 5% of it). One build per setup, so no spread. Not yet run on the 2,000-designator stress workload (W-1). |
+| 2026-10-19 | f721375 | P-12 builds per session | 1 (both setups) | baseline | **PASS** (target 1). |
+| 2026-10-19 | f721375 | P-18 mod startup | (a) mod ctor 29.05 ms, all of it patching (scan + patch of 8 overrides 23.50 ms); (b) patching 19.00 ms, 8 patched, 0 failed | baseline | **PASS** (limit 50% of 150 ms = 75 ms for the vanilla/DLC set; 39% of it). Settings load and Mint/BAM/MP detection are not implemented yet and not included. Setup (b) total ctor not logged. |
+
+Machine: user's main Linux PC (Fedora, 2560x1440, UI scale 1.0); RimWorld 1.7.4982 (Waylith, CoreCLR .NET 10); Harmony mod 3.0.1.0 (lib 3.0.0-rc.3); dev-mode Stopwatch scopes (`PerfCounters`), not the Frame Profiler. Single session, single run per setup, medians over the frame counts shown; no run-to-run spread yet.
+
+### UC-1 baseline notes (2026-10-19)
+Pass/fail uses 50% of each budget (architecture section 7 hardware margin), except the zero/equality budgets (P-2, P-4, P-6, P-12), which need no margin. Setup (a): Harmony + 5 DLC + Quick Menu, 8 mods, 454 entries. Setup (b): (a) + Better Architect Menu, 10 mods, 718 entries.
+
+1. **Open-path allocation (~58 KB per open, 72 KB max; first frame of the window up to 65.7 KB).** Time is fine (first open 1.2 ms). The allocation is per user action (one open), not per frame, so at a few opens per minute it is negligible for the GC (a gen0 budget is far larger). It does exceed the written P-9 first-frame limit (8 KB), which I set before the open path existed, so that number was a guess, not a requirement. Recommendation: do not add a hard per-open byte budget now. Instead (a) re-measure at UC-2 with the real wheel and 40 pins, (b) set a regression guard for the open path of about 2x the UC-2 measurement and require that it does not grow with the number of catalog entries, (c) re-base P-9 first-frame to "<= 128 KB per open, recorded, no growth with catalog size". Find the source with the `MeasureScope` split (Window construction, `WindowStack.Add`, first layout, first IMGUI call) before changing code; this cost may be engine-side (the control window allocates only 328 B in its first frame, so mod-side `Window` setup or text/GUIContent caches are suspects). Do not optimise yet: no budget requires it.
+2. **P-8 and P-9 were measured with the 2-slot skeleton.** They prove the harness and the no-regression floor (+0 B over control), not the cost of 40 pins. Re-measure at UC-2.
+3. **Poller max 281 us (10,000-frame sample) and 311 us (35,844-frame report).** One outlier per run against a p99 of 0.27 to 0.54 us, so it is not a steady cost. The log shows the 10,000-frame report is printed from inside the postfix (`PrintPendingReport`), and the poller's own max bytes of 59,648 in one frame matches report-string building, so the max most likely includes the report printing frame, or a GC pause or scheduler preemption. This is a hypothesis; I did not isolate it. Impact: 0.3 ms is 1.9% of a 16.7 ms frame, once per 10,000 frames. Action: exclude the report-printing frame from the sample (record the sample before printing), then check whether max stays under about 50 us. No fix on the mod's hot path is warranted.
+4. **P-4 with BAM loaded**: setup (b) confirmed BAM calls `ProcessInput` on clicks, but the log does not record an idle-hover count with BAM; the 0 over 4,042 frames is setup (a). Re-run the idle count with BAM at the next in-game session.
+5. **Frame Profiler was not used.** The P-1 cross-check (Waylith Frame Profiler, filter `QuickMenu!*`) and the Frame Profiler overhead question (section 7, question 4) are still open. All numbers above are Stopwatch/allocation scopes inside the mod.
+6. **P-1 floor**: measured 0.15 us against a 2 us goal, so per the note under section 1 the target can be tightened (proposal: <= 2 us hard, 0.5 us goal) once the Frame Profiler cross-check confirms the wrapper cost.
 
 Every entry states: machine (CPU, RAM, OS), game build (`1.7.4982 rev1280` or later), runtime, workload ID, loaded mod count and designator count, number of runs, median and spread.
 
