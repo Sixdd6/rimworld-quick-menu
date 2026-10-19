@@ -204,7 +204,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **In-game check**: UC-1 (user)
   - **Size**: M
 
-- [ ] **T-13**: UC-1 spike session guide and run
+- [x] **T-13**: UC-1 spike session guide and run
   - **Owner**: test-engineer
   - **Requirements**: NFR-2, NFR-3 (load with Harmony only)
   - **Depends on**: T-5, T-7, T-8, T-9, T-10, T-11, T-12
