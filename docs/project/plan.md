@@ -478,6 +478,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
     - [ ] Given `Activate(i)` on a plain designator (order or build), then `DesignatorActivator` calls `ProcessInput(Event.current)` and the window closes (stuff builds and dropdowns use the vanilla menus until T-41/T-43).
     - [ ] Given hover, then `Mouseover_Command` plays once on enter and the tooltip is the designator's own; labels and tooltips are cached per open; `Disabled` designators use the base disabled state until T-65.
     - [ ] Given middle mouse is the trigger, then camera drag while the menu is open is prevented if T-14 found it disruptive (`preventCameraMotion`).
+    - [x] *(UC-2 fix, FR-14)* Given a pinned build whose designator is hidden or not in the catalog (Ideology morbid slabs), then the pin resolves with `FindAllowedDesignator(def, mustBeVisible: false)` (ad-hoc entry), or a lightweight `Designator_Build` forced greyed when the game offers none; the slot is Disabled (dimmed icon, lock badge, reason in tooltip, reject message + sound on click), never Empty. Reason selection is Core `UnavailableReason`; composition (research, required buildings, tech level) is `UnavailableReasons`. Covers part of T-40 (Ideology pins resolve while the catalog lacks the Ideology part) and part of T-65 (greyed use-mode slot, composed reasons; the picker rows, monolith/grav-engine/Biotech/precept causes stay open).
     - [ ] *(UC-2)* Given setup (a), the user opens the wheel near each corner (fully on screen), places a wall and designates mining from it, and pins are the same after a restart and in a second save.
   - **Tests**: Core tests cover logic; in-game UC-2.
   - **In-game check**: UC-2 (user)
@@ -893,7 +894,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Depends on**: T-14, T-42, T-45
   - **Files**: `src/QuickMenu/Catalog/AvailabilityResolver.cs`, `src/QuickMenu/Menu/{QuickMenuWindow,PickerRow}.cs`, `mod/Languages/English/Keyed/QuickMenu.Menu.xml`
   - **Acceptance criteria**:
-    - [ ] Given a `Disabled` designator, then the reason is `disabledReason`; given `Visible == false`, then the reason is composed from the causes found in S-5 (research with the project label, tech level, required building, monolith, grav engine) using game strings where they exist, else "Not available right now."
+    - [ ] *(partly done in T-32 UC-2 fix: use-mode slot, research / building / tech-level reasons)* Given a `Disabled` designator, then the reason is `disabledReason`; given `Visible == false`, then the reason is composed from the causes found in S-5 (research with the project label, tech level, required building, monolith, grav engine) using game strings where they exist, else "Not available right now."
     - [ ] Known gap from T-7: Disabled designators must never be activated (the skeleton does not check), and activation fires on mouse-up over the same slot.
     - [ ] Given a greyed slot, then the tooltip adds the reason in `danger`; clicking it plays `ClickReject` and shows the reason as a `RejectInput` message; availability is evaluated on open and on hover only.
     - [ ] Given the picker, then greyed rows show the same reason in the sub-line.

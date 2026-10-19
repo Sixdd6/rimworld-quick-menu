@@ -75,7 +75,7 @@ internal static class DesignatorCatalog
 
     /// <summary>
     /// Finds the entry for a key: exact match, then (for builds, and only while a game is loaded) the architect's own
-    /// lookup, which evaluates designator visibility and so needs game state. Never throws, never logs the key.
+    /// lookup (needs game state), which also finds designators that are hidden or not in the catalog, as ad-hoc entries. Never throws, never logs the key.
     /// </summary>
     /// <returns>The entry, or null when the key is unresolved.</returns>
     internal static CatalogEntry? Resolve(PinKey? key)
@@ -100,8 +100,20 @@ internal static class DesignatorCatalog
             BuildableDef? def = key.Kind == PinKeyKind.BuildThing
                 ? DefDatabase<ThingDef>.GetNamedSilentFail(key.Name)
                 : DefDatabase<TerrainDef>.GetNamedSilentFail(key.Name);
-            Designator? found = def == null ? null : BuildCopyCommandUtility.FindAllowedDesignator(def);
-            return found != null && _byDesignator.TryGetValue(found, out CatalogEntry? entry) ? entry : null;
+            if (def == null)
+            {
+                return null;
+            }
+
+            // mustBeVisible: false, so a building that is hidden or unavailable right now still resolves (FR-14).
+            Designator? found = BuildCopyCommandUtility.FindAllowedDesignator(def, mustBeVisible: false);
+            if (found != null)
+            {
+                return _byDesignator.TryGetValue(found, out CatalogEntry? entry) ? entry : AdHoc(key, found, def, forcedUnavailable: false);
+            }
+
+            // The game offers no designator at all (Ideology building without its precept, say): a lightweight one shows the def's icon, greyed.
+            return AdHoc(key, new Designator_Build(def), def, forcedUnavailable: true);
         }
         catch (Exception ex)
         {
@@ -109,6 +121,19 @@ internal static class DesignatorCatalog
             Log.LogOnce("Catalog.Resolve", $"Resolving a {key.Kind} pin through the architect lookup failed ({ex.GetType().Name}); it stays unresolved.");
             return null;
         }
+    }
+
+    /// <summary>An entry for a designator the catalog does not hold (Ideology, hidden right now). Not added to <see cref="Entries"/>.</summary>
+    private static CatalogEntry AdHoc(PinKey key, Designator designator, BuildableDef def, bool forcedUnavailable)
+    {
+        string label = designator.Label;
+        if (string.IsNullOrEmpty(label))
+        {
+            label = def.label ?? def.defName;
+        }
+
+        ModContentPack? pack = def.modContentPack;
+        return new CatalogEntry(-1, -1, designator, key, label, string.Empty, pack?.Name ?? string.Empty, pack?.PackageId ?? string.Empty, isDropdown: false, forcedUnavailable);
     }
 
     /// <summary>The catalog entry of a live designator, or null (for example an Ideology-only designator).</summary>

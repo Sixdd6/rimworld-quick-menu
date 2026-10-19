@@ -1,4 +1,5 @@
 using QuickMenu.Core.Geometry;
+using QuickMenu.Core.Input;
 using QuickMenu.Core.Render;
 using UnityEngine;
 using Verse;
@@ -60,7 +61,31 @@ internal static class SlotRenderer
                 QuickMenu.Diagnostics.Log.LogOnce($"Menu.Icon.{type}", $"Drawing the icon of {type} failed, its icon is left blank: {ex.GetType().Name}: {ex.Message}");
                 model.BlankIcon(index);
             }
+
+            if (model.Kinds[index] == SlotKind.Disabled)
+            {
+                DrawUnavailable(model, layoutCentre, c, scale, transform);
+            }
         }
+    }
+
+    // Greyed with reason (S4 state 5): the icon is dimmed under a slotBg veil, and the lock badge sits at 7:30, radius B/2.
+    private static void DrawUnavailable(WheelModel model, Vec2 layoutCentre, Vec2 c, float scale, in RenderTransform transform)
+    {
+        if (!Textures.Ready)
+        {
+            return;
+        }
+
+        GUI.color = QMStyle.UnavailableVeil;
+        MenuRenderer.DrawMask(MaskId.Circle, c, model.CircleDrawSize * scale);
+        const float diagonal = 0.70710678f;
+        float r = model.ButtonSize / 2f;
+        Vec2 badge = new Vec2(layoutCentre.X - (r * diagonal), layoutCentre.Y + (r * diagonal));
+        GUI.color = QMStyle.RimOutline;
+        MenuRenderer.DrawSized(Textures.Glyph(MaskId.Lock), transform.Point(badge), scale * 1.15f);
+        GUI.color = QMStyle.TextMuted;
+        MenuRenderer.DrawSized(Textures.Glyph(MaskId.Lock), transform.Point(badge), scale);
     }
 
     private static Color Fill(SlotVisualState state) => state switch

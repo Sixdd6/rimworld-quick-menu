@@ -13,18 +13,20 @@ namespace QuickMenu.Menu;
 /// Everything one open of the menu shows, resolved once at open from the pin board (the cached resolution in
 /// <see cref="PinService"/>): the render model, the designator behind each slot and lazily built tooltips.
 /// Resolved pins fill <see cref="SlotKind.Normal"/> slots, or <see cref="SlotKind.Disabled"/> when the designator is not
-/// usable right now. Dropdowns are Normal too: until T-41 activating one opens the vanilla dropdown menu. Empty and
-/// unresolved (reserved) pins stay empty in use mode.
+/// usable right now. Dropdowns are Normal too: until T-41 activating one opens the vanilla dropdown menu. A pin whose def exists is never Empty: when the game offers no
+/// designator it is Disabled (FR-14). Only unresolved (reserved, mod missing) pins stay empty in use mode.
 /// </summary>
 internal sealed class MenuContent
 {
     private readonly string?[] _tips;
+    private readonly string?[] _reasons;
 
     private MenuContent(WheelModel model, Designator?[] designators)
     {
         Model = model;
         Designators = designators;
         _tips = new string?[designators.Length];
+        _reasons = new string?[designators.Length];
     }
 
     internal WheelModel Model { get; }
@@ -48,7 +50,7 @@ internal sealed class MenuContent
 
             Designator d = entry.Designator;
             designators[i] = d;
-            model.SetSlot(i, d, IsUsable(d) ? SlotKind.Normal : SlotKind.Disabled, entry.Label);
+            model.SetSlot(i, d, !entry.ForcedUnavailable && IsUsable(d) ? SlotKind.Normal : SlotKind.Disabled, entry.Label);
         }
 
         model.SetHubLabels("QuickMenu.Menu.Close".Translate(), "QuickMenu.Menu.Edit".Translate());
@@ -72,6 +74,10 @@ internal sealed class MenuContent
             {
                 string desc = d.Desc ?? string.Empty;
                 tip = desc.Length == 0 ? d.LabelCap : d.LabelCap + "\n\n" + desc;
+                if (Model.Kinds[slot] == SlotKind.Disabled)
+                {
+                    tip += "\n\n<color=#" + UnityEngine.ColorUtility.ToHtmlStringRGB(QMStyle.Danger) + ">" + Reason(slot) + "</color>";
+                }
             }
             catch (Exception ex)
             {
@@ -83,6 +89,18 @@ internal sealed class MenuContent
         }
 
         return tip.Length == 0 ? null : tip;
+    }
+
+    /// <summary>Why a Disabled slot cannot be used (FR-14); composed on first use and kept for this open. Null for other slots.</summary>
+    internal string? Reason(int slot)
+    {
+        Designator? d = Designators[slot];
+        if (d == null || Model.Kinds[slot] != SlotKind.Disabled)
+        {
+            return null;
+        }
+
+        return _reasons[slot] ??= UnavailableReasons.For(d);
     }
 
     private static bool IsUsable(Designator d)

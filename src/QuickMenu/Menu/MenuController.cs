@@ -177,9 +177,9 @@ internal static class MenuController
 
                 break;
             case MenuCommandKind.Reject:
-                if (_content != null && command.Index >= 0 && command.Index < _content.Designators.Length && _content.Designators[command.Index] is { } rejected)
+                if (_content != null && command.Index >= 0 && command.Index < _content.Designators.Length && _content.Reason(command.Index) is { } reason)
                 {
-                    DesignatorActivator.Reject(rejected);
+                    DesignatorActivator.Reject(reason);
                 }
 
                 break;

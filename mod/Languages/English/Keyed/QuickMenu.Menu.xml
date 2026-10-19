@@ -5,4 +5,9 @@
   <QuickMenu.Menu.Edit>Edit</QuickMenu.Menu.Edit>
   <!-- Reason shown when a slot is clicked that cannot be used and the designator gives none (U-4). -->
   <QuickMenu.Menu.Unavailable>Not available right now.</QuickMenu.Menu.Unavailable>
+  <!-- Composed reasons for an unavailable building (FR-14) when the designator gives none. -->
+  <QuickMenu.Menu.ReasonResearch>Requires research: {0}.</QuickMenu.Menu.ReasonResearch>
+  <QuickMenu.Menu.ReasonBuildings>Requires a building: {0}.</QuickMenu.Menu.ReasonBuildings>
+  <QuickMenu.Menu.ReasonTechMin>Requires a higher tech level ({0}).</QuickMenu.Menu.ReasonTechMin>
+  <QuickMenu.Menu.ReasonTechMax>Not available above the {0} tech level.</QuickMenu.Menu.ReasonTechMax>
 </LanguageData>

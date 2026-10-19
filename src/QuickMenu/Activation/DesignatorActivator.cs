@@ -36,23 +36,5 @@ internal static class DesignatorActivator
     }
 
     /// <summary>Shows why a slot cannot be used. <c>RejectInput</c> plays the reject sound itself.</summary>
-    internal static void Reject(Designator designator)
-    {
-        string? reason = null;
-        try
-        {
-            reason = designator.disabledReason;
-        }
-        catch (Exception ex)
-        {
-            Log.LogOnce("Menu.Reject.Reason", $"Reading a designator's disabled reason failed: {ex.GetType().Name}");
-        }
-
-        if (string.IsNullOrEmpty(reason))
-        {
-            reason = "QuickMenu.Menu.Unavailable".Translate();
-        }
-
-        Messages.Message(reason, MessageTypeDefOf.RejectInput, historical: false);
-    }
+    internal static void Reject(string reason) => Messages.Message(reason, MessageTypeDefOf.RejectInput, historical: false);
 }

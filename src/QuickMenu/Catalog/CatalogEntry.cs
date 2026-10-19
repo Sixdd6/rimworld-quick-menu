@@ -15,7 +15,8 @@ internal sealed class CatalogEntry
         string categoryLabel,
         string modName,
         string packageId,
-        bool isDropdown)
+        bool isDropdown,
+        bool forcedUnavailable = false)
     {
         Id = id;
         ParentId = parentId;
@@ -26,6 +27,7 @@ internal sealed class CatalogEntry
         ModName = modName;
         PackageId = packageId;
         IsDropdown = isDropdown;
+        ForcedUnavailable = forcedUnavailable;
     }
 
     /// <summary>Index in <see cref="DesignatorCatalog.Entries"/> (pre-order: a dropdown precedes its elements).</summary>
@@ -48,4 +50,10 @@ internal sealed class CatalogEntry
     internal string PackageId { get; }
 
     internal bool IsDropdown { get; }
+
+    /// <summary>
+    /// True for an entry made only to show a pin whose def exists but whose designator the game does not offer right now
+    /// (FR-14): it is always shown greyed. Such entries are not in <see cref="DesignatorCatalog.Entries"/> (Id is -1).
+    /// </summary>
+    internal bool ForcedUnavailable { get; }
 }

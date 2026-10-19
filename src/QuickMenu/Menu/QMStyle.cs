@@ -36,6 +36,8 @@ internal static class QMStyle
     internal static readonly Color Text = ToColor(StyleTokens.Text);
     internal static readonly Color TextMuted = ToColor(StyleTokens.TextMuted);
     internal static readonly Color UnavailableIcon = ToColor(StyleTokens.UnavailableIcon);
+    /// <summary>Veil over a greyed slot's icon (S4 state 5): <c>slotBg</c> at 60 %, so the icon reads dim and desaturated.</summary>
+    internal static readonly Color UnavailableVeil = new(SlotBg.r, SlotBg.g, SlotBg.b, 0.6f);
     internal static readonly Color Plate = ToColor(StyleTokens.Plate);
 
     /// <summary>Untinted drawing: textures with baked colour (the disc rim) and designator icons.</summary>
