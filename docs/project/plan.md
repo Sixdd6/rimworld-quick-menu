@@ -1076,7 +1076,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
 
 ### M6: Hardening and release prep
 
-- [ ] **T-72**: Fault isolation audit and fault-injection action · `parallel-ok`
+- [x] **T-72**: Fault isolation audit and fault-injection action · `parallel-ok`
   - **Owner**: developer
   - **Requirements**: NFR-6, FR-17
   - **Depends on**: T-69
@@ -1089,7 +1089,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-6 (user)
   - **Size**: M
 
-- [ ] **T-73**: Keyed-string and key-usage check in CI · `parallel-ok`
+- [x] **T-73**: Keyed-string and key-usage check in CI · `parallel-ok`
   - **Owner**: developer
   - **Requirements**: NFR-4
   - **Depends on**: T-67
@@ -1100,7 +1100,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: the script runs in CI and passes.
   - **Size**: S
 
-- [ ] **T-74**: Clean-room, dependency and asset audit · `parallel-ok`
+- [x] **T-74**: Clean-room, dependency and asset audit · `parallel-ok`
   - **Owner**: release-engineer
   - **Requirements**: NFR-7, NFR-3
   - **Depends on**: T-69
