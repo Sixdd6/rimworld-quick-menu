@@ -51,6 +51,9 @@ internal enum StatId
 
     /// <summary>The dropdown-entry marker postfixes (P-19, hook site 5): one sample per frame, covering every option draw of that frame.</summary>
     PinMarkerEntry,
+
+    /// <summary>Drawing a pin marker (two <c>GUI.DrawTexture</c> calls in the game's IMGUI backend): only pinned, visible designators. Kept out of <see cref="PinMarker"/> (P-19 budgets the decision).</summary>
+    PinMarkerDraw,
 }
 
 /// <summary>
@@ -94,6 +97,7 @@ internal static class PerfCounters
         new("  P-8 by layout: sub-grid (sub-grid or material grid open)", FrameRing),
         new("pin marker hook per frame (P-19; calls = hook calls, calls/steadyFrames = calls per frame; every command gizmo, drawn or not)", FrameRing),
         new("pin marker dropdown-entry hooks per frame (P-19; calls = float-menu option draws while a mapped list exists)", FrameRing),
+        new("pin marker draw per frame (P-19, not budgeted: IMGUI texture drawing of the pinned buttons; calls = markers drawn)", FrameRing),
     };
 
     internal static MeasureStats Get(StatId id) => EnsureStats()[(int)id];
@@ -102,7 +106,31 @@ internal static class PerfCounters
     internal static void Enable()
     {
         EnsureStats();
+        Calibrate();
         Enabled = true;
+    }
+
+    /// <summary>Median cost in ticks of the timed interval of an empty <see cref="MeasureScope"/> (calibrated by <see cref="Calibrate"/>).</summary>
+    internal static long ScopeOverheadTicks { get; private set; }
+
+    /// <summary>
+    /// Times 1,000 empty scopes (same call sequence as <see cref="MeasureScope"/>, nothing recorded) and keeps the median of the
+    /// timed interval. Per-call sites (P-19) subtract it per call in the report, so the raw numbers stay raw and the corrected ones are shown beside them.
+    /// </summary>
+    private static void Calibrate()
+    {
+        const int n = 1000;
+        long[] samples = new long[n];
+        for (int i = 0; i < n; i++)
+        {
+            _ = GC.GetAllocatedBytesForCurrentThread();
+            long start = Stopwatch.GetTimestamp();
+            long end = Stopwatch.GetTimestamp();
+            samples[i] = end - start;
+        }
+
+        Array.Sort(samples);
+        ScopeOverheadTicks = samples[n / 2];
     }
 
     /// <summary>Called by <see cref="MeasureScope"/> (enabled path only).</summary>
@@ -228,11 +256,36 @@ internal static class PerfCounters
                 + " | firstCallUs=" + F(Us(s.FirstCallTicks)) + " firstCallBytes=" + s.FirstCallBytes
                 + " | firstFrameAfterOpen maxBytes=" + s.FirstFrameBytesMax + " maxUs=" + F(Us(s.FirstFrameTicksMax))
                 + " | totalBytes=" + s.TotalBytes + " (ring " + t.Count + "/" + s.FrameTicks.Capacity + ")");
+            if (ReferenceEquals(s, Get(StatId.PinMarker)) || ReferenceEquals(s, Get(StatId.PinMarkerEntry)))
+            {
+                AppendCorrected(sb, s, t);
+            }
         }
 
         sb.AppendLine("sized texture rebuilds this session=" + Textures.SizedRebuilds + " (T-95: at most one per slider drag), last took "
             + F(Textures.LastSizedRebuildMs) + " ms with upload");
         sb.AppendLine("control window slots drawn N=" + ControlSlots + " (live wheel N is in the menu window line: same count and icon path)");
+    }
+
+    /// <summary>
+    /// Per-call hooks (P-19) wrap every call in a scope, so each call includes the timed part of the scope itself. This prints the
+    /// calibrated overhead and the estimate with it removed: per call = frame median / calls per frame - overhead.
+    /// </summary>
+    private static void AppendCorrected(StringBuilder sb, MeasureStats s, SampleSummary t)
+    {
+        if (s.Frames == 0)
+        {
+            return;
+        }
+
+        double callsPerFrame = (double)s.Calls / s.Frames;
+        double overheadNs = ScopeOverheadTicks * 1e9 / Stopwatch.Frequency;
+        double rawPerCallNs = Us(t.Median) * 1000.0 / Math.Max(callsPerFrame, 1.0);
+        double correctedPerCallNs = Math.Max(rawPerCallNs - overheadNs, 0.0);
+        sb.AppendLine("    P-19 corrected: calls/frame=" + F(callsPerFrame, "F1") + " scopeOverheadNs=" + F(overheadNs, "F1") + " (calibrated, 1000 empty scopes)"
+            + " | rawNsPerCall=" + F(rawPerCallNs, "F1") + " correctedNsPerCall=" + F(correctedPerCallNs, "F1")
+            + " | correctedUsPerFrame=" + F(Math.Max(Us(t.Median) - (callsPerFrame * overheadNs / 1000.0), 0.0))
+            + " (budget <= 100 ns per call and <= 10 us per frame; allocation outside the scope, i.e. the marker draw, is under 'pin marker draw')");
     }
 
     private static void ClosedMeasureDone()
