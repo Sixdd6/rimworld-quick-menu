@@ -19,6 +19,11 @@ public static class WheelLayout
             throw new ArgumentOutOfRangeException(nameof(p), p.ButtonSize, "Button size must be positive.");
         }
 
+        if (!float.IsFinite(p.Center.X) || !float.IsFinite(p.Center.Y))
+        {
+            throw new ArgumentOutOfRangeException(nameof(p), p.Center, "Center must be finite.");
+        }
+
         var pitch = LayoutConstants.Pitch(p.ButtonSize);
         var result = new SlotPlacement[RingCapacity.Total(p.Rings)];
         var index = 0;
@@ -33,7 +38,7 @@ public static class WheelLayout
                 var center = new Vec2(
                     p.Center.X + (float)(radius * Math.Cos(rad)),
                     p.Center.Y + (float)(radius * Math.Sin(rad)));
-                result[index] = new SlotPlacement(index, k, center, radius, (float)degrees);
+                result[index] = new SlotPlacement(index, k, center, radius, (float)degrees, pitch / 2f);
                 index++;
             }
         }

@@ -138,4 +138,26 @@ public class WheelLayoutExtremesTests
         // The design note: at B = 36 the sub-button reaches 2 px past the hub hit area.
         Assert.Equal(2f, LayoutConstants.HubSubOffset(36) + (LayoutConstants.HubSubDiameter(36) / 2f) - (LayoutConstants.Pitch(36) / 2f), Tol);
     }
+
+    [Fact]
+    public void Compute_NonFiniteCenter_Throws()
+    {
+        foreach (float bad in new[] { float.NaN, float.PositiveInfinity, float.NegativeInfinity })
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => WheelLayout.Compute(new WheelParams(56f, 2, new Vec2(bad, 0f))));
+            Assert.Throws<ArgumentOutOfRangeException>(() => WheelLayout.Compute(new WheelParams(56f, 2, new Vec2(0f, bad))));
+        }
+    }
+
+    [Theory]
+    [InlineData(36f)]
+    [InlineData(56f)]
+    [InlineData(96f)]
+    public void Compute_HitRadiusIsHalfPitch_ForEverySlot(float size)
+    {
+        foreach (SlotPlacement slot in WheelLayout.Compute(new WheelParams(size, 3, default)))
+        {
+            Assert.Equal((size + 8f) / 2f, slot.HitRadius);
+        }
+    }
 }
