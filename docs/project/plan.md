@@ -43,7 +43,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
 
 ### M1: Walking skeleton + spike build
 
-- [ ] **T-1**: Put the repository on GitHub and get CI green · `parallel-ok`
+- [x] **T-1**: Put the repository on GitHub and get CI green · `parallel-ok`
   - **Owner**: release-engineer
   - **Requirements**: NFR-8 (CI runs the unit suite), NFR-3
   - **Depends on**: —
