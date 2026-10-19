@@ -1,7 +1,8 @@
 using System;
+using System.Runtime.CompilerServices;
 using HarmonyLib;
 using QuickMenu.Diagnostics;
-using QuickMenu.Input;
+using QuickMenu.Trigger;
 using RimWorld;
 using Verse;
 
@@ -17,14 +18,38 @@ public sealed class QuickMenuMod : Mod
     {
         try
         {
-            var harmony = new Harmony(HarmonyId);
-            harmony.Patch(
-                AccessTools.Method(typeof(UIRoot_Play), nameof(UIRoot_Play.UIRootUpdate)),
-                postfix: new HarmonyMethod(typeof(TriggerPoller), nameof(TriggerPoller.Postfix)));
+            ApplyPatches();
         }
         catch (Exception ex)
         {
-            Diagnostics.Log.LogOnce("Harmony.Bootstrap", $"Applying Harmony patches failed: {ex}");
+            Diagnostics.Log.LogOnce("Harmony.Bootstrap", $"Harmony is unavailable, Quick Menu patches were not applied: {ex}");
+        }
+    }
+
+    // Isolated and not inlined so a missing 0Harmony assembly fails here, inside the caller's try block.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ApplyPatches()
+    {
+        var harmony = new Harmony(HarmonyId);
+        ApplyPostfix(harmony, TriggerPoller.Site, typeof(UIRoot_Play), nameof(UIRoot_Play.UIRootUpdate), typeof(TriggerPoller), nameof(TriggerPoller.Postfix));
+    }
+
+    private static void ApplyPostfix(Harmony harmony, Diagnostics.PatchSite site, Type targetType, string targetMethod, Type patchType, string postfix)
+    {
+        try
+        {
+            var original = AccessTools.Method(targetType, targetMethod);
+            if (original == null)
+            {
+                site.Fail(new MissingMethodException(targetType.FullName, targetMethod));
+                return;
+            }
+
+            harmony.Patch(original, postfix: new HarmonyMethod(patchType, postfix));
+        }
+        catch (Exception ex)
+        {
+            site.Fail(ex);
         }
     }
 }

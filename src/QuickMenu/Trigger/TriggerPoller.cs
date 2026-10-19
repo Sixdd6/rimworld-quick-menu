@@ -6,7 +6,7 @@ using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
-namespace QuickMenu.Input;
+namespace QuickMenu.Trigger;
 
 /// <summary>
 /// Harmony postfix on <c>UIRoot_Play.UIRootUpdate</c> (ADR 0003). Closed-state cost is one flag check and one
@@ -14,21 +14,31 @@ namespace QuickMenu.Input;
 /// </summary>
 internal static class TriggerPoller
 {
-    internal const string Site = "TriggerPoller.UIRootUpdate";
-
-    private static readonly Action _pollAction = Poll;
+    internal static readonly PatchSite Site = new("TriggerPoller.UIRootUpdate");
 
     /// <summary>Called once when the trigger fires in a valid context. T-7 sets this to <c>MenuController.Open</c>.</summary>
     internal static Action? OpenRequested { get; set; }
 
     internal static void Postfix()
     {
-        if (!UnityEngine.Input.GetMouseButtonDown(SkeletonTrigger.MouseIndex))
+        if (Site.Disabled)
         {
             return;
         }
 
-        PatchGuard.Run(Site, _pollAction);
+        try
+        {
+            if (!UnityEngine.Input.GetMouseButtonDown(SkeletonTrigger.MouseIndex))
+            {
+                return;
+            }
+
+            Poll();
+        }
+        catch (Exception ex)
+        {
+            Site.Fail(ex);
+        }
     }
 
     private static void Poll()

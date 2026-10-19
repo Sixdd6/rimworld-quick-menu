@@ -98,7 +98,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Owner**: developer
   - **Requirements**: FR-1 (skeleton), NFR-1, NFR-3, NFR-6 (ADR 0001, 0003)
   - **Depends on**: —
-  - **Files**: `src/QuickMenu/QuickMenuMod.cs`, `src/QuickMenu/Diagnostics/{Log,PatchGuard}.cs`, `src/QuickMenu/Input/TriggerPoller.cs`, `src/QuickMenu/Diagnostics/Spike/SkeletonTrigger.cs`, `mod/Languages/English/Keyed/QuickMenu.Debug.xml`
+  - **Files**: `src/QuickMenu/QuickMenuMod.cs`, `src/QuickMenu/Diagnostics/{Log,PatchGuard}.cs`, `src/QuickMenu/Trigger/TriggerPoller.cs`, `src/QuickMenu/Diagnostics/Spike/SkeletonTrigger.cs`, `mod/Languages/English/Keyed/QuickMenu.Debug.xml`
   - **Acceptance criteria**:
     - [ ] Given the mod ctor, when it runs, then Harmony id `sixdd.QuickMenu` applies the postfix on `RimWorld.UIRoot_Play.UIRootUpdate` inside try/catch, and a failure is logged once with `[QuickMenu]` and does not stop loading.
     - [ ] Given `PatchGuard.Run(site, body)`, when the body throws, then the error is logged once per site, the site is disabled for the session, and later calls return without running the body (unit-testable part kept in the adapter, verified in game by T-72).
@@ -168,7 +168,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Owner**: performance-engineer
   - **Requirements**: NFR-1 (P-1, P-2, P-6, P-7a, P-8, P-9, P-18; performance.md T-6)
   - **Depends on**: T-5, T-7, T-9
-  - **Files**: `src/QuickMenu/Diagnostics/{MeasureScope,PerfCounters,ControlRunWindow}.cs`, `src/QuickMenu/Input/TriggerPoller.cs` (scope around the body), `src/QuickMenu/UI/QuickMenuWindow.cs` (scopes around the open path, `DoWindowContents`, `WindowUpdate`), `src/QuickMenu/Diagnostics/SelfTest.cs` (print counters)
+  - **Files**: `src/QuickMenu/Diagnostics/{MeasureScope,PerfCounters,ControlRunWindow}.cs`, `src/QuickMenu/Trigger/TriggerPoller.cs` (scope around the body), `src/QuickMenu/UI/QuickMenuWindow.cs` (scopes around the open path, `DoWindowContents`, `WindowUpdate`), `src/QuickMenu/Diagnostics/SelfTest.cs` (print counters)
   - **Acceptance criteria**:
     - [ ] Given dev mode is off, then the poller and the window pay only one cached bool check for measurement.
     - [ ] Given the window scopes and debug action "Quick Menu: control window" (an empty full-screen transparent window making the same `Widgets`/`GUI` calls, for the P-9 control run), then open-path ms, per-frame draw ms and allocated bytes are printed by "Quick Menu: perf report". T-32 keeps these scopes when it replaces the skeleton window.
@@ -433,7 +433,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Owner**: developer
   - **Requirements**: FR-1, NFR-1, NFR-4 (ADR 0003; design.md S7 binding, capture dialog)
   - **Depends on**: T-14, T-20, T-25
-  - **Files**: `src/QuickMenu/Settings/{BindingCaptureWindow,BindingRow}.cs`, `src/QuickMenu/Input/TriggerPoller.cs`, `mod/Languages/English/Keyed/QuickMenu.Settings.xml`
+  - **Files**: `src/QuickMenu/Settings/{BindingCaptureWindow,BindingRow}.cs`, `src/QuickMenu/Trigger/TriggerPoller.cs`, `mod/Languages/English/Keyed/QuickMenu.Settings.xml`
   - **Acceptance criteria**:
     - [ ] Given the capture dialog, when a key is pressed (`KeyDown`) or a middle/side button (polled `GetMouseButtonDown(2..4)` in `WindowUpdate`), then it is stored; Esc cancels; left or right shows "Left and right click can't open the menu." with `ClickReject`.
     - [ ] Given the key is also a game key binding, then it is accepted and the row shows "{key} is also used for: {binding}." in `danger`.
