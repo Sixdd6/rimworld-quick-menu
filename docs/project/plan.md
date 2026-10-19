@@ -251,7 +251,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
 
 ### M2: Pin by click, use the wheel
 
-- [ ] **T-16**: Core `EdgeDodger` and wheel bounding box · `parallel-ok`
+- [x] **T-16**: Core `EdgeDodger` and wheel bounding box · `parallel-ok`
   - **Owner**: developer
   - **Requirements**: FR-3, NFR-5, NFR-8
   - **Depends on**: T-2
@@ -263,7 +263,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Tests**: unit `EdgeDodgerTests` (four edges, four corners, oversize per axis, UI screen 960 × 540), `MenuBoundsTests`.
   - **Size**: S
 
-- [ ] **T-17**: Core `HitTester` for the wheel and hub · `parallel-ok`
+- [x] **T-17**: Core `HitTester` for the wheel and hub · `parallel-ok`
   - **Owner**: developer
   - **Requirements**: FR-2, FR-4, FR-9, NFR-8 (design.md §1.1 hit testing, S4a)
   - **Depends on**: T-2
@@ -276,7 +276,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Tests**: unit `HitTesterTests` (defaults, every B, priority cases).
   - **Size**: M
 
-- [ ] **T-18**: Core `PinBoard` (Fixed sizing) · `parallel-ok`
+- [x] **T-18**: Core `PinBoard` (Fixed sizing) · `parallel-ok`
   - **Owner**: developer
   - **Requirements**: FR-5, FR-9, FR-14, FR-15, NFR-8
   - **Depends on**: T-3
@@ -289,7 +289,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Tests**: unit `PinBoardFixedTests`.
   - **Size**: M
 
-- [ ] **T-19**: Core `PinSerializer` v1 · `parallel-ok`
+- [x] **T-19**: Core `PinSerializer` v1 · `parallel-ok`
   - **Owner**: developer
   - **Requirements**: FR-14, FR-17, NFR-6, NFR-8
   - **Depends on**: T-3
@@ -301,7 +301,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Tests**: unit `PinSerializerTests`.
   - **Size**: S
 
-- [ ] **T-20**: Core `TriggerBinding`, `ModifierPolicy` and `PinClickClassifier` · `parallel-ok`
+- [x] **T-20**: Core `TriggerBinding`, `ModifierPolicy` and `PinClickClassifier` · `parallel-ok`
   - **Owner**: developer
   - **Requirements**: FR-1, FR-8, NFR-1, NFR-8 (ADR 0003, 0005)
   - **Depends on**: — (use the T-14 field results when available)
@@ -313,7 +313,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Tests**: unit tests above.
   - **Size**: S
 
-- [ ] **T-21**: Core `TriggerStateMachine` (toggle mode) · `parallel-ok`
+- [x] **T-21**: Core `TriggerStateMachine` (toggle mode) · `parallel-ok`
   - **Owner**: developer
   - **Requirements**: FR-2, FR-9 (enter/exit), FR-11 (back), NFR-8 (design.md close and cancel rules)
   - **Depends on**: T-17
@@ -326,7 +326,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Tests**: unit `TriggerStateMachineToggleTests` (one test per row of the close and cancel table).
   - **Size**: M
 
-- [ ] **T-22**: `MaskRasterizer` full shape set · `parallel-ok`
+- [x] **T-22**: `MaskRasterizer` full shape set · `parallel-ok`
   - **Owner**: visual-designer
   - **Requirements**: NFR-5, NFR-7, NFR-8 (design.md §2 components, §6)
   - **Depends on**: T-4
