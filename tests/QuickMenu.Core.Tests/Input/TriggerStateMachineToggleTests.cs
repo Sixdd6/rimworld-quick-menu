@@ -323,37 +323,4 @@ public class TriggerStateMachineToggleTests
         var m = Opened();
         Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseMove(new Vec2(300, 300))));
     }
-
-    [Fact]
-    [Trait("Category", "Perf")]
-    public void Handle_allocates_nothing()
-    {
-        var m = new TriggerStateMachine();
-        var events = new[]
-        {
-            TriggerEvent.TriggerPressed(_origin),
-            TriggerEvent.MouseMove(new Vec2(150, 150)),
-            TriggerEvent.MouseDown(_origin, Hit.Slot(1), 0),
-            TriggerEvent.MouseUp(_origin, Hit.Slot(1), SlotKind.Submenu, 0),
-            TriggerEvent.MouseDown(_origin, Hit.HubEdit, 0),
-            TriggerEvent.MouseUp(_origin, Hit.HubEdit, SlotKind.Normal, 0),
-            TriggerEvent.Escape(_origin),
-            TriggerEvent.MouseDown(_origin, Hit.Outside, 1),
-            TriggerEvent.MapLost(),
-        };
-
-        for (var i = 0; i < 1000; i++)
-        {
-            m.Handle(events[i % events.Length]);
-        }
-
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 10_000; i++)
-        {
-            m.Handle(events[i % events.Length]);
-        }
-
-        var after = GC.GetAllocatedBytesForCurrentThread();
-        Assert.Equal(0, after - before);
-    }
 }

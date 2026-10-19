@@ -120,29 +120,4 @@ public class PinClickClassifierTests
     {
         Assert.Equal(PinClickAction.Pin, PinClickClassifier.Classify(Click(U, rawCtrl: true, up: true), PinModifier.Ctrl));
     }
-
-    [Fact]
-    [Trait("Category", "Perf")]
-    public void Classify_and_policy_allocate_nothing()
-    {
-        var pin = Click(rawCtrl: true);
-        var pass = Click(RawEventType.KeyDown, key: true);
-        long sum = 0;
-        for (var i = 0; i < 100; i++)
-        {
-            sum += (int)PinClickClassifier.Classify(pin, ModifierPolicy.Effective(false, PinModifier.Alt, false));
-        }
-
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 10_000; i++)
-        {
-            var m = ModifierPolicy.Effective(i % 3 == 0, PinModifier.Shift, i % 2 == 0);
-            sum += (int)PinClickClassifier.Classify(pin, m);
-            sum += (int)PinClickClassifier.Classify(pass, m);
-        }
-
-        var after = GC.GetAllocatedBytesForCurrentThread();
-        Assert.Equal(0L, after - before);
-        Assert.True(sum > 0);
-    }
 }

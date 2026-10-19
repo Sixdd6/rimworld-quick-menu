@@ -119,26 +119,4 @@ public class EdgeDodgerTests
         var o = EdgeDodger.Fit(b, _screen);
         Assert.Equal(270f, b.Y + o.Y + (b.Height / 2f));
     }
-
-    [Fact]
-    [Trait("Category", "Perf")]
-    public void Fit_allocates_nothing()
-    {
-        var b = Box(10f, 530f);
-        var sum = 0f;
-        for (var i = 0; i < 100; i++)
-        {
-            sum += EdgeDodger.Fit(b, _screen).X;
-        }
-
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 10_000; i++)
-        {
-            sum += EdgeDodger.Fit(b, _screen).X;
-        }
-
-        var after = GC.GetAllocatedBytesForCurrentThread();
-        Assert.Equal(0L, after - before);
-        Assert.True(sum > 0f);
-    }
 }

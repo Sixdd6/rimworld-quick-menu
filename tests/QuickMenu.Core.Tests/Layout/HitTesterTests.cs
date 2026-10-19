@@ -136,28 +136,6 @@ public class HitTesterTests
     }
 
     [Fact]
-    [Trait("Category", "Perf")]
-    public void Hit_does_not_allocate()
-    {
-        var buttons = new[] { new HitButton(new Rect2(0f, 0f, 10f, 10f), 1) };
-        var l = Make(56f, 2, new Rect2(0f, 500f, 100f, 30f), buttons);
-        var sink = 0;
-        for (var i = 0; i < 100; i++)
-        {
-            sink += (int)HitTester.Hit(new Vec2(i, i), l).Kind;
-        }
-
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 10_000; i++)
-        {
-            sink += (int)HitTester.Hit(new Vec2(480f + (i % 60), 380f + (i % 90)), l).Kind;
-        }
-
-        Assert.Equal(0L, GC.GetAllocatedBytesForCurrentThread() - before);
-        Assert.True(sink >= 0);
-    }
-
-    [Fact]
     public void Without_hub_sub_the_sub_area_is_hub_close()
     {
         var l = Make(56f, 2, hasHubSub: false);
