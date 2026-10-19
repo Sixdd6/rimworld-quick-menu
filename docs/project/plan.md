@@ -1032,7 +1032,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: screenshot review.
   - **Size**: S
 
-- [ ] **T-71**: M5 performance record · `parallel-ok`
+- [x] **T-71**: M5 performance record · `parallel-ok`
   - **Owner**: performance-engineer
   - **Requirements**: NFR-1 (P-3, P-4 with BAM and Mint, P-5 in game)
   - **Depends on**: T-69
