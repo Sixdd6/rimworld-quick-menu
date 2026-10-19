@@ -952,7 +952,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-5 (user)
   - **Size**: S
 
-- [ ] **T-65**: `AvailabilityResolver` and greyed slots
+- [x] **T-65**: `AvailabilityResolver` and greyed slots
   - **Owner**: developer
   - **Requirements**: FR-14, NFR-4, NFR-6 (ADR 0006, U-4)
   - **Depends on**: T-14, T-40, T-42
@@ -967,7 +967,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-5 (user)
   - **Size**: M
 
-- [ ] **T-66**: Missing-mod pins end to end · `parallel-ok`
+- [x] **T-66**: Missing-mod pins end to end · `parallel-ok`
   - **Owner**: developer
   - **Requirements**: FR-14, FR-17, NFR-6 (architecture §4, U-2)
   - **Depends on**: T-57, T-59
@@ -981,7 +981,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-5 (user)
   - **Size**: S
 
-- [ ] **T-67**: Mod detection, Mint Alt default, notices · `parallel-ok`
+- [x] **T-67**: Mod detection, Mint Alt default, notices · `parallel-ok`
   - **Owner**: developer
   - **Requirements**: FR-1, FR-8, NFR-2, NFR-4 (design.md S7 Mint line, S8)
   - **Depends on**: T-31
@@ -1043,7 +1043,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: none.
   - **Size**: S
 
-- [ ] **T-93**: Settings page polish from the UC-4 review
+- [x] **T-93**: Settings page polish from the UC-4 review
   - **Owner**: visual-designer
   - **Requirements**: FR-6, NFR-5, NFR-7 (design.md S7, §8 "UC-4 visual review" items 7–10)
   - **Depends on**: T-59 (done; was T-64 until hold mode was dropped, 2026-10-19). T-95 follows it in the same file.
@@ -1057,7 +1057,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: build and format; screenshot check in UC-5 (T-69), reviewed in T-70.
   - **Size**: S
 
-- [ ] **T-95**: `perf:` settings page rebuilds textures once per slider drag, not per step
+- [x] **T-95**: `perf:` settings page rebuilds textures once per slider drag, not per step
   - **Owner**: performance-engineer
   - **Requirements**: NFR-1 (texture rebuild ≤ 5 ms, performance.md UC-4 record), NFR-5, FR-6
   - **Depends on**: T-93 (same file `SettingsPage.cs`)

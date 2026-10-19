@@ -277,3 +277,5 @@ Previously open items, now:
 - **C-2 (small)**: the architecture's performance row says "Core micro-benchmarks as xUnit timing tests". I agree for gates, but real numbers need BenchmarkDotNet, which adds a project not in ADR 0008 (L-1).
 - **C-3 (small)**: the architecture runs coverage on Core tests; timing and zero-allocation tests must not run under coverage (section 4).
 - **C-4 (informational)**: spec NFR-1 and the task brief assumed the hook runs on every gizmo draw. The architecture removes that cost. I replaced P-3/P-4 accordingly. The risk returns only if S-3 finds `ProcessInput` called outside clicks.
+
+**Decision (user, 2026-10-19):** a single sized-texture rebuild after a size change at the largest settings (UI 1.5+, B 96, 5 rings; ~32 ms expected) is accepted as a one-time hitch. It happens only right after changing size (settings slider release or the next open); normal opening and play are unaffected. No rim-size cap.
