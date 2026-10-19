@@ -117,18 +117,25 @@ Templates are in `.claude/templates/`. Copy a template, then fill it in. Never l
 - `src/QuickMenu.Core/`: pure logic (layout, edge dodge, sizing, PinKey/PinBoard/serializer, trigger state machine, search). **Must not reference any game or Unity assembly.**
 - `src/QuickMenu/`: thin game adapter (Mod + settings, Harmony patches, catalog, activation, IMGUI windows, diagnostics).
 - `tests/QuickMenu.Core.Tests/`: unit tests and Perf-trait gates. `tests/QuickMenu.Core.Benchmarks/`: BenchmarkDotNet. `tests/Shared/SyntheticCatalog.cs`: shared seeded test data, linked into both projects.
-- `scripts/`: build, link-dev, package, run-game (written by the environment-engineer).
+- `scripts/`: setup, test, perf, link-mod, package (the ADR/architecture name `link-dev.sh` is `link-mod.sh` in practice).
 - `reference/`: Dubs Mint Menus, gitignored. **Clean-room: study behaviour only. Never copy its code, textures or strings.**
 
-### Build / test / run (intended; the environment-engineer confirms in environment.md)
-- Build: `dotnet build QuickMenu.slnx -c Release` (outputs to `mod/1.7/Assemblies/`)
-- Test (functional + coverage): `dotnet test tests/QuickMenu.Core.Tests` excluding trait `Category=Perf`
-- Perf gates (Release, no coverage, separate CI step): Core tests with trait `Category=Perf`
-- Benchmarks: `dotnet run --project tests/QuickMenu.Core.Benchmarks -c Release` (manual)
-- Lint/format: `dotnet format QuickMenu.slnx --verify-no-changes`
-- Dev install: `scripts/link-dev.sh` (symlinks `mod/` → `$RIMWORLD_DIR/Mods/QuickMenu`; `RIMWORLD_DIR` defaults to `~/.steam/steam/steamapps/common/RimWorld`)
-- Run: launch RimWorld with `-mod=brrainz.harmony,sixdd.QuickMenu -quicktest`; in dev mode run the debug action "Quick Menu: self-test"
-- Package: `scripts/package.sh` → `dist/QuickMenu-<version>.zip`
+### Commands (verified; see docs/project/environment.md)
+| Purpose | Command |
+|---|---|
+| Setup (idempotent; installs .NET 10 SDK to `~/.dotnet` if missing, restores) | `scripts/setup.sh` |
+| Build (outputs to `mod/1.7/Assemblies/`) | `dotnet build QuickMenu.slnx -c Release` |
+| Format check / fix | `dotnet format QuickMenu.slnx --verify-no-changes` / `dotnet format QuickMenu.slnx` |
+| Functional tests + coverage gate (Core >= 90 %) | `scripts/test.sh` |
+| Perf gates (Release, no coverage) | `scripts/perf.sh` |
+| Benchmarks (manual) | `scripts/perf.sh --bench` |
+| Dev install (once per machine, symlink) | `scripts/link-mod.sh` |
+| Package | `scripts/package.sh` -> `dist/QuickMenu-<version>.zip` |
+| Run in game | launch RimWorld with `-mod=brrainz.harmony,sixdd.QuickMenu -quicktest`; in dev mode run the debug action "Quick Menu: self-test" |
+- Perf tests carry `[Trait("Category", "Perf")]`; xUnit v3 filter is `--filter-trait "Category=Perf"` / `--filter-not-trait`.
+- If `dotnet` is not on PATH, `. scripts/_env.sh` adds `~/.dotnet`.
+- Local game DLLs instead of Krafs: `dotnet build -p:UseLocalGameRefs=true` (rewrites `packages.lock.json`; run `git checkout -- '**/packages.lock.json'` afterwards). CI uses `restore --locked-mode`.
+- Test names may use underscores (CA1707 is off under `tests/`). Warnings are errors.
 
 ### Conventions
 - Namespaces `QuickMenu.Core.*` and `QuickMenu.*`. Keyed string keys are prefixed `QuickMenu.`, and every player-facing string is Keyed.

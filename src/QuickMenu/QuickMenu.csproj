@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Thin game adapter. Compiles against Krafs.Rimworld.Ref (no game files needed),
+       or against local game DLLs with: dotnet build -p:UseLocalGameRefs=true  (RIMWORLD_DIR) -->
+  <PropertyGroup>
+    <RootNamespace>QuickMenu</RootNamespace>
+    <AssemblyName>QuickMenu</AssemblyName>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <OutputPath>$(RepoRoot)mod/1.7/Assemblies/</OutputPath>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\QuickMenu.Core\QuickMenu.Core.csproj" />
+    <PackageReference Include="Lib.Harmony" ExcludeAssets="runtime" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseLocalGameRefs)' != 'true'">
+    <PackageReference Include="Krafs.Rimworld.Ref" PrivateAssets="all" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseLocalGameRefs)' == 'true'">
+    <Reference Include="Assembly-CSharp" HintPath="$(RIMWORLD_DIR)/Assembly-CSharp.dll" Private="false" />
+    <Reference Include="UnityStubs" HintPath="$(RIMWORLD_DIR)/UnityStubs.dll" Private="false" />
+    <Reference Include="Waylith" HintPath="$(RIMWORLD_DIR)/Waylith.dll" Private="false" />
+  </ItemGroup>
+</Project>

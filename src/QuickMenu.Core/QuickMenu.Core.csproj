@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Pure logic. Must not reference any game or Unity assembly (ADR 0002). -->
+  <PropertyGroup>
+    <RootNamespace>QuickMenu.Core</RootNamespace>
+    <AssemblyName>QuickMenu.Core</AssemblyName>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <OutputPath>$(RepoRoot)mod/1.7/Assemblies/</OutputPath>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+</Project>

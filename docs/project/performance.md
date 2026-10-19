@@ -84,29 +84,31 @@ Notes:
 | In-game integration | Debug action "Quick Menu: self-test" (already in the architecture): reports index build time, patch count, round-trip results; I ask it to also print the budget counters (P-4, P-12, P-18) | |
 | Scaling | Stress mod plus real list; results to the log in section 5 | Manual |
 
-### How to run (intended; the repo does not exist yet, so none of this has been run; paths follow ADR 0008)
+### How to run (verified 2026-10-19 on .NET SDK 10.0.402, xunit.v3 4.0.2, paths follow ADR 0008)
 ```
 # Build everything
 dotnet build QuickMenu.slnx -c Release
 
 # Functional tests + coverage gate (Perf-trait tests excluded: coverage instrumentation distorts time and allocation)
-dotnet run --project tests/QuickMenu.Core.Tests -c Release -- --filter-not-trait "Category=Perf"
-#   (or: dotnet test --solution QuickMenu.slnx -c Release -- --filter-not-trait "Category=Perf")
+scripts/test.sh
+#   = dotnet run --project tests/QuickMenu.Core.Tests -c Release -- --filter-not-trait "Category=Perf" --coverage ...
 
 # Performance gates (time + zero-allocation), Release, no coverage
-dotnet run --project tests/QuickMenu.Core.Tests -c Release -- --filter-trait "Category=Perf"
+scripts/perf.sh
+#   = dotnet run --project tests/QuickMenu.Core.Tests -c Release -- --filter-trait "Category=Perf"
 
 # Full benchmarks (writes BenchmarkDotNet.Artifacts/, gitignored)
-dotnet run --project tests/QuickMenu.Core.Benchmarks -c Release -- --filter '*' --memory
+scripts/perf.sh --bench
+#   = dotnet run --project tests/QuickMenu.Core.Benchmarks -c Release -- --filter '*' --memory
 
 # In-game
-scripts/link-dev.sh                      # once per machine: symlink mod/ into $RIMWORLD_DIR/Mods/QuickMenu
+scripts/link-mod.sh                      # once per machine: symlink mod/ into $RIMWORLD_DIR/Mods/QuickMenu
 dotnet build QuickMenu.slnx -c Release   # DLLs land in mod/1.7/Assemblies
-# launch: -mod=brrainz.harmony,<packageId> -quicktest   (packageId pending question U-1 in the architecture)
+# launch: -mod=brrainz.harmony,sixdd.QuickMenu -quicktest
 # in game: enable dev mode, enable the Frame Profiler with filter "QuickMenu!*", run scenarios S-1..S-8,
 #          run debug action "Quick Menu: self-test", copy the log block into section 5
 ```
-The xUnit v3 filter flag spelling (`--filter-trait`) is from memory of the Microsoft Testing Platform options; the environment-engineer must confirm it on the pinned `xunit.v3` version and wrap the commands in `scripts/` (suggest `scripts/perf.sh` for the Perf-trait and benchmark commands). The Frame Profiler's menu path and exact filter syntax are taken from the coordinator's note; I have not used it yet, and the exact steps will be recorded here after first use.
+Confirmed: xUnit v3 on Microsoft Testing Platform accepts `--filter-trait "Name=Value"` and `--filter-not-trait "Name=Value"` (also `--filter-class/-method/-namespace`). `dotnet test` also works because `global.json` selects the Microsoft Testing Platform runner, but `dotnet run` is used so relative `--coverage-settings` paths are not an issue (scripts pass absolute paths). Trait attribute: `[Trait("Category", "Perf")]`. The Frame Profiler's menu path and exact filter syntax are taken from the coordinator's note and are not yet used; the exact steps will be recorded here after first use.
 
 ## 4. CI gates
 

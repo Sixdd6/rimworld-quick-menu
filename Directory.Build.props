@@ -1,0 +1,22 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <!-- CI restores with locked mode (see scripts/setup.sh and ci.yml) -->
+    <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
+  </PropertyGroup>
+
+  <!-- Game install used only by the optional local-DLL fallback and by scripts/link-mod.sh. -->
+  <PropertyGroup>
+    <RIMWORLD_DIR Condition="'$(RIMWORLD_DIR)' == ''">$([System.Environment]::GetEnvironmentVariable('RIMWORLD_DIR'))</RIMWORLD_DIR>
+    <RIMWORLD_DIR Condition="'$(RIMWORLD_DIR)' == ''">$(HOME)/.steam/steam/steamapps/common/RimWorld</RIMWORLD_DIR>
+  </PropertyGroup>
+</Project>

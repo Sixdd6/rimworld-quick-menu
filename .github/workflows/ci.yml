@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DOTNET_NOLOGO: 1
+      DOTNET_CLI_TELEMETRY_OPTOUT: 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+          dotnet-version: 10.0.x
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
+
+      # Game refs come from the Krafs.Rimworld.Ref NuGet package: no game files needed.
+      - name: Restore (locked)
+        run: dotnet restore QuickMenu.slnx --locked-mode
+
+      - name: Format check
+        run: dotnet format QuickMenu.slnx --verify-no-changes --no-restore
+
+      - name: Build (Release, warnings are errors; includes benchmarks project, compile only)
+        run: dotnet build QuickMenu.slnx -c Release --no-restore
+
+      - name: Functional tests + coverage gate (Category!=Perf, Core >= 90% lines)
+        run: scripts/test.sh
+
+      - name: Perf gates (Release, no coverage)
+        run: scripts/perf.sh
+
+      - name: Package
+        run: scripts/package.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: QuickMenu-mod
+          path: dist/*.zip
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: TestResults/
+          if-no-files-found: ignore
