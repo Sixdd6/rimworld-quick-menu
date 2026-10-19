@@ -32,3 +32,11 @@ Setups: (b) Harmony + 5 DLC + BAM + Quick Menu; then (b) + stress mod (`sixdd.Qu
 | P-9 allocations | 96 B/frame median (no control run this time) | PASS (≤ 512 over control) |
 | Texture prewarm | 14.0 ms at startup (loading screen) | off play path |
 | Satellite rim rebuild | 3.1 ms on first sub-ring open | PASS (≤ 5) |
+
+## UC-3 recheck after fixes (26d7add)
+
+| Check | Result |
+|---|---|
+| Fine tile sub-ring shows stone block icons (FR-11a) | PASS (user) |
+| Wall material ring keeps a fixed order; last-used only highlighted (FR-12) | PASS (user) |
+| No "Catalog.Ideology failed" in the log; no errors; 4/4 opens same frame | PASS (log) |

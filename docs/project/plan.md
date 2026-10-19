@@ -714,7 +714,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: script run in CI-like check (XML well-formed via `xmllint` if present, else a `dotnet` one-liner test).
   - **Size**: S
 
-- [ ] **T-47**: UC-3 checklist, session guide and run
+- [x] **T-47**: UC-3 checklist, session guide and run
   - **Owner**: test-engineer
   - **Requirements**: FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, NFR-2
   - **Depends on**: T-40, T-43, T-44, T-46
