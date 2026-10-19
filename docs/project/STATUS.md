@@ -4,7 +4,7 @@
 - **Autonomy**: gated   <!-- gated | autonomous -->
 - **Specialists**: visual-designer (all-UI product), performance-engineer (NFR-1 per-frame budget)
 - **Current phase**: 5 Build
-- **Current milestone / task**: M1 — all 15 tasks done; milestone review
+- **Current milestone / task**: M1 done — awaiting approval to start M2
 - **Last updated**: 2026-10-19
 
 ## Phases
@@ -39,3 +39,4 @@ States: `not started` → `in progress` → `awaiting approval` → `done` (or `
 - 2026-10-19 — Architecture, design and performance direction approved; ADRs 0001–0008 accepted. Name: Quick Menu (sixdd.QuickMenu).
 - 2026-10-19 — Environment set up: .NET SDK 10.0.402 in ~/.dotnet (no sudo), solution scaffolded, CI workflow written (not yet run on GitHub). Build, format and tests pass locally.
 - 2026-10-19 — Plan approved: 6 milestones, 80 tasks, 6 user in-game sessions (UC-1..UC-6). Release version 0.9.0.
+- 2026-10-19 — M1 done: walking skeleton + spikes S-1..S-7 all passed in UC-1 (vanilla + BAM); perf baseline within 50% budgets except P-9 first-frame (66 KB vs 8 KB, decision pending); security audit PASS (fixes applied); 322 tests, Core 99.4%.
