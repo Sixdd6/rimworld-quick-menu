@@ -251,6 +251,8 @@ internal sealed class QuickMenuWindow : Window
 
     private void Paint(WheelModel model, Hit hit)
     {
+        bool editing = MenuController.IsEditing;
+        model.Editing = editing;
         MenuRenderer.Draw(model, hit, _pressHit);
         int slot = hit.Kind == HitKind.Slot && model.Kinds[hit.Index] is not (SlotKind.Empty or SlotKind.Reserved) ? hit.Index : -1;
         if (slot != _hoverSlot)
@@ -261,6 +263,13 @@ internal sealed class QuickMenuWindow : Window
                 using var soundScope = new MeasureScope(StatId.WindowSound);
                 SoundDefOf.Mouseover_Command.PlayOneShotOnCamera();
             }
+        }
+
+        if (hit.Kind == HitKind.HubEdit)
+        {
+            float hubHalf = LayoutConstants.Pitch(model.ButtonSize) / 2f;
+            using var hubTipScope = new MeasureScope(StatId.WindowTip);
+            TooltipHandler.TipRegion(new Rect(model.Center.X - hubHalf, model.Center.Y - hubHalf, 2f * hubHalf, 2f * hubHalf), new TipSignal(_content!.HubTip(editing), TooltipIdBase - 1));
         }
 
         if (slot >= 0 && _content!.Tip(slot) is { } tip)

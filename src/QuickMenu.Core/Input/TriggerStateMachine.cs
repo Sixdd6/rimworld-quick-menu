@@ -17,8 +17,8 @@ public sealed class TriggerStateMachine
 
     public MenuState State { get; private set; }
 
-    /// <summary>True once edit mode exists (set by T-44); until then a hub click does nothing and the menu stays open.</summary>
-    public bool EditEnabled { get; set; }
+    /// <summary>True when a hub click enters edit mode (T-44; the default). When false a hub click does nothing and the menu stays open.</summary>
+    public bool EditEnabled { get; set; } = true;
 
     /// <summary>True when the trigger is held to use the menu and released to choose (FR-2).</summary>
     public bool HoldMode { get; set; }

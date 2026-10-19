@@ -2,6 +2,11 @@
 <LanguageData>
   <!-- Label plate of the hub, the Edit button (design.md S4a). -->
   <QuickMenu.Menu.Edit>Edit</QuickMenu.Menu.Edit>
+  <!-- Label plate of the hub in edit mode. -->
+  <QuickMenu.Menu.Done>Done</QuickMenu.Menu.Done>
+  <!-- Hub tooltips (vanilla delay). -->
+  <QuickMenu.Menu.EditTip>Edit the quick menu: move and remove pins.</QuickMenu.Menu.EditTip>
+  <QuickMenu.Menu.DoneTip>Finish editing (Esc)</QuickMenu.Menu.DoneTip>
   <!-- Reason shown when a slot is clicked that cannot be used and the designator gives none (U-4). -->
   <QuickMenu.Menu.Unavailable>Not available right now.</QuickMenu.Menu.Unavailable>
   <!-- Composed reasons for an unavailable building (FR-14) when the designator gives none. -->

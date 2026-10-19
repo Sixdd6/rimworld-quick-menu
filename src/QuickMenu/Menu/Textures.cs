@@ -91,6 +91,7 @@ internal static class Textures
     private static SizedTexture _slotRingDashed;
     private static SizedTexture _hubRing1;
     private static SizedTexture _hubRing2;
+    private static SizedTexture _hubRing3;
     private static SizedTexture _discRim;
     private static SizedTexture _satelliteRim;
     private static RoundTextureGeometry? _satelliteRimGeometry;
@@ -153,6 +154,9 @@ internal static class Textures
 
     /// <inheritdoc cref="HubRing1"/>
     internal static SizedTexture HubRing2 => _hubRing2;
+
+    /// <summary>Hub ring, 3 px: hover and pressed in edit mode.</summary>
+    internal static SizedTexture HubRing3 => _hubRing3;
 
     /// <summary>
     /// The main disc rim with baked colours; draw it with <see cref="QMStyle.White"/> (α scaled when dimmed). For a
@@ -226,6 +230,7 @@ internal static class Textures
                 RoundTextureGeometry g = next.HubRing;
                 _hubRing1 = Replace(_hubRing1, BuildRing(g, TextureSizing.Ring1Width, 0, "HubRing1"));
                 _hubRing2 = Replace(_hubRing2, BuildRing(g, TextureSizing.Ring2Width, 0, "HubRing2"));
+                _hubRing3 = Replace(_hubRing3, BuildRing(g, TextureSizing.Ring3Width, 0, "HubRing3"));
             }
 
             if ((groups & SizedGroups.Rim) != 0)

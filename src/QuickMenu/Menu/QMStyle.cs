@@ -17,6 +17,9 @@ internal static class QMStyle
     /// <summary>Tint for the <c>Disc</c> mask: black α 0.85 at the centre, falling to 0.55 at the edge through the mask.</summary>
     internal static readonly Color DiscFill = ToColor(StyleTokens.DiscCentre);
 
+    /// <summary>The edit-mode hub tint (S4a): <c>accent</c> at <see cref="HubStyle.EditTintAlpha"/>, drawn over the hub fill.</summary>
+    internal static readonly Color EditTint = new(Accent.r, Accent.g, Accent.b, HubStyle.EditTintAlpha);
+
     internal static readonly Color RimOutline = ToColor(StyleTokens.RimOutline);
     internal static readonly Color SlotBg = ToColor(StyleTokens.SlotBg);
     internal static readonly Color SlotBgHover = ToColor(StyleTokens.SlotBgHover);

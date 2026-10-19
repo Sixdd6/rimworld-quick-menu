@@ -35,6 +35,9 @@ internal static class MenuController
 
     internal static bool IsOpen => _window != null;
 
+    /// <summary>True while the open menu is in edit mode (the hub shows Done).</summary>
+    internal static bool IsEditing => _machine?.State == MenuState.Edit;
+
     /// <summary>Opens the menu in the current frame. Pressing the trigger while it is open closes it.</summary>
     internal static void Open()
     {
@@ -206,10 +209,11 @@ internal static class MenuController
                 Unpin(command.Index);
                 break;
             case MenuCommandKind.ExitEdit:
+                // Done or the first Esc: the pins are already applied; one write ends the edit session (a later close is a plain Close).
                 QuickMenuMod.SaveSettings();
                 break;
             default:
-                // Back, OpenSub and EnterEdit cannot occur yet: no satellite (T-41, T-43), and the hub's edit mode is off until T-44.
+                // Back and OpenSub are the satellite's (T-43). EnterEdit changes only the state, which the window reads when it paints.
                 break;
         }
     }

@@ -24,9 +24,9 @@ public class TriggerStateMachineHubAndUnpinTests
     }
 
     [Fact]
-    public void Edit_is_disabled_by_default()
+    public void Edit_is_enabled_and_hold_is_off_by_default()
     {
-        Assert.False(new TriggerStateMachine().EditEnabled);
+        Assert.True(new TriggerStateMachine().EditEnabled);
         Assert.False(new TriggerStateMachine().HoldMode);
     }
 

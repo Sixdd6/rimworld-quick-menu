@@ -91,10 +91,9 @@ public class TriggerStateMachineToggleTests
     }
 
     [Fact]
-    public void Main_click_on_hub_never_closes_and_does_nothing_until_edit_is_enabled()
+    public void Main_click_on_hub_never_closes_and_does_nothing_while_edit_is_disabled()
     {
-        var m = new TriggerStateMachine();
-        Assert.False(m.EditEnabled);
+        var m = new TriggerStateMachine { EditEnabled = false };
         m.Handle(TriggerEvent.TriggerPressed(_origin));
         Assert.Equal(MenuCommand.None, Click(m, Hit.HubEdit));
         Assert.Equal(MenuState.Main, m.State);

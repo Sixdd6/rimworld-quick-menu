@@ -78,13 +78,21 @@ internal sealed class WheelModel
     /// <summary>Draw size of the <c>Circle</c> mask for the hub (diameter H).</summary>
     internal float HubCircleDrawSize { get; }
 
-    /// <summary>Glyph of the hub: the pencil in use mode (the check mark in edit mode, T-44).</summary>
-    internal MaskId HubGlyph { get; set; } = MaskId.IconEdit;
+    private string _editLabel = string.Empty;
+    private string _doneLabel = string.Empty;
+    private float _editLabelWidth;
+    private float _doneLabelWidth;
+
+    /// <summary>True in edit mode: the hub is Done (check mark, "Done" plate, accent tint). Set by the window from the state machine.</summary>
+    internal bool Editing { get; set; }
+
+    /// <summary>Glyph of the hub: the pencil in use mode, the check mark in edit mode.</summary>
+    internal MaskId HubGlyph => HubStyle.Glyph(Editing);
 
     /// <summary>The hub's plate label ("Edit"; "Done" in edit mode).</summary>
-    internal string HubLabel { get; private set; } = string.Empty;
+    internal string HubLabel => Editing ? _doneLabel : _editLabel;
 
-    internal float HubLabelWidth { get; private set; }
+    internal float HubLabelWidth => Editing ? _doneLabelWidth : _editLabelWidth;
 
     /// <summary>Slot kinds, indexed like <see cref="Slots"/> (length <see cref="SlotCount"/>).</summary>
     internal SlotKind[] Kinds => _kinds;
@@ -124,8 +132,12 @@ internal sealed class WheelModel
         _labels[index] = label ?? icon.LabelCap ?? string.Empty;
     }
 
-    /// <summary>The hub's plate label ("Edit").</summary>
-    internal void SetHubLabel(string label) => HubLabel = label;
+    /// <summary>The hub's plate labels: <paramref name="edit"/> in use mode, <paramref name="done"/> in edit mode.</summary>
+    internal void SetHubLabels(string edit, string done)
+    {
+        _editLabel = edit;
+        _doneLabel = done;
+    }
 
     /// <summary>
     /// Truncates and measures every label in the Small font once. With <paramref name="ensureTextures"/> it also sizes
@@ -149,8 +161,8 @@ internal sealed class WheelModel
                 _labels[i] = Fit(_labels[i], max, out _labelWidths[i]);
             }
 
-            HubLabel = Fit(HubLabel, max, out float hubWidth);
-            HubLabelWidth = hubWidth;
+            _editLabel = Fit(_editLabel, max, out _editLabelWidth);
+            _doneLabel = Fit(_doneLabel, max, out _doneLabelWidth);
         }
         finally
         {

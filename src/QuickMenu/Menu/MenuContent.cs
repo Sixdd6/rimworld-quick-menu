@@ -20,6 +20,8 @@ internal sealed class MenuContent
 {
     private readonly string?[] _tips;
     private readonly string?[] _reasons;
+    private string? _editTip;
+    private string? _doneTip;
 
     private MenuContent(WheelModel model, Designator?[] designators, PinEntry?[] pins)
     {
@@ -31,6 +33,11 @@ internal sealed class MenuContent
     }
 
     internal WheelModel Model { get; }
+
+    /// <summary>Tooltip of the hub: what Edit does in use mode, how to finish in edit mode (built on first hover).</summary>
+    internal string HubTip(bool editing) => editing
+        ? _doneTip ??= "QuickMenu.Menu.DoneTip".Translate().Resolve()
+        : _editTip ??= "QuickMenu.Menu.EditTip".Translate().Resolve();
 
     internal Designator?[] Designators { get; }
 
@@ -69,7 +76,7 @@ internal sealed class MenuContent
             model.SetSlot(i, d, !entry.ForcedUnavailable && IsUsable(d) ? SlotKind.Normal : SlotKind.Disabled, entry.Label);
         }
 
-        model.SetHubLabel("QuickMenu.Menu.Edit".Translate());
+        model.SetHubLabels("QuickMenu.Menu.Edit".Translate(), "QuickMenu.Menu.Done".Translate());
         model.Prepare();
         return new MenuContent(model, designators, pinsBySlot);
     }
