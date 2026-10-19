@@ -601,7 +601,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: `grep -niE 'picker|SearchIndex|insert cursor' docs/project/architecture.md` matches only the removal notes.
   - **Size**: S
 
-- [ ] **T-36**: Core `SubMenuLayout` (satellite and sub-grid) · `parallel-ok`
+- [x] **T-36**: Core `SubMenuLayout` (satellite and sub-grid) · `parallel-ok`
   - **Owner**: developer
   - **Requirements**: FR-11, FR-12, FR-4, FR-3, NFR-8 (design.md §1.1 sub-menu placement)
   - **Depends on**: T-16
@@ -613,7 +613,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: unit `SubMenuLayoutTests` (counts 1…60, all screen edges, both sides).
   - **Size**: M
 
-- [ ] **T-37**: Core `StuffOrdering` and `ModDropdownMatcher` · `parallel-ok`
+- [x] **T-37**: Core `StuffOrdering` and `ModDropdownMatcher` · `parallel-ok`
   - **Owner**: developer
   - **Requirements**: FR-10, FR-12, FR-14, NFR-8 (ADR 0004, 0006)
   - **Depends on**: T-3
@@ -628,7 +628,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
 
 - [-] **T-39**: Synthetic catalog, search perf gates and benchmarks for P-11a, P-11b, P-13, P-14 (removed: picker dropped by user 2026-10-19; budgets retired in T-84)
 
-- [ ] **T-40**: Catalog v2: Ideology part and refresh, mod-dropdown resolve
+- [x] **T-40**: Catalog v2: Ideology part and refresh, mod-dropdown resolve
   - **Owner**: developer
   - **Requirements**: FR-10, FR-14, NFR-1 (P-7c, P-11c), NFR-2 (ADR 0006)
   - **Depends on**: T-14, T-37
@@ -645,7 +645,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-3 (user)
   - **Size**: M
 
-- [ ] **T-41**: `StuffOptions` and full `DesignatorActivator`
+- [x] **T-41**: `StuffOptions` and full `DesignatorActivator`
   - **Owner**: developer
   - **Requirements**: FR-12, FR-13, FR-18 (ADR 0006)
   - **Depends on**: T-32, T-37
@@ -661,7 +661,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-3 (user)
   - **Size**: M
 
-- [ ] **T-42**: Slot states for sub-menus, materials, greyed, open parent; dimmed menu · `parallel-ok`
+- [x] **T-42**: Slot states for sub-menus, materials, greyed, open parent; dimmed menu · `parallel-ok`
   - **Owner**: visual-designer
   - **Requirements**: FR-10, FR-11, FR-12, FR-14 (look) (design.md S3, S4 states 4, 5, 12, 13, 14)
   - **Depends on**: T-29
@@ -673,7 +673,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-3 (user)
   - **Size**: S
 
-- [ ] **T-43**: Sub-ring and material ring in the window
+- [x] **T-43**: Sub-ring and material ring in the window
   - **Owner**: developer
   - **Requirements**: FR-10, FR-11, FR-12, FR-13 (design.md S3)
   - **Depends on**: T-36, T-41, T-42
@@ -687,7 +687,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-3 (user)
   - **Size**: M
 
-- [ ] **T-44**: Edit mode shell: enter, Done, Esc, modifier+click unpin
+- [x] **T-44**: Edit mode shell: enter, Done, Esc, modifier+click unpin
   - **Owner**: developer
   - **Requirements**: FR-9 (enter/exit, unpin in edit mode) (design.md S4a; S5 as revised by T-83)
   - **Depends on**: T-32, T-81, T-83
@@ -704,7 +704,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
 
 - [-] **T-45**: Picker window (removed: picker dropped by user 2026-10-19)
 
-- [ ] **T-46**: In-game stress mod generator · `parallel-ok`
+- [x] **T-46**: In-game stress mod generator · `parallel-ok`
   - **Owner**: performance-engineer
   - **Requirements**: NFR-1 (P-11c, W-1, W-2)
   - **Depends on**: —
