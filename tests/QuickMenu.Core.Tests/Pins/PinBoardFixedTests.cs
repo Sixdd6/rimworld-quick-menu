@@ -83,27 +83,6 @@ public class PinBoardFixedTests
     }
 
     [Fact]
-    public void Toggle_uses_cursor_slot_when_free_else_first_free()
-    {
-        var b = new PinBoard(4);
-        b.SetCursor(2);
-        b.Toggle(K("A"));
-        Assert.Equal(new string?[] { null, null, "build:thing/A", null }, Keys(b, 4));
-        b.Toggle(K("B")); // cursor slot now occupied
-        Assert.Equal("build:thing/B", b.Entries[0]!.Key.Value);
-        b.SetCursor(null);
-        Assert.Null(b.Cursor);
-    }
-
-    [Fact]
-    public void Cursor_out_of_range_is_cleared()
-    {
-        var b = new PinBoard(2);
-        b.SetCursor(5);
-        Assert.Null(b.Cursor);
-    }
-
-    [Fact]
     public void Swap_exchanges_and_keeps_others()
     {
         var b = new PinBoard(4);

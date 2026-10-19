@@ -79,33 +79,6 @@ public class PinBoardCapacityTests
     }
 
     [Fact]
-    public void Cursor_on_a_slot_hidden_by_shrinking_never_receives_a_pin()
-    {
-        var b = new PinBoard(4);
-        b.SetCursor(3);
-        b.Capacity = 2;
-
-        Assert.Equal(PinResult.Pinned, b.Toggle(K("A")));
-        Assert.Equal(K("A"), b.Entries[0]?.Key);
-        Assert.Single(b.Entries);
-        b.Capacity = 4;
-        Assert.Null(b.Cursor);
-    }
-
-    [Fact]
-    public void Shrunk_cursor_is_not_reported_as_visible()
-    {
-        var b = new PinBoard(4);
-        b.SetCursor(2);
-        b.Capacity = 2;
-        Assert.Null(b.Cursor);
-
-        b.SetCursor(1);
-        b.Capacity = 2;
-        Assert.Equal(1, b.Cursor);
-    }
-
-    [Fact]
     public void Entries_is_a_read_only_view()
     {
         var b = new PinBoard(2);

@@ -85,7 +85,11 @@ internal sealed class QuickMenuSettings : ModSettings
     }
 
     /// <summary>Recomputes the board capacity from the size settings. Pins beyond it are kept, just not shown.</summary>
-    internal void ApplyCapacity() => Board.Capacity = SettingsRules.PinCapacity(Layout, Sizing, Rings, GridColumns, GridRows);
+    internal void ApplyCapacity()
+    {
+        Board.Mode = Sizing;
+        Board.Capacity = SettingsRules.PinCapacity(Layout, Sizing, Rings, GridColumns, GridRows);
+    }
 
     /// <summary>Ticks spent inside the settings scribe pass over all load phases (our parsing plus the game's Scribe calls), for P-16 attribution.</summary>
     internal static long ScribeTicks { get; private set; }

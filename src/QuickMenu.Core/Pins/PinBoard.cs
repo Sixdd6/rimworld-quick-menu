@@ -1,11 +1,15 @@
 using System;
 using System.Collections.Generic;
+using QuickMenu.Core.Settings;
 
 namespace QuickMenu.Core.Pins;
 
 /// <summary>
-/// Ordered pin slots with Fixed sizing semantics (FR-5, FR-9, FR-14, FR-15). A slot holds a pin or is
-/// empty. Slots at or beyond <see cref="Capacity"/> are hidden but kept, and return when it grows.
+/// Ordered pins in Fixed or Auto sizing mode (FR-5, FR-9, FR-14, FR-15). Fixed: a slot holds a pin or is
+/// empty, new pins take the first free slot, and slots at or beyond <see cref="Capacity"/> are hidden but kept.
+/// Auto: a compact ordered list (no gaps), new pins go to the end, clearing moves later pins up, and unresolved
+/// pins are hidden from <see cref="VisibleSlots"/> but keep their place. In Auto, <see cref="Capacity"/> is the
+/// pin limit and indexes (<see cref="PinSlot.Index"/>, <see cref="Clear"/>, <see cref="Swap"/>) are positions in <see cref="Entries"/>.
 /// Unresolved pins (including opaque lines from a newer version) are never altered except by <see cref="Clear"/>, <see cref="Toggle"/> on their key
 /// and <see cref="ForgetUnresolved"/>. Contains no game types.
 /// </summary>
@@ -14,7 +18,7 @@ public sealed class PinBoard
     private readonly List<PinEntry?> _slots = new();
     private readonly IReadOnlyList<PinEntry?> _view;
     private int _capacity;
-    private int? _cursor;
+    private SizingMode _mode = SizingMode.Fixed;
 
     public PinBoard(int capacity)
     {
@@ -30,15 +34,25 @@ public sealed class PinBoard
         {
             ArgumentOutOfRangeException.ThrowIfNegative(value);
             _capacity = value;
-            if (_cursor >= value)
-            {
-                _cursor = null;
-            }
         }
     }
 
-    /// <summary>Insert cursor slot, or null.</summary>
-    public int? Cursor => _cursor is { } c && c < _capacity ? c : null;
+    /// <summary>
+    /// Sizing mode. Switching to Auto closes the gaps, keeping order; switching to Fixed keeps every pin in its position.
+    /// No pin is lost either way (pins beyond <see cref="Capacity"/> stay hidden).
+    /// </summary>
+    public SizingMode Mode
+    {
+        get => _mode;
+        set
+        {
+            _mode = value;
+            if (value == SizingMode.Auto)
+            {
+                Compact();
+            }
+        }
+    }
 
     /// <summary>All stored slots including hidden ones; trailing empties are trimmed.</summary>
     public IReadOnlyList<PinEntry?> Entries => _view;
@@ -54,14 +68,15 @@ public sealed class PinBoard
 
         _slots[index] = entry;
         Trim();
+        if (_mode == SizingMode.Auto)
+        {
+            Compact();
+        }
     }
-
-    /// <summary>Sets the insert cursor (a visible slot index) or clears it with null. Out of range clears it.</summary>
-    public void SetCursor(int? index) => _cursor = index is >= 0 && index < _capacity ? index : null;
 
     /// <summary>
     /// Unpins <paramref name="key"/> in place if pinned (also when hidden or unresolved). Otherwise pins
-    /// it into the cursor slot if that is free, else the first free visible slot, else returns Full.
+    /// it into the first free visible slot (Fixed) or at the end (Auto), else returns Full.
     /// </summary>
     public PinResult Toggle(PinKey key, string label = "", string? packageId = null)
     {
@@ -70,13 +85,12 @@ public sealed class PinBoard
         {
             if (_slots[i]?.Key.Equals(key) == true)
             {
-                _slots[i] = null;
-                Trim();
+                RemoveAt(i);
                 return PinResult.Unpinned;
             }
         }
 
-        int target = _cursor is { } c && c < _capacity && IsFree(c) ? c : FirstFree();
+        int target = _mode == SizingMode.Auto ? (_slots.Count < _capacity ? _slots.Count : -1) : FirstFree();
         if (target < 0)
         {
             return PinResult.Full;
@@ -91,10 +105,13 @@ public sealed class PinBoard
         return PinResult.Pinned;
     }
 
-    /// <summary>Exchanges two visible slots. Returns false (no change) if either is out of range.</summary>
+    /// <summary>
+    /// Exchanges two slots (Fixed: either may be empty, so the pin moves; Auto: two pins exchange places in the list).
+    /// Returns false (no change) if either is out of range.
+    /// </summary>
     public bool Swap(int a, int b)
     {
-        if (!Visible(a) || !Visible(b))
+        if (!InRange(a) || !InRange(b))
         {
             return false;
         }
@@ -106,27 +123,43 @@ public sealed class PinBoard
         return true;
     }
 
-    /// <summary>Empties a visible slot in place. Returns false if out of range.</summary>
+    /// <summary>Empties a slot in place (Fixed) or removes it so later pins move up (Auto). Returns false if out of range.</summary>
     public bool Clear(int index)
     {
-        if (!Visible(index))
+        if (!InRange(index))
         {
             return false;
         }
 
         if (index < _slots.Count)
         {
-            _slots[index] = null;
-            Trim();
+            RemoveAt(index);
         }
 
         return true;
     }
 
-    /// <summary>The visible slots, <see cref="Capacity"/> of them; unresolved ones are reserved.</summary>
+    /// <summary>
+    /// Fixed: the <see cref="Capacity"/> visible slots, unresolved ones reserved. Auto: only the resolved pins in order
+    /// (unresolved are hidden), each with its list position as <see cref="PinSlot.Index"/>.
+    /// </summary>
     public IReadOnlyList<PinSlot> VisibleSlots(IPinResolver resolver)
     {
         ArgumentNullException.ThrowIfNull(resolver);
+        if (_mode == SizingMode.Auto)
+        {
+            var list = new List<PinSlot>(_slots.Count);
+            for (int i = 0; i < _slots.Count; i++)
+            {
+                if (_slots[i] is { } pin && IsResolved(resolver, pin.Key))
+                {
+                    list.Add(new PinSlot(i, PinSlotState.Resolved, pin));
+                }
+            }
+
+            return list;
+        }
+
         var result = new PinSlot[_capacity];
         for (int i = 0; i < result.Length; i++)
         {
@@ -156,7 +189,7 @@ public sealed class PinBoard
         return n;
     }
 
-    /// <summary>Removes unresolved pins (slots become empty in place); returns how many.</summary>
+    /// <summary>Removes unresolved pins (Fixed: slots become empty in place; Auto: later pins move up); returns how many.</summary>
     public int ForgetUnresolved(IPinResolver resolver)
     {
         ArgumentNullException.ThrowIfNull(resolver);
@@ -171,6 +204,11 @@ public sealed class PinBoard
         }
 
         Trim();
+        if (_mode == SizingMode.Auto)
+        {
+            Compact();
+        }
+
         return n;
     }
 
@@ -179,9 +217,24 @@ public sealed class PinBoard
 
     private PinEntry? At(int i) => i < _slots.Count ? _slots[i] : null;
 
-    private bool Visible(int i) => i >= 0 && i < _capacity;
+    private bool InRange(int i) => i >= 0 && i < (_mode == SizingMode.Auto ? _slots.Count : _capacity);
 
     private bool IsFree(int i) => At(i) is null;
+
+    private void RemoveAt(int i)
+    {
+        if (_mode == SizingMode.Auto)
+        {
+            _slots.RemoveAt(i);
+        }
+        else
+        {
+            _slots[i] = null;
+            Trim();
+        }
+    }
+
+    private void Compact() => _slots.RemoveAll(static e => e is null);
 
     private int FirstFree()
     {
