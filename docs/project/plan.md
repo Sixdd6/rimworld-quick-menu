@@ -18,8 +18,8 @@
 |---|---|---|---|---|
 | M1 | Walking skeleton + spike build | The mod loads on 1.7.4982 with Harmony 3. Mouse 4 on a colony map opens a crude wheel with two hard-coded pins (Mine, Wall); clicking one selects the designator. A dev-mode spike build answers S-1 … S-7 in one user session (UC-1); results go into the ADRs. CI is green on GitHub | T-1 … T-15 | 15 |
 | M2 | Pin by click, use the wheel | Ctrl+click any designator in vanilla or BAM pins it (message; full; toggle). The bindable trigger opens the styled Fixed wheel centred on the mouse, dodging edges; clicking a slot activates it like the architect. Pins and settings persist across saves and restarts | T-16 … T-35 | 20 |
-| M3 | Sub-menus, materials, picker | Whole dropdowns pin and fan out as a sub-ring; stuff builds open a material ring (last-used first); edit mode shell with Add opens a searchable picker of every architect designator, independent of the architect UI | T-36 … T-49 | 14 |
-| M4 | Edit mode, grid, Auto sizing | Drag to swap, right-click to clear, insert cursor, help panel, full state; grid layout with sub-grids; Auto sizing; full layout settings with live preview; empty-menu hint | T-50 … T-62 | 13 |
+| M3 | Sub-menus, materials, picker | Whole dropdowns pin and fan out as a sub-ring; stuff builds open a material ring (last-used first); edit mode shell (the centre Edit button enters it and shows Done; "+" slots open a searchable picker of every architect designator, independent of the architect UI) | T-36 … T-49 | 14 |
+| M4 | Edit mode, grid, Auto sizing | Drag to swap, pin-modifier+click (Ctrl) to unpin, insert cursor, help panel, full state; grid layout with sub-grids; Auto sizing; full layout settings with live preview; empty-menu hint | T-50 … T-62 | 13 |
 | M5 | Hold mode, availability, compatibility | Hold-and-release with 150 ms hover-open; greyed slots with the game's (or composed) reason; missing-mod pins kept and restored; Mint detection with Alt default and notices; first-run notice; Multiplayer-safe audit | T-63 … T-71 | 9 |
 | M6 | Hardening and release prep | Fault isolation verified, string and clean-room audits, final performance pass, final regression on all setups, Preview.png, README, CHANGELOG, Workshop description, release package (publishing is the separate gated Phase 7) | T-72 … T-80 | 9 |
 | | | | **Total** | **80** |
@@ -324,6 +324,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
     - [ ] Given a satellite open, then Esc, right-click, click outside and click on its hub give `Back`.
     - [ ] Given edit mode, then Esc and `HubClose` (Done) give `ExitEdit`, a left-click outside gives nothing, and a second Esc closes. Given map lost, then `Close` in every state.
   - **Tests**: unit `TriggerStateMachineToggleTests` (one test per row of the close and cancel table).
+  - **Note (2026-10-19)**: the hub rows are superseded by T-81: there is no `HubClose`, a hub click never closes, and right-click in edit mode closes.
   - **Size**: M
 
 - [x] **T-22**: `MaskRasterizer` full shape set · `parallel-ok`
@@ -432,6 +433,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
     - [ ] Given a placement array, origin and scale, then the renderer draws disc + rim + outlines, slots, hub, label plate in that order, with no allocation per frame (labels cached per open).
     - [ ] Slot states Normal, Hover, Pressed and Empty (Fixed, use mode) match design.md S4 exactly; icons are drawn with `Command.DrawIcon` in a 0.75 B square.
     - [ ] Hub: Close main area and Edit sub-button per S4a; no hover highlight until the mouse moved ≥ 4 px since open; the Edit sub-button is drawn only when a flag says edit mode exists (off until T-44).
+    - Note (2026-10-19): the hub drawing is superseded by T-81 (one centred pencil Edit button, design.md S4a).
     - [ ] The renderer accepts a scale for the settings preview (used in T-59).
   - **Tests**: build; visual review T-34 on UC-2 screenshots.
   - **In-game check**: UC-2 (user)
@@ -506,17 +508,20 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Tests**: screenshot review.
   - **Size**: S
 
-- [ ] **T-81**: Visual fixes from the M2 review · `parallel-ok`
-  - **Owner**: visual-designer
-  - **Requirements**: FR-4, NFR-5 (design.md S4 state 6, S4a, §8 UC-2 review rows 6 and 7)
+- [ ] **T-81**: Visual fixes from the M2 review; the hub becomes the centred Edit button · `parallel-ok`
+  - **Owner**: developer (visual-designer checks the result in T-48)
+  - **Requirements**: FR-4, FR-9 (centre = Edit button, never closes), NFR-5 (design.md §1.1 hub, S4 state 6, S4a, close and cancel rules, §8 UC-2 review rows 6 and 7; user decision 2026-10-19 after UC-2)
   - **Depends on**: T-34
-  - **Files**: `src/QuickMenu/Menu/{SlotRenderer,HubRenderer,QMStyle}.cs`, `src/QuickMenu.Core/Render/StyleTokens.cs` (if alphas are tokens there)
+  - **Files**: `src/QuickMenu.Core/Layout/{Hit,HitTester,LayoutConstants}.cs`, `src/QuickMenu.Core/Input/TriggerStateMachine.cs`, `src/QuickMenu.Core/Render/{TextureSizing,Glyphs,MaskSet}.cs`, `src/QuickMenu/Menu/{SlotRenderer,HubRenderer,PlateRenderer,WheelVisuals,QMStyle,MenuController}.cs`, `src/QuickMenu.Core/Render/StyleTokens.cs` (if alphas are tokens there), `mod/Languages/English/Keyed/QuickMenu.Menu.xml`, and the matching tests under `tests/QuickMenu.Core.Tests/{Layout,Input,Render}/`
   - **Acceptance criteria**:
     - [ ] Given an empty Fixed slot in use mode, then it is drawn with `slotBg` at 50 % and a 1 px `slotBorder` ring at 70 % (both as named tokens, no literals); edit-mode empty and reserved slots keep `emptyBorder`.
-    - [ ] Given the Edit sub-button is not drawn (edit-mode flag off), then the hub × is centred at `(cx, cy)`; with the flag on, it stays at `(cx, cy − 0.12 B)`.
-    - [ ] *(UC-3)* A screenshot of a mostly empty Fixed wheel shows the filled and greyed slots reading stronger than the empty ones; the user confirms.
-  - **Tests**: build; the token values are checked in the existing style-token tests if present; visual check in T-48.
-  - **Size**: XS
+    - [ ] Given a point in the hub area (wheel: distance ≤ P/2; grid: the centre cell), then `HitTester` returns `HubEdit`; `HitKind.HubClose`, `HasHubSub`, `HubSubDiameter`/`HubSubOffset` (`e`, `ey`) are removed with their tests; new constants `HubDiameter(B) = round(0.64·B)` and `HubGlyphSize(B) = round(0.5·HubDiameter)` are unit-tested (rounding half away from zero: B 36 → 23/12, B 56 → 36/18, B 96 → 61/31).
+    - [ ] Given the main level, when the hub gets a deliberate click (down and up on it), then the state machine returns `None` while `EditEnabled` is false (the default until T-44) and the menu stays open; it never returns `Close` for a hub click. Given hold mode, when the trigger is released over the hub, then `Close` (cancel). Given a satellite, a click on its centre still gives `Back`. Given edit mode (tests drive `EditEnabled = true`), then a hub click gives `ExitEdit` and a right-click gives `CloseFromEdit` (no longer `None`). The T-21 tests are updated to these rows.
+    - [ ] Given use mode, then the hub is drawn per S4a: a circle of diameter `H` at `(cx, cy)` in `slotBg` with a 1 px `accent` ring and the pencil (`IconEdit`) at `Hg` in `text`, centred at `(cx, cy)`; hover (after ≥ 4 px of movement, and never while a hold trigger is held) = `slotBgHover` + 8 % white + 2 px `accent`, plate "Edit"; pressed = `slotBgPressed` + 2 px `accent`. Hub rings are rasterized at `H` (`TextureSizing.HubRing` uses `H`, not `e`). No × is drawn; `IconClose` is removed from the mask set and its tests. No tooltip yet.
+    - [ ] Keyed: `QuickMenu.Menu.Close` is removed (no other use); `QuickMenu.Menu.Edit` ("Edit") stays as the hub plate label.
+    - [ ] *(UC-3)* A screenshot of a mostly empty Fixed wheel shows the filled and greyed slots reading stronger than the empty ones, and the centre reads as a pencil button; clicking it does nothing and the menu stays open; the user confirms.
+  - **Tests**: `HitTesterTests`/`WheelHitTestTests` (hub rows), `LayoutConstants` tests, `TriggerStateMachineToggleTests` (hub and edit rows), mask-set tests; build; visual check in T-48.
+  - **Size**: S
 
 - [ ] **T-35**: M2 performance record · `parallel-ok`
   - **Owner**: performance-engineer
@@ -633,16 +638,17 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **In-game check**: UC-3 (user)
   - **Size**: M
 
-- [ ] **T-44**: Edit mode shell: enter, Done, Esc, Add
+- [ ] **T-44**: Edit mode shell: enter, Done, Esc, Add via "+" slots
   - **Owner**: developer
-  - **Requirements**: FR-9 (enter/exit, add), FR-7 (entry point) (design.md S4a, S5)
-  - **Depends on**: T-32
-  - **Files**: `src/QuickMenu/Menu/{EditModeController,QuickMenuWindow,HubRenderer}.cs`
+  - **Requirements**: FR-9 (enter/exit, add), FR-7 (entry point) (design.md S4, state 7; S4a; S5)
+  - **Depends on**: T-32, T-81
+  - **Files**: `src/QuickMenu/Menu/{EditModeController,QuickMenuWindow,HubRenderer,SlotRenderer}.cs`, `mod/Languages/English/Keyed/QuickMenu.Menu.xml`
   - **Acceptance criteria**:
-    - [ ] Given use mode, when the Edit sub-button gets a deliberate click (down and up on it), then edit mode starts; the hub shows Done and Add; satellites do not open in edit mode.
-    - [ ] Given edit mode, then Done or the first Esc leaves it (settings written once if dirty), a second Esc closes, a left-click outside does nothing.
-    - [ ] Given Add, then `PickerWindow` opens above the menu and the menu stays open (stub until T-45 if needed).
-  - **Tests**: `TriggerStateMachineToggleTests` (edit rows); in-game UC-3.
+    - [ ] `EditEnabled` is set to true. Given use mode, when the hub gets a deliberate click (down and up on it), then edit mode starts and the hub shows Done per S4a (`slotBg` + 22 % `accent` tint, 2 px `accent` ring, `IconDone` at `Hg`; hover/pressed 3 px ring), plate "Done"; a hold-mode release over the hub never enters edit mode; satellites do not open in edit mode.
+    - [ ] Given edit mode, then Done or the first Esc leaves it (settings written once if dirty), a second Esc closes, right-click or the trigger closes, a left-click outside does nothing.
+    - [ ] Given edit mode, then Fixed empty slots and the Auto append slot draw as "+" (state 7: dashed `emptyBorder` ring, `IconAdd` at 0.3 B in `textMuted`, hover `text` + 2 px `accent`, plate "Add"); a plain click on one opens `PickerWindow` above the menu (the menu stays open) and sets the insert cursor per S5 (Fixed: that slot; Auto append: cursor cleared). Given Auto, a plain click on an occupied slot sets the cursor in front of it and opens the picker. If the picker is open, a click only moves the cursor. (Stub picker until T-45 if needed.)
+    - [ ] Keyed strings added: `QuickMenu.Menu.Done` "Done"; `QuickMenu.Menu.EditTip` "Edit the quick menu: add, move and remove pins."; `QuickMenu.Menu.DoneTip` "Finish editing (Esc)"; `QuickMenu.Menu.Add` "Add"; `QuickMenu.Menu.AddTip` "Click to add here.". Hub tooltips use the vanilla delay.
+  - **Tests**: `TriggerStateMachineToggleTests` (edit rows with `EditEnabled`); in-game UC-3.
   - **In-game check**: UC-3 (user)
   - **Size**: S
 
@@ -713,7 +719,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Files**: `src/QuickMenu.Core/Layout/{GridLayout,GridParams}.cs`, `src/QuickMenu.Core/Layout/HitTester.cs`, `tests/QuickMenu.Core.Tests/Layout/{GridLayoutTests,HitTesterGridTests}.cs`
   - **Acceptance criteria**:
     - [ ] Given 5 × 3 at B = 56, then the panel is 336 × 208, the hub is cell (1, 2), 14 slots in reading order skipping the hub; odd-only cols {3…11} and rows {1…7} (Fixed).
-    - [ ] Given a point, then a slot is hit inside its P × P cell; the hub sub-button first, then the centre cell as main area; panel and plate count as inside.
+    - [ ] Given a point, then a slot is hit inside its P × P cell; the whole centre cell is `HubEdit` (one hub target, no sub-button); panel and plate count as inside.
   - **Tests**: unit tests above.
   - **Size**: M
 
@@ -769,8 +775,9 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Depends on**: T-29
   - **Files**: `src/QuickMenu/Menu/{EditStateRenderer,HelpPanelRenderer}.cs`, `mod/Languages/English/Keyed/QuickMenu.Menu.xml`
   - **Acceptance criteria**:
-    - [ ] States 7 (empty edit), 8 (reserved-missing "?"), 9 (drag source ghost and dragged icon at 0.9 B, 80 %, offset +16), 10 (insert cursor with caret) and 11 (drop target) are drawn per S4.
+    - [ ] States 7 ("+" Add slot, drawn since T-44), 8 (reserved-missing "?", tooltip ending "{modifier}+click to remove."), 9 (drag source ghost and dragged icon at 0.9 B, 80 %, offset +16), 10 (insert cursor with caret) and 11 (drop target) are drawn per S4.
     - [ ] The help panel is at top centre (60 px down, max 520 wide) with the Fixed or Auto text and the capacity line (`danger` when full); the hint plate wraps at 360.
+    - [ ] Keyed strings (design.md §1.4, S4, Tooltips): `QuickMenu.Menu.EditHelpFixed`, `QuickMenu.Menu.EditHelpAuto` (both take the modifier name as {0}, no right-click wording), `QuickMenu.Menu.EditSlotTip` "Drag to move. {0}+click to remove.", `QuickMenu.Menu.MissingTip` (state 8, label {0}, mod {1}, modifier {2}), `QuickMenu.Menu.CapacityFixed` "{0} of {1} slots used", `QuickMenu.Menu.CapacityAuto` "{0} pinned", `QuickMenu.Menu.Full` "The menu is full.".
   - **Tests**: build; visual review T-61.
   - **In-game check**: UC-4 (user)
   - **Size**: M
@@ -788,14 +795,15 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **In-game check**: UC-4 (user)
   - **Size**: M
 
-- [ ] **T-57**: Edit interactions: drag swap, right-click clear, insert cursor, help panel, full
+- [ ] **T-57**: Edit interactions: drag swap, modifier+click unpin, insert cursor, help panel, full
   - **Owner**: developer
   - **Requirements**: FR-9, FR-5, FR-14, NFR-1 (P-17 write count)
   - **Depends on**: T-44, T-52, T-55, T-56
   - **Files**: `src/QuickMenu/Menu/{EditModeController,QuickMenuWindow}.cs`, `src/QuickMenu/Pinning/PinService.cs`
   - **Acceptance criteria**:
     - [ ] Given edit mode, when slot A is dragged (start after 6 px) onto slot B, then they swap with `Tick_Tiny`; less than 6 px is a click that sets or clears the insert cursor.
-    - [ ] Given a right-click on a slot (including a reserved one), then it is cleared; on the hub it does nothing.
+    - [ ] Given a pin-modifier+click (the effective modifier from `ModifierPolicy`: Ctrl by default, Alt with Mint, or the user's choice; read from the menu window's own click `Event`) on an occupied or reserved slot, then it is unpinned (`Tick_Low`, message `QuickMenu.Pin.Unpinned`; Fixed: the slot shows "+", Auto: later slots move up); on an empty slot or the hub, nothing extra happens. Given a right-click, then it never unpins: it cancels a drag in progress, otherwise closes the menu. Given use mode, a modifier+click on a slot acts as a plain click.
+    - [ ] Given Fixed, a plain click on an occupied slot does nothing; clicking the slot that holds the cursor clears it and the picker stays open.
     - [ ] Given the help panel, then it shows the right text and capacity line; when full, pinning from the picker or by click plays `ClickReject` with the full message.
     - [ ] Given an edit session, then settings are written once at edit end or menu close if dirty, never per drag step (counter in the self-test).
     - [ ] *(UC-4)* Journey 5 in wheel and grid.
@@ -869,7 +877,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Depends on**: T-21
   - **Files**: `src/QuickMenu.Core/Input/TriggerStateMachine.cs`, `tests/QuickMenu.Core.Tests/Input/TriggerStateMachineHoldTests.cs`
   - **Acceptance criteria**:
-    - [ ] Given hold mode, when the trigger is released over a slot, then `Activate(i)`; over the hub (either part) or elsewhere, then `Close` (or `Back` with a satellite open — releasing elsewhere closes everything per S3).
+    - [ ] Given hold mode, when the trigger is released over a slot, then `Activate(i)`; over the hub (one target, `HubEdit`) or elsewhere, then `Close` (or `Back` with a satellite open — releasing elsewhere closes everything per S3).
     - [ ] Given hovering a sub-menu or material slot for ≥ 150 ms (time passed in as a parameter), then `OpenSub(i)`; less, then nothing; releasing over an option activates it.
     - [ ] Given HubEdit, then only a deliberate click enters edit mode, never a release; in edit mode releasing keeps the menu open.
   - **Tests**: unit `TriggerStateMachineHoldTests`; zero-alloc gate extended in `ZeroAllocTests` (owner may add it here).
@@ -1085,7 +1093,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
 | FR-6 size settings used on next open | T-2, T-31, T-32, T-50, T-51, T-59 | `WheelLayoutTests`, `CapacityTests`; UC-2, UC-4 · M1: `WheelLayoutTests` (geometry only; setting not wired yet) |
 | FR-7 searchable picker independent of architect UI; greyed; dev-only | T-6, T-9, T-38, T-40, T-44, T-45, T-65 | `SearchIndexTests`, `SearchPerfTests`, self-test round-trip; UC-1, UC-3 (setup b), UC-5 · M1: `PinKeyFactoryTests`, `PinKeyRoundTripTests`; UC-1 S-4 (454 / 718 entries, 0 failures, 0 duplicates), S-5 (reasons must be composed) |
 | FR-8 modifier+click on any designator; Mint → Alt | T-8, T-20, T-26, T-27, T-31, T-67 | `ModifierPolicyTests`, `PinClickClassifierTests`; UC-1 (S-3 probe), UC-2 (a, b), UC-5 (c, d) · M1: UC-1 S-3 (idle 0 calls; modifiers via `Input`; dropdown entry needs T-27); patch count 8/0 failed |
-| FR-9 edit mode: picker, drag swap, right-click clear, insert cursor | T-17, T-18, T-21, T-44, T-52, T-55, T-57, T-63 | `PinBoardFixedTests`, `PinBoardAutoTests`, `TriggerStateMachine*Tests`; UC-3, UC-4 |
+| FR-9 edit mode: centre Edit button, picker via "+" slots, drag swap, modifier+click unpin, insert cursor | T-17, T-18, T-21, T-81, T-44, T-52, T-55, T-57, T-63 | `PinBoardFixedTests`, `PinBoardAutoTests`, `TriggerStateMachine*Tests`; UC-3, UC-4 |
 | FR-10 pin a whole dropdown | T-3, T-6, T-9, T-26, T-27, T-37, T-40, T-42, T-43, T-45 | `PinKeyTests`, `PinKeyFactoryTests`, `ModDropdownMatcherTests`; UC-1 self-test, UC-2, UC-3 · M1: `PinKeyTests`, `PinKeyEdgeTests`, `PinKeyFactoryTests`, `PinKeyFactoryEdgeTests`, `PinKeyRoundTripTests`; UC-1 S-4 |
 | FR-11 dropdown expands as sub-ring / sub-grid | T-21, T-36, T-42, T-43, T-54, T-56, T-63 | `SubMenuLayoutTests`, `TriggerStateMachine*Tests`; UC-3, UC-4 |
 | FR-12 material sub-ring | T-36, T-37, T-41, T-42, T-43, T-56 | `StuffOrderingTests`, `SubMenuLayoutTests`; UC-3 (journey 4), UC-4 |
