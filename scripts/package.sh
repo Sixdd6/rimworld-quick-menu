@@ -10,6 +10,15 @@ for dll in QuickMenu.dll QuickMenu.Core.dll; do
   [ -f "mod/1.7/Assemblies/$dll" ] || { echo "$dll missing after build" >&2; exit 1; }
 done
 [ ! -e mod/1.7/Assemblies/0Harmony.dll ] || { echo "0Harmony.dll must not ship" >&2; exit 1; }
+# Privacy: the shipped DLLs must not embed the builder's home or absolute paths (see PathMap in Directory.Build.props).
+for dll in QuickMenu.dll QuickMenu.Core.dll; do
+  if strings -a "mod/1.7/Assemblies/$dll" | grep -qF -e "$HOME" -e "/home/"; then
+    echo "$dll embeds a local path (\$HOME or /home/); check PathMap/DeterministicSourcePaths" >&2; exit 1
+  fi
+  if strings -a -e l "mod/1.7/Assemblies/$dll" | grep -qF -e "$HOME" -e "/home/"; then
+    echo "$dll embeds a local path (UTF-16)" >&2; exit 1
+  fi
+done
 stage="$(mktemp -d)"; trap 'rm -rf "$stage"' EXIT
 mkdir -p "$stage/QuickMenu" dist
 # Ship only tracked mod files (minus .gitkeep) plus the two build outputs; never the working folder as-is.

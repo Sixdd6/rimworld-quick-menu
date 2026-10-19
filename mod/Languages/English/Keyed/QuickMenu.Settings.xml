@@ -11,6 +11,7 @@
   <QuickMenu.Settings.KeyConflict>{0} is also used for: {1}.</QuickMenu.Settings.KeyConflict>
   <QuickMenu.Settings.KeyIsPinModifier>{0} is also the key you hold to pin, so pinning will open the menu. Pick another key or another pin key.</QuickMenu.Settings.KeyIsPinModifier>
   <QuickMenu.Settings.Title>Quick Menu</QuickMenu.Settings.Title>
+  <QuickMenu.Settings.PageError>The Quick Menu settings page could not be drawn. See the log for details.</QuickMenu.Settings.PageError>
   <QuickMenu.Settings.HeadOpening>Opening the menu</QuickMenu.Settings.HeadOpening>
   <QuickMenu.Settings.HeadPinning>Pinning</QuickMenu.Settings.HeadPinning>
   <QuickMenu.Settings.HeadLayout>Layout</QuickMenu.Settings.HeadLayout>

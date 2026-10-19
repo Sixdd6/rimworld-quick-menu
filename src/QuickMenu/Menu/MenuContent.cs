@@ -127,8 +127,8 @@ internal sealed class MenuContent
         }
         catch (Exception ex)
         {
-            Log.LogOnce($"Menu.Usable.{d.GetType().FullName}", $"Checking whether {d.GetType().FullName} is usable failed, treating it as usable: {ex.GetType().Name}");
-            return true;
+            Log.LogOnce($"Menu.Usable.{d.GetType().FullName}", $"Checking whether {d.GetType().FullName} is usable failed, treating it as unavailable: {ex.GetType().Name}");
+            return false;
         }
     }
 }

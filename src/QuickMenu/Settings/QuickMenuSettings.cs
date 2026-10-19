@@ -146,7 +146,17 @@ internal sealed class QuickMenuSettings : ModSettings
     private void PostLoad()
     {
         bool repaired = Normalize() | _unreadable;
-        _trigger = TriggerBinding.TryParse(_triggerText, out TriggerBinding parsed) ? parsed : TriggerBinding.Mouse(3);
+        if (TriggerBinding.TryParse(_triggerText, out TriggerBinding parsed) && IsKnownKey(parsed))
+        {
+            _trigger = parsed;
+        }
+        else
+        {
+            _trigger = TriggerBinding.TryParse(SettingsRules.DefaultTrigger, out TriggerBinding fallback) ? fallback : TriggerBinding.Mouse(3);
+            _triggerText = _trigger.Serialize();
+            repaired = true;
+        }
+
         PinLoadResult loaded = PinSerializer.FromLines(_pinLines);
         Board = loaded.Board;
         ApplyCapacity();
@@ -161,6 +171,8 @@ internal sealed class QuickMenuSettings : ModSettings
             Diagnostics.Log.WarnOnce("Settings.Repaired", "Some settings were missing or out of range and were reset to valid values.");
         }
     }
+
+    private static bool IsKnownKey(TriggerBinding b) => b.Kind != TriggerBindingKind.Key || Enum.IsDefined(typeof(UnityEngine.KeyCode), b.Code);
 
     /// <summary>Resets invalid values to valid ones. Returns true when anything changed.</summary>
     /// <remarks>Plain statements, no generic helper: each value-type instantiation of a generic would be JIT-compiled separately at startup (P-16).</remarks>

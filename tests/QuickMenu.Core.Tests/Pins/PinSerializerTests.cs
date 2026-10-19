@@ -148,4 +148,27 @@ public class PinSerializerTests
     [Fact]
     public void ToLines_NullBoard_Throws() =>
         Assert.Throws<System.ArgumentNullException>(() => PinSerializer.ToLines(null!));
+
+    [Fact]
+    public void ToLines_DropsCharactersXmlCannotStore()
+    {
+        var board = new PinBoard(4);
+        board.SetSlot(0, new PinEntry(Thing("Wall"), "a\u0001b\uD800c\uDC00d\uFFFEe\uD83D\uDE00", "p\u0000q"));
+
+        PinLoadResult r = PinSerializer.FromLines(PinSerializer.ToLines(board));
+
+        PinEntry e = r.Board.Entries[0]!;
+        Assert.Equal("abcde\uD83D\uDE00", e.Label);
+        Assert.Equal("pq", e.PackageId);
+    }
+
+    [Fact]
+    public void Toggle_SanitizesLabelAndPackage()
+    {
+        var board = new PinBoard(4);
+        Assert.Equal(PinResult.Pinned, board.Toggle(Thing("Wall"), "l\u0003", "x\u0002"));
+        PinEntry e = board.Entries[0]!;
+        Assert.Equal("l", e.Label);
+        Assert.Equal("x", e.PackageId);
+    }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using QuickMenu.Core.Input;
@@ -46,6 +47,20 @@ internal static class SettingsPage
 
     /// <summary>Draws the page in the settings window's content rect.</summary>
     internal static void Draw(Rect inRect)
+    {
+        try
+        {
+            DrawPage(inRect);
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Log.LogOnce("Settings.Page", $"The settings page failed to draw: {ex.GetType().Name}");
+            Text.Font = GameFont.Small;
+            Widgets.Label(inRect, "QuickMenu.Settings.PageError".Translate());
+        }
+    }
+
+    private static void DrawPage(Rect inRect)
     {
         EnsureStrings();
         QuickMenuSettings settings = QuickMenuMod.Settings;

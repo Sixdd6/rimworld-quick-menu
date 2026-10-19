@@ -87,9 +87,9 @@ public static class PinSerializer
             {
                 Append(sb, e.Key.Value);
                 sb.Append(Sep);
-                Append(sb, e.PackageId ?? string.Empty);
+                Append(sb, Sanitize(e.PackageId ?? string.Empty));
                 sb.Append(Sep);
-                Append(sb, e.Label);
+                Append(sb, Sanitize(e.Label));
             }
 
             lines.Add(sb.ToString());
@@ -260,6 +260,8 @@ public static class PinSerializer
     /// </summary>
     internal static bool TryFit(int slot, PinKey key, string? packageId, string label, out string? fitPackage, out string fitLabel)
     {
+        packageId = packageId == null ? null : Sanitize(packageId);
+        label = Sanitize(label);
         fitPackage = packageId;
         fitLabel = label;
         if (key.Kind == PinKeyKind.ModDropdown && key.Children!.Count > MaxModDropdownChildren)
@@ -306,6 +308,45 @@ public static class PinSerializer
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Drops characters XML 1.0 cannot store (control characters, unpaired surrogates, U+FFFE/U+FFFF), so a pin label or
+    /// package id can never make the settings file unreadable. Returns the same instance when nothing needs dropping.
+    /// </summary>
+    internal static string Sanitize(string text)
+    {
+        StringBuilder? sb = null;
+        for (int i = 0; i < text.Length; i++)
+        {
+            char c = text[i];
+            bool ok;
+            int width = 1;
+            if (char.IsHighSurrogate(c))
+            {
+                ok = i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]);
+                width = ok ? 2 : 1;
+            }
+            else
+            {
+                ok = !char.IsLowSurrogate(c) && System.Xml.XmlConvert.IsXmlChar(c);
+            }
+
+            if (ok)
+            {
+                if (sb != null)
+                {
+                    sb.Append(text, i, width);
+                }
+
+                i += width - 1;
+                continue;
+            }
+
+            sb ??= new StringBuilder(text.Length).Append(text, 0, i);
+        }
+
+        return sb?.ToString() ?? text;
     }
 
     private static int Digits(int n) => n < 10 ? 1 : n < 100 ? 2 : n < 1000 ? 3 : 4;

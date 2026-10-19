@@ -29,7 +29,7 @@ if [ -n "$scan_out" ]; then
   echo "$scan_out" >&2
   exit 1
 fi
-scan '(ExposeData|Scribe_[A-Za-z]+|IExposable)'
+scan '(ExposeData|Scribe_[A-Za-z]+|Scribe\.|IExposable)'
 exposure="$(printf '%s\n' "$scan_out" | awk -v d="$settings_dir" 'NF && index($0, d) != 1')"
 if [ -n "$exposure" ]; then
   echo "save-safety check FAILED (FR-17): ExposeData/Scribe_/IExposable used outside ${settings_dir}:" >&2
