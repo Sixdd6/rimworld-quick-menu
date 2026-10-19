@@ -45,6 +45,9 @@ internal enum StatId
 
     /// <summary>Sub-bucket of <see cref="Window"/>: frames drawn with a sub-grid or material grid open.</summary>
     WindowSubGrid,
+
+    /// <summary>The pin-marker hook on <c>Command.GizmoOnGUIInt</c> (P-19): one sample per frame, covering every call of that frame.</summary>
+    PinMarker,
 }
 
 /// <summary>
@@ -86,6 +89,7 @@ internal static class PerfCounters
         new("  P-8 by layout: grid (main grid on screen)", FrameRing),
         new("  P-8 by layout: wheel satellite (sub-ring or material ring open)", FrameRing),
         new("  P-8 by layout: sub-grid (sub-grid or material grid open)", FrameRing),
+        new("pin marker hook per frame (P-19; calls = hook calls, calls/steadyFrames = calls per frame; every command gizmo, drawn or not)", FrameRing),
     };
 
     internal static MeasureStats Get(StatId id) => EnsureStats()[(int)id];

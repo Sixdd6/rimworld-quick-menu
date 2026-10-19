@@ -131,6 +131,7 @@ public sealed class QuickMenuMod : Mod
         ApplyPostfix(harmony, TriggerPoller.Site, typeof(UIRoot_Play), nameof(UIRoot_Play.UIRootUpdate), typeof(TriggerPoller), nameof(TriggerPoller.Postfix));
         PatchGuard.Run(PinClickPatch.Site, () => PinClickPatch.Apply(harmony));
         DropdownEntryPatch.Apply(harmony);
+        PinMarkerPatch.Apply(harmony);
     }
 
     private static void ApplyPostfix(Harmony harmony, Diagnostics.PatchSite site, Type targetType, string targetMethod, Type patchType, string postfix)

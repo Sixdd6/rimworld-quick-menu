@@ -59,6 +59,7 @@ internal static class PinService
             _stamp = Stamp();
             _failedStamp = -1;
             _initialized = true;
+            PinnedDesignators.Rebuild();
         }
         catch (Exception ex)
         {
@@ -68,6 +69,15 @@ internal static class PinService
             Log.LogOnce("Pinning.Resolve", $"Resolving the pins failed, they are treated as not yet known: {ex}");
         }
     }
+
+    /// <summary>
+    /// Re-validates the resolved cache and so the pin marker set (once per frame from the marker hook): an O(1) stamp compare
+    /// that resolves, and rebuilds the set, only after a game load, a catalog rebuild or an Ideology change.
+    /// </summary>
+    internal static void Revalidate() => EnsureCurrent();
+
+    /// <summary>The cached resolution of a stored pin, without checking whether the cache is current (the marker set rebuilds from it).</summary>
+    internal static bool TryGetResolved(PinKey key, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out CatalogEntry? entry) => _resolved.TryGetValue(key, out entry);
 
     /// <summary>Answers from the cache; resolves again first when the catalog or game state changed since.</summary>
     internal static IPinResolver Resolver { get; } = new CacheResolver();
@@ -132,6 +142,7 @@ internal static class PinService
         int n = Board.Forget(IsMissing);
         if (n > 0)
         {
+            PinnedDesignators.Rebuild();
             QuickMenuMod.SaveSettings();
         }
 
@@ -143,6 +154,7 @@ internal static class PinService
     {
         QuickMenuMod.Settings.ClearAllPins();
         _resolved.Clear();
+        PinnedDesignators.Rebuild();
     }
 
     internal static PinBoard Board => QuickMenuMod.Settings.Board;
@@ -211,6 +223,7 @@ internal static class PinService
             _resolved[key] = entry;
         }
 
+        PinnedDesignators.Rebuild();
         PinFeedback feedback = PinFeedback.For(result);
         Announce(feedback, label);
         if (persist && feedback.Persist)

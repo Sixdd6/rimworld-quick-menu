@@ -61,6 +61,8 @@ internal static class FaultInjection
         new(FaultPoint.TexturesSized, Textures.SizedSite, "press the menu trigger; the menu opens without the ring textures, or closes, the game continues"),
         new(FaultPoint.Notice, Compat.NoticeRunner.Site, "automatic: fails on the next frame; no notice, no further attempts", Compat.NoticeRunner.Rearm),
         new(FaultPoint.FirstRunWindow, FirstRunNoticeWindow.Site, "opens the first-run notice; it closes itself", () => Find.WindowStack.Add(new FirstRunNoticeWindow(false))),
+        new(FaultPoint.PinMarker, Pinning.PinMarkerPatch.Site, "open the architect menu with at least one pin; buttons keep drawing and working without markers"),
+        new(FaultPoint.TexturesPinMarker, Textures.PinMarkerSite, "open the architect menu with at least one pin; the marker textures are skipped, buttons keep drawing without markers"),
         new(FaultPoint.BindingCaptureWindow, BindingCaptureWindow.Site, "opens the key capture window; it closes itself", () => Find.WindowStack.Add(new BindingCaptureWindow(_ => { }))),
     };
 

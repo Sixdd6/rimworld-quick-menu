@@ -402,6 +402,7 @@ internal static class DesignatorCatalog
             _modDropdownKeys = null;
             IdeoRebuildCount++;
             NotifyChanged();
+            Pinning.PinService.Refresh(); // resolves the pins again and rebuilds the pin marker set against the new designator instances
             stopwatch.Stop();
             IdeoBuildTime = stopwatch.Elapsed;
         }

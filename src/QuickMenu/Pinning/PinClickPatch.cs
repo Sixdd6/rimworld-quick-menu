@@ -115,10 +115,6 @@ internal static class PinClickPatch
         }
     }
 
-    private static Type? _mintArchitectWindow;
-    private static Type? _mintWheelWindow;
-    private static bool _mintTypesResolved;
-
     /// <summary>
     /// True while an architect menu is open: the vanilla Architect main tab, or (with Dubs Mint Menus active) one of its two
     /// architect windows. Better Architect Menu draws inside the vanilla tab (it patches <c>ArchitectCategoryTab.DesignationTabOnGUI</c>
@@ -139,17 +135,12 @@ internal static class PinClickPatch
             return false;
         }
 
-        if (!_mintTypesResolved)
-        {
-            _mintTypesResolved = true;
-            _mintArchitectWindow = AccessTools.TypeByName("DubsMintMenus.MainTabWindow_MintArchitect");
-            _mintWheelWindow = AccessTools.TypeByName("DubsMintMenus.MainTabWindow_MayaMenu");
-        }
-
+        Type? architectWindow = ArchitectDrawContext.MintArchitectWindow;
+        Type? wheelWindow = ArchitectDrawContext.MintWheelWindow;
         for (int i = 0; i < stack.Count; i++)
         {
             Type type = stack[i].GetType();
-            if ((_mintArchitectWindow != null && type == _mintArchitectWindow) || (_mintWheelWindow != null && type == _mintWheelWindow))
+            if ((architectWindow != null && type == architectWindow) || (wheelWindow != null && type == wheelWindow))
             {
                 return true;
             }

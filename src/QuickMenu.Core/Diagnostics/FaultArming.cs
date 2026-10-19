@@ -18,6 +18,8 @@ public enum FaultPoint
     Notice = 9,
     FirstRunWindow = 10,
     BindingCaptureWindow = 11,
+    PinMarker = 12,
+    TexturesPinMarker = 13,
 }
 
 /// <summary>

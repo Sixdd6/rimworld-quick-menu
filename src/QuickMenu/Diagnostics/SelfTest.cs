@@ -101,6 +101,11 @@ internal static class SelfTest
         }
 
         Append(sb, "patch failed", failed);
+        sb.AppendLine("marker patch (Command.GizmoOnGUIInt postfix): " + (PinMarkerPatch.Patched ? "patched" : "failed")
+            + " siteDisabled=" + PinMarkerPatch.Site.Disabled
+            + " textureSiteDisabled=" + Textures.PinMarkerSite.Disabled
+            + " markedSetEmpty=" + PinnedDesignators.IsEmpty
+            + " setVersion=" + PinnedDesignators.Version.ToString(CultureInfo.InvariantCulture));
     }
 
     private static void RoundTrip(StringBuilder sb)

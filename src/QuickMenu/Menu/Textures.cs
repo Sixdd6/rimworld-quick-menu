@@ -222,6 +222,7 @@ internal static class Textures
 
         try
         {
+            FaultInjection.Check(FaultPoint.TexturesPinMarker);
             float scale = Prefs.UIScale;
             if (_pinSizing is { } built && built.UiScale == scale)
             {

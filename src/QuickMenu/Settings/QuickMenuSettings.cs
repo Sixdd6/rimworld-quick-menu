@@ -56,6 +56,7 @@ internal sealed class QuickMenuSettings : ModSettings
     {
         ApplyCapacity();
         Revision++;
+        Pinning.PinnedDesignators.Rebuild();
     }
 
     /// <summary>Removes every pin, including hidden and unresolved ones.</summary>
