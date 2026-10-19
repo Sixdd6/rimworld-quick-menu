@@ -3,4 +3,6 @@
   <!-- Label plate of the hub (design.md S4a). -->
   <QuickMenu.Menu.Close>Close</QuickMenu.Menu.Close>
   <QuickMenu.Menu.Edit>Edit</QuickMenu.Menu.Edit>
+  <!-- Reason shown when a slot is clicked that cannot be used and the designator gives none (U-4). -->
+  <QuickMenu.Menu.Unavailable>Not available right now.</QuickMenu.Menu.Unavailable>
 </LanguageData>

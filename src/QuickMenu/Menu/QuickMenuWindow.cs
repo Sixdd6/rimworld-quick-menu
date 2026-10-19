@@ -1,15 +1,13 @@
 using System;
-using QuickMenu.Catalog;
 using QuickMenu.Core.Geometry;
 using QuickMenu.Core.Input;
 using QuickMenu.Core.Layout;
-using QuickMenu.Core.Pins;
 using QuickMenu.Diagnostics;
-using QuickMenu.Skeleton;
 using RimWorld;
 using RimWorld.Planet;
 using UnityEngine;
 using Verse;
+using Verse.Sound;
 using Log = QuickMenu.Diagnostics.Log;
 
 namespace QuickMenu.Menu;
@@ -17,25 +15,28 @@ namespace QuickMenu.Menu;
 /// <summary>
 /// Full-screen transparent window hosting the wheel (ADR 0007). Spike S-6 settings: layer <see cref="WindowLayer.GameUI"/>,
 /// no pause, no background or shadow, <c>closeOnCancel</c>, <c>absorbInputAroundWindow=false</c> (the full-screen rect
-/// itself swallows map clicks). Layout and designators are resolved once per open; OnGUI allocates nothing.
+/// itself swallows map clicks). It holds no menu logic: it hit-tests, turns IMGUI events into <see cref="TriggerEvent"/>s
+/// for <see cref="MenuController.Dispatch"/>, and draws. Layout and designators are resolved once per open
+/// (<see cref="MenuContent"/>); OnGUI allocates nothing.
 /// </summary>
 internal sealed class QuickMenuWindow : Window
 {
-    private const float ButtonSize = 56f;
-    private const int Rings = 1;
+    private const int TooltipIdBase = 0x514D0000;
 
     internal static readonly PatchSite DrawSite = new("QuickMenuWindow.DoWindowContents");
 
     private readonly int _openFrame;
     private readonly Map? _map;
-    private readonly Designator?[] _designators;
+    private readonly MenuContent _content;
     private readonly WheelModel _model;
-    private readonly Vec2 _openMouse;
-    private bool _hoverEnabled;
+    private Hit _pressHit = Hit.Outside;
+    private int _hoverSlot = -1;
     private bool _loggedFirstDraw;
 
-    internal QuickMenuWindow(int openFrame)
+    internal QuickMenuWindow(MenuContent content, int openFrame)
     {
+        _content = content;
+        _model = content.Model;
         _openFrame = openFrame;
         _map = Find.CurrentMap;
         layer = WindowLayer.GameUI;
@@ -48,7 +49,8 @@ internal sealed class QuickMenuWindow : Window
         closeOnAccept = false;
         closeOnClickedOutside = false;
         absorbInputAroundWindow = false;
-        preventCameraMotion = false;
+        TriggerBinding trigger = QuickMenuMod.Settings.Trigger;
+        preventCameraMotion = trigger.Kind == TriggerBindingKind.Mouse && trigger.Code == 2; // middle mouse also drags the camera
         draggable = false;
         resizeable = false;
         focusWhenOpened = true;
@@ -58,27 +60,6 @@ internal sealed class QuickMenuWindow : Window
         {
             Log.Info($"Menu trigger frame={openFrame}");
         }
-
-        // Skeleton until T-32: hard-coded pins, Fixed 1 ring, drawn by the T-29 renderer, edge-dodged with the plate.
-        Vector2 mouse = UI.MousePositionOnUIInverted;
-        _openMouse = new Vec2(mouse.x, mouse.y);
-        float plateHeight = WheelModel.DefaultPlateHeight;
-        Vec2 fit = EdgeDodger.Fit(MenuBounds.ForWheel(_openMouse, ButtonSize, Rings, plateHeight), new Vec2(UI.screenWidth, UI.screenHeight));
-        Vec2 centre = _openMouse + fit;
-        SlotPlacement[] wheel = WheelLayout.Compute(new WheelParams(ButtonSize, Rings, centre));
-        PinKey[] pins = SkeletonPins.Create();
-        _designators = new Designator?[wheel.Length];
-        _model = new WheelModel(centre, ButtonSize, Rings, wheel, wheel.Length, hasHubSub: false, plateHeight);
-        for (int i = 0; i < pins.Length && i < wheel.Length; i++)
-        {
-            Designator? d = DesignatorCatalog.Resolve(pins[i])?.Designator;
-            _designators[i] = d;
-            _model.SetSlot(i, d, SlotKind.Normal);
-        }
-
-        _model.SetHubLabels("QuickMenu.Menu.Close".Translate(), "QuickMenu.Menu.Edit".Translate());
-        _model.Prepare();
-        MenuController.LastSlotCount = pins.Length < wheel.Length ? pins.Length : wheel.Length;
     }
 
     public override Vector2 InitialSize => new(UI.screenWidth, UI.screenHeight);
@@ -98,8 +79,23 @@ internal sealed class QuickMenuWindow : Window
             base.WindowUpdate();
             if (!ReferenceEquals(Find.CurrentMap, _map) || WorldRendererUtility.WorldRendered)
             {
-                MenuController.Close();
+                MenuController.Dispatch(TriggerEvent.MapLost());
             }
+        }
+        catch (Exception ex)
+        {
+            DrawSite.Fail(ex);
+            SafeClose();
+        }
+    }
+
+    /// <summary>Esc: one level out, decided by the state machine (it closes the menu from the main level).</summary>
+    public override void OnCancelKeyPressed()
+    {
+        try
+        {
+            Event.current.Use();
+            MenuController.Dispatch(TriggerEvent.Escape(MousePosition()));
         }
         catch (Exception ex)
         {
@@ -128,7 +124,7 @@ internal sealed class QuickMenuWindow : Window
     {
         if (DrawSite.Disabled)
         {
-            MenuController.Close();
+            SafeClose();
             return;
         }
 
@@ -144,7 +140,7 @@ internal sealed class QuickMenuWindow : Window
             }
 
             using var scope = new MeasureScope(StatId.Window);
-            Draw();
+            HandleEvent(Event.current);
         }
         catch (Exception ex)
         {
@@ -153,53 +149,61 @@ internal sealed class QuickMenuWindow : Window
         }
     }
 
-    private void Draw()
+    private void HandleEvent(Event ev)
     {
-        Event ev = Event.current;
-        var mouse = new Vec2(ev.mousePosition.x, ev.mousePosition.y);
+        Vec2 mouse = new(ev.mousePosition.x, ev.mousePosition.y);
         HitLayout layout = _model.HitLayout;
         Hit hit = HitTester.Hit(mouse, in layout);
-        if (!_hoverEnabled && mouse.Distance(_openMouse) >= TriggerStateMachine.HoverMoveThreshold)
+        switch (ev.type)
         {
-            _hoverEnabled = true;
-        }
-
-        int hover = hit.Kind == HitKind.Slot ? hit.Index : -1;
-        if (ev.type == EventType.Repaint)
-        {
-            // The skeleton activates on mouse-down, so nothing is ever shown pressed until T-32.
-            MenuRenderer.Draw(_model, hit, Hit.Outside, _hoverEnabled);
-        }
-        else if (ev.type == EventType.MouseDown)
-        {
-            if (hover >= 0 && ev.button == 0)
-            {
-                Designator? d = _designators[hover];
-                if (d != null)
+            case EventType.Repaint:
+                MenuController.Dispatch(TriggerEvent.MouseMove(mouse));
+                Paint(hit);
+                break;
+            case EventType.MouseDown:
+                if (ev.button == 0)
                 {
-                    // Known gap (T-26/T-65): the architect fires on mouse-up over the same slot and never activates
-                    // Disabled designators; this skeleton fires on mouse-down.
-                    MenuActivation.Enter();
-                    try
-                    {
-                        d.ProcessInput(ev);
-                    }
-                    catch (Exception ex)
-                    {
-                        // A foreign designator's fault must not disable the whole menu (DrawSite stays enabled).
-                        Type type = d.GetType();
-                        Log.LogOnce($"Menu.Activation.{type.FullName}", $"Designator {type.FullName} threw during activation: {ex}");
-                    }
-                    finally
-                    {
-                        MenuActivation.Exit();
-                    }
+                    _pressHit = hit;
                 }
-            }
 
-            ev.Use();
-            SafeClose();
+                ev.Use();
+                MenuController.Dispatch(TriggerEvent.MouseDown(mouse, hit, ev.button));
+                break;
+            case EventType.MouseUp:
+                _pressHit = Hit.Outside;
+                SlotKind kind = hit.Kind == HitKind.Slot ? _model.Kinds[hit.Index] : SlotKind.Normal;
+                ev.Use();
+                MenuController.Dispatch(TriggerEvent.MouseUp(mouse, hit, kind, ev.button));
+                break;
         }
+    }
+
+    private void Paint(Hit hit)
+    {
+        bool hoverEnabled = MenuController.HoverEnabled;
+        MenuRenderer.Draw(_model, hit, _pressHit, hoverEnabled);
+        int slot = hoverEnabled && hit.Kind == HitKind.Slot && _model.Kinds[hit.Index] != SlotKind.Empty ? hit.Index : -1;
+        if (slot != _hoverSlot)
+        {
+            _hoverSlot = slot;
+            if (slot >= 0)
+            {
+                SoundDefOf.Mouseover_Command.PlayOneShotOnCamera();
+            }
+        }
+
+        if (slot >= 0 && _content.Tip(slot) is { } tip)
+        {
+            float half = _model.ButtonSize / 2f;
+            Vec2 c = _model.Slots[slot].Center;
+            TooltipHandler.TipRegion(new Rect(c.X - half, c.Y - half, _model.ButtonSize, _model.ButtonSize), new TipSignal(tip, TooltipIdBase + slot));
+        }
+    }
+
+    private static Vec2 MousePosition()
+    {
+        Vector2 p = Event.current.mousePosition;
+        return new Vec2(p.x, p.y);
     }
 
     private static void SafeClose()
