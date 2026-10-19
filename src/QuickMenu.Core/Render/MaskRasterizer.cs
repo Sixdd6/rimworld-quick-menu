@@ -143,13 +143,127 @@ public static class MaskRasterizer
             int row = y * width;
             for (int x = 0; x < width; x++)
             {
-                double qx = Math.Abs(x + 0.5 - hx) - bx;
-                double ox = Math.Max(qx, 0.0);
-                double oy = Math.Max(qy, 0.0);
-                double sd = Math.Sqrt((ox * ox) + (oy * oy)) + Math.Min(Math.Max(qx, qy), 0.0) - r;
+                destination[row + x] = ToByte(Coverage(RoundedBoxDistance(Math.Abs(x + 0.5 - hx) - bx, qy, r)));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Anti-aliased dashed ring: the <see cref="Ring(int, float)"/> band cut into <paramref name="dashes"/> equal
+    /// dashes, each covering <paramref name="duty"/> of its period. The first dash is centred at 12 o'clock
+    /// (top row first), so the pattern is mirror-symmetric about the vertical axis.
+    /// </summary>
+    public static byte[] DashedRing(int size, float stroke, int dashes, float duty)
+    {
+        byte[] result = new byte[CheckRoundSize(size) * size];
+        DashedRing(size, stroke, dashes, duty, result);
+        return result;
+    }
+
+    /// <inheritdoc cref="DashedRing(int, float, int, float)"/>
+    public static void DashedRing(int size, float stroke, int dashes, float duty, Span<byte> destination)
+    {
+        CheckRoundSize(size);
+        double c = size / 2.0;
+        double outer = c - EdgePadding;
+        if (!(stroke > 0f && stroke <= outer))
+        {
+            throw new ArgumentOutOfRangeException(nameof(stroke), stroke, "Stroke must be > 0 and fit inside the ring.");
+        }
+
+        if (dashes < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(dashes), dashes, "Dash count must be ≥ 1.");
+        }
+
+        if (!(duty > 0f && duty <= 1f))
+        {
+            throw new ArgumentOutOfRangeException(nameof(duty), duty, "Duty must be in (0, 1].");
+        }
+
+        CheckDestination(destination, size, size);
+        double half = stroke / 2.0;
+        double mid = outer - half;
+        double period = 2.0 * Math.PI / dashes;
+        double halfDash = period * duty / 2.0;
+        bool solid = duty >= 1f;
+        for (int y = 0; y < size; y++)
+        {
+            double dy = y + 0.5 - c;
+            int row = y * size;
+            for (int x = 0; x < size; x++)
+            {
+                double dx = x + 0.5 - c;
+                double d = Math.Sqrt((dx * dx) + (dy * dy));
+                double sd = Math.Abs(d - mid) - half;
+                if (!solid)
+                {
+                    // Angle measured clockwise from 12 o'clock (rows go down), folded into the nearest dash centre.
+                    double a = Math.Atan2(dx, -dy);
+                    double off = Math.Abs(a - (Math.Round(a / period) * period));
+                    sd = Math.Max(sd, (off - halfDash) * d);
+                }
+
                 destination[row + x] = ToByte(Coverage(sd));
             }
         }
+    }
+
+    /// <summary>
+    /// Anti-aliased outline of the <see cref="RoundedRect(int, int, float)"/> shape: a band <paramref name="stroke"/> px
+    /// wide whose outer edge is the box edge. A stroke of at least half the short side gives the filled shape.
+    /// </summary>
+    public static byte[] RoundedRectRing(int width, int height, float radius, float stroke)
+    {
+        CheckRectSize(width, height);
+        byte[] result = new byte[width * height];
+        RoundedRectRing(width, height, radius, stroke, result);
+        return result;
+    }
+
+    /// <inheritdoc cref="RoundedRectRing(int, int, float, float)"/>
+    public static void RoundedRectRing(int width, int height, float radius, float stroke, Span<byte> destination)
+    {
+        CheckRectSize(width, height);
+        if (!(radius >= 0f))
+        {
+            throw new ArgumentOutOfRangeException(nameof(radius), radius, "Radius must be ≥ 0.");
+        }
+
+        if (!(stroke > 0f))
+        {
+            throw new ArgumentOutOfRangeException(nameof(stroke), stroke, "Stroke must be > 0.");
+        }
+
+        CheckDestination(destination, width, height);
+        double hx = width / 2.0;
+        double hy = height / 2.0;
+        double r = Math.Min(radius, Math.Min(hx, hy));
+        double bx = hx - r;
+        double by = hy - r;
+        bool filled = stroke >= Math.Min(hx, hy);
+        for (int y = 0; y < height; y++)
+        {
+            double qy = Math.Abs(y + 0.5 - hy) - by;
+            int row = y * width;
+            for (int x = 0; x < width; x++)
+            {
+                double sd = RoundedBoxDistance(Math.Abs(x + 0.5 - hx) - bx, qy, r);
+                if (!filled)
+                {
+                    sd = Math.Max(sd, -(sd + stroke));
+                }
+
+                destination[row + x] = ToByte(Coverage(sd));
+            }
+        }
+    }
+
+    private static double RoundedBoxDistance(double qx, double qy, double r)
+    {
+        double ox = Math.Max(qx, 0.0);
+        double oy = Math.Max(qy, 0.0);
+        return Math.Sqrt((ox * ox) + (oy * oy)) + Math.Min(Math.Max(qx, qy), 0.0) - r;
     }
 
     private static double Coverage(double signedDistance) => Math.Clamp(0.5 - signedDistance, 0.0, 1.0);
