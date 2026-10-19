@@ -751,7 +751,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
 
 ### M4: Edit mode, grid, Auto sizing
 
-- [ ] **T-50**: Core `GridLayout` and grid hit testing · `parallel-ok`
+- [x] **T-50**: Core `GridLayout` and grid hit testing · `parallel-ok`
   - **Owner**: developer
   - **Requirements**: FR-4, FR-6, NFR-8 (design.md §1.1 grid)
   - **Depends on**: T-17
@@ -762,13 +762,12 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: unit tests above.
   - **Size**: M
 
-- [ ] **T-51**: Core `Capacity` (Auto growth and full) for wheel and grid
+- [x] **T-51**: Core `Capacity` (Auto growth and full) for wheel and grid
   - **Owner**: developer
   - **Requirements**: FR-5, FR-6, NFR-5, NFR-8
   - **Depends on**: T-16, T-50
   - **Files**: `src/QuickMenu.Core/Layout/Capacity.cs`, `src/QuickMenu.Core/Layout/WheelLayout.cs` (Auto mode), `tests/QuickMenu.Core.Tests/Layout/CapacityTests.cs`
   - **Acceptance criteria**:
-    - [ ] Given `PinService.IsReady` is false (catalog not built, empty or failed), then the missing-pin count and the "Forget missing pins" button are disabled; and given it is true, then a pin counts as missing (`PinService.IsMissing`/`CountMissing`/`ForgetMissing`) only when it is unresolved and (a build pin's def is absent from the DefDatabase, or its stored packageId is not an active mod), so an unresolved but present pin (main menu, no game) is never forgotten (T-25 review M2, round 2).
     - [ ] Given Auto wheel with count c, then the smallest m with Σ cap ≥ c is used, inner rings full, outer ring spread evenly; c = 0 draws ring-1 geometry; edit mode adds no extra slot (there is no append/Add slot).
     - [ ] Given Auto wheel, then full when count = Σ cap(m) and m + 1 rings do not fit the screen minus margins, or m = 8. Given Auto grid, rows = smallest odd with rows·cols − 1 ≥ count; full when rows + 2 do not fit or rows = 9.
     - [ ] Given Fixed, then capacity = rings or rows·cols − 1.
@@ -799,7 +798,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: `scripts/perf.sh`.
   - **Size**: S
 
-- [ ] **T-54**: Grid panel and sub-grid renderer · `parallel-ok`
+- [x] **T-54**: Grid panel and sub-grid renderer · `parallel-ok`
   - **Owner**: visual-designer
   - **Requirements**: FR-4, FR-11 (look) (design.md S2, §2 grid panel)
   - **Depends on**: T-29, T-42
@@ -872,6 +871,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Depends on**: T-31, T-51, T-52, T-54
   - **Files**: `src/QuickMenu/Settings/{SettingsPage,LayoutPreview}.cs`, `mod/Languages/English/Keyed/QuickMenu.Settings.xml`
   - **Acceptance criteria**:
+    - [ ] Given `PinService.IsReady` is false (catalog not built, empty or failed), then the missing-pin count and the "Forget missing pins" button are disabled; and given it is true, then a pin counts as missing (`PinService.IsMissing`/`CountMissing`/`ForgetMissing`) only when it is unresolved and (a build pin's def is absent from the DefDatabase, or its stored packageId is not an active mod), so an unresolved but present pin (main menu, no game) is never forgotten (T-25 review M2, round 2).
     - [ ] Shape [Wheel][Grid], Size Fixed/Auto with tooltips, Rings or Columns/Rows steppers (odd steps, hidden in Auto except Columns), slot count text.
     - [ ] Preview 410 × 270 at 50 % from Core, updated live, with the "bigger than the screen" warning and the Fixed shrink note.
     - [ ] Given unresolved pins, then the count text and [Forget missing pins] with a confirmation; on confirm, `ForgetUnresolved` and one write.
