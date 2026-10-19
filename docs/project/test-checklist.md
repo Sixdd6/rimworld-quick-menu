@@ -338,3 +338,249 @@ e.12. Copy from both clients: the `[QuickMenu]` lines of the log and any Multipl
 - f.2. Open the Architect tab (vanilla, then Better Architect Menu, then with Dubs Mint Menus active both its build grid and its wheel; the default modifier is Alt there) and modifier+click a building, an order and a dropdown entry.
 - Expected: each one pins or unpins and does not activate.
 - f.3. With Mint active, close all of these and use Mint's always-visible designator bars (if enabled in its settings): modifier+click does not pin there (known gap, bars are not detected).
+
+## UC-6 final regression session
+
+**Task**: T-75 (part 1: this guide). **Total**: about 3.5 h in 17 Parts of 15 min or less, with a break after any Part. **How it runs**: the agent relays one Part at a time in chat and reads `Player.log` and your screenshots itself. You click, look, and say `done` or what you saw. You do not copy logs. **Do not restart or close the game until the agent says it has read the log** (the log is rewritten at each start).
+
+Marks: **[M]** = Must (every one must pass or you accept a documented exception), **[S]** = Should. FR/NFR tags show what a step covers.
+
+### Rules for every Part
+
+- Game in dev mode. Debug actions = the bug-icon menu; type `Quick Menu` in its filter box.
+- "Screenshot" = F12. No copying needed: say `shot taken` and the agent takes the newest file from `~/.config/unity3d/Ludeon Studios/RimWorld by Ludeon Studios/Screenshots/`.
+- "Pin" = hold the pin key (Ctrl; Alt when Mint is loaded) and click. Pinning never activates the tool.
+- If a step does not match "Expect", stop, say what you saw, and the agent decides whether to go on.
+
+### Setups and launch options (paste into Steam, Properties, Launch Options)
+
+DLC = `ludeon.rimworld.royalty,ludeon.rimworld.ideology,ludeon.rimworld.biotech,ludeon.rimworld.anomaly,ludeon.rimworld.odyssey` (drop the ones you do not own).
+
+| Setup | Launch options |
+|---|---|
+| **(a)S** vanilla + stress mod | `-mod=brrainz.harmony,<DLC>,sixdd.QuickMenu,sixdd.QuickMenuStress -quicktest` |
+| **(b)S** (a)S + Better Architect Menu | `-mod=brrainz.harmony,ferny.BetterArchitect,<DLC>,sixdd.QuickMenu,sixdd.QuickMenuStress -quicktest` |
+| **(d)S** (b)S + Dubs Mint Menus | `-mod=brrainz.harmony,ferny.BetterArchitect,<DLC>,Dubwise.DubsMintMenus,sixdd.QuickMenu,sixdd.QuickMenuStress -quicktest` |
+| **(c)S** Mint, no BAM | `-mod=brrainz.harmony,<DLC>,Dubwise.DubsMintMenus,sixdd.QuickMenu,sixdd.QuickMenuStress -quicktest` |
+| **(R)** your real 1.7 list | no `-mod=`, keep `-quicktest` off; select your saved list in the Mods screen (Harmony first, Quick Menu last) |
+| **(H)** Harmony + Quick Menu only | `-mod=brrainz.harmony,sixdd.QuickMenu -quicktest` |
+| **(e)** Multiplayer | **Skipped**: Multiplayer has no 1.7 build (spec A-2). Recorded as `FR-18: blocked`. Section "FR-18 Multiplayer" above stays valid for later. |
+
+The stress mod (2,000 buildings in tabs "stress A/B/C", some in dropdown groups) gives the large categories P-19 needs. All vanilla and BAM checks run with it on; (H), (R) and Part 16 are without it.
+
+### Blocks used by several Parts
+
+**Block P: pin-click and marker performance** (about 6 min; needs an Architect tab with many buttons, "stress A" or the Mint/BAM equivalent, and at least 5 pinned buttons visible in it):
+P.1. Debug actions, **perf measuring (toggle)**. Expect the log line `perf measuring ON (counters reset)`; if it says OFF, toggle again. Do the same before each P step marked "reset".
+P.2. Open the architect category. Move the mouse slowly over the buttons for 15 s. No clicks. Then **perf report**. *Agent reads*: pin click prefix `calls=0` (P-4, idle); pin marker hook: calls per frame, median us/frame <= 10, bytes/frame 0 (P-19).
+P.3. Reset. Click one button, press Esc; repeat 20 times (no modifier). **perf report**. *Agent reads*: pin click prefix calls about 20 (P-3, plain click fast path), 0 bytes.
+P.4. Reset. Pin the same button 20 times (toggles on/off, ends where it started). **perf report**. *Agent reads*: pin click prefix median <= 1 ms, bytes <= 2 KB per call (P-5).
+P.5. Reset. Close the architect. Select a colonist so its command bar shows. Wait 15 s. **perf report**. *Agent reads*: marker hook calls > 0, median <= 10 us, bytes 0; dropdown-entry hooks `calls=0`.
+P.6. Reset. Open the architect, plain-click a dropdown button (list opens), Esc, close the architect. Right-click the ground to open a vanilla float menu, hold 5 s, Esc. **perf report**. *Agent reads*: dropdown-entry hooks (`PinMarkerEntry`) `calls=0`.
+
+### Part 0: Prep, terminal only (5 min, game closed)
+
+0.1. `cd ~/Documents/Programming/rimworld-quick-menu && . scripts/_env.sh && dotnet build QuickMenu.slnx -c Release && scripts/link-mod.sh` [M]. Expect `Build succeeded`, `linked` or `already linked`.
+0.2. `scripts/make-stress-mod.sh 2000 && scripts/link-stress-mod.sh`. Expect `linked`.
+0.3. Move the old settings aside so the first-run notice shows: `mv ~/.config/unity3d/"Ludeon Studios"/"RimWorld by Ludeon Studios"/Config/Mod_QuickMenu_QuickMenuMod.xml{,.bak}` (the file may not exist; fine). You can move the `.bak` back at the very end.
+0.4. Set launch options to **(a)S**. Say `done`.
+
+### Part 1: (a)S fresh start, first run, settings (15 min)
+
+*Agent reads*: self-test, log errors; screenshots.
+1.1. Start the game, load or start the quick-test colony. Expect the first-run notice once, not blocking [M, T-67]. **Screenshot** (first-run notice). Dismiss it.
+1.2. Open the menu with the trigger (Mouse 4). Expect an empty menu with the hint "Nothing pinned yet…" and an Edit hub [S, FR-16]. **Screenshot** (empty hint). Close with the trigger again.
+1.3. Debug actions, **self-test**. *Agent reads*: `patched`, `failed=0`, `marker patch ... patched`, `dropdown marker patches ... map/row/grid patched`, the "own GizmoOnGUIInt" line, `mint=False`, `modCtorMs` (P-18 <= 150).
+1.4. Options, Mod settings, Quick Menu. **Screenshot** (settings page) [T-70].
+1.5. Click "Clear" on the binding. Expect `Unbound` and the trigger opens nothing [M, FR-1]. Click "Use middle mouse instead", test it opens, then rebind Mouse 4. Close settings.
+1.6. Architect, Structure: pin Wall, Door. Orders: pin Mine. Expect a "Pinned … to the quick menu" message each time and the tool not activated [M, FR-8, FR-15]. Pin Wall again: "Removed". Pin it again.
+1.7. Open the "stress A" tab: pin 6 stress buildings (keep one in mind: the first one). These make the missing-mod test in Part 16. [M]
+1.8. Pin a research-locked building (one you cannot build yet). Open the menu: its slot is greyed with a lock. Hover: red reason line. **Screenshot** (greyed tooltip, T-70). Click it: reject sound and the reason message, menu stays open [M, FR-14]. If Ideology is on and a precept-gated build (e.g. Morbid slab) exists, pin it too and report its reason text [S].
+1.9. Quit the game normally (not Alt+F4) after the agent has read the log. Start again with the same options, load the colony. Open the menu. Expect all pins still there in the same slots [M, FR-17].
+
+### Part 2: (a)S core wheel and grid regression (15 min)
+
+All [M]. Use the pins from Part 1.
+2.1. Open at the screen centre and at all four corners. Expect the whole wheel on screen each time (FR-3). Time keeps running (FR-2).
+2.2. Close it five ways, one per opening: trigger again, Esc, left-click outside, right-click, then select Mine. Nothing under the click happens; Esc does not open the pause menu (FR-2).
+2.3. Click Wall. Expect the material ring in the same order each time; choose Steel, open again, choose Wood: the last used is highlighted, nothing moves (FR-12). Place a wall tile. Click Mine: the mining tool is selected (FR-13).
+2.4. Pin a dropdown button (a stress dropdown or Floors dropdown), click it in the menu. Expect a sub-ring; for the fine-tile floors the options show stone block icons (FR-10, FR-11, FR-11a). Esc, right-click and the hub go back one level.
+2.5. Edit: click the centre (Edit becomes Done). Drag one slot onto another (swap) and onto an empty slot (move); Ctrl+click a slot unpins it and the menu stays open; Done and Esc end editing (FR-9). Re-pin what you removed.
+2.6. Settings: Shape Grid. Repeat 2.3 and 2.5 in the grid, plus the sub-grid and the material grid (FR-4). Back to Wheel.
+2.7. Settings: Size Auto. Pin one more item: the menu grows. Unpin it: it shrinks (FR-5). Back to Fixed. Rings 1 and 3: the menu size follows next open (FR-6). Back to 2. Button size small and large: same.
+2.8. Close the Architect tab, select a colonist, Ctrl+click Draft or any command-bar button. Expect its normal action and nothing pinned (FR-8, f.1).
+2.9. With the Architect tab open, pin a building, an order and a dropdown entry: each pins and does not activate (FR-8, f.2, vanilla).
+
+### Part 3: (a)S pin marker, vanilla (15 min, UI scale 1.0)
+
+*Agent reads*: nothing; screenshots. The marker is a small pin at the top-right of a button, under the little "+" slot.
+3.1. Architect, Structure. Wall (pinned in Part 1) shows a blue pin with a dark outline; unpinned buttons do not [M, FR-19].
+3.2. Pin Wall (unpin). Expect the marker gone on the very next frame. Pin again: marker back next frame [M].
+3.3. Orders tab: Mine shows the marker [M].
+3.4. Go to a dropdown button (Floors tab, or a "stress" tab). Pin the dropdown button. Expect a full-size blue marker on the dropdown button and the list not opened [M].
+3.5. Plain-click the dropdown button. In the open list **no entry** has a marker (whole-dropdown pin marks no entries) [M]. Esc.
+3.6. Pin the dropdown button (unpin it, marker gone). Plain-click it, then pin one entry in the list. Vanilla closes the list. Expect on the button a **smaller, WHITE** marker [M, decision 14].
+3.7. Plain-click the button again. Expect a small blue marker on that entry only [M]. **Screenshot** (list open, entry marker).
+3.8. Pin the same entry in the list: it unpins, the list closes, the button's marker is gone. Reopen: no entry marker [M]. Pin the entry again.
+3.9. **Screenshot** the Architect tab with at least 3 markers plus the dropdown button's white marker (UI 1.0).
+3.10. Close the Architect. Select a colonist: no marker anywhere on its command bar. Select a built or planned thing whose type you pinned (e.g. a Wall) so its Copy/Build gizmo shows: no marker on it either [M, decision 12]. If no such thing exists, say `none on map`.
+3.11. Settings: Fixed, Wheel, Rings 1 (6 slots). Make sure you have 8 pins. Open the Architect. A pinned button whose slot is **not visible** in the wheel has **no marker**; the others do [S, decision 13]. Set Rings back to 2; markers return.
+
+### Part 4: (a)S UI scale 1.5 and 2.0 (12 min)
+
+4.1. Options, Interface, UI scale 1.5. Settings, Rings 5, drag the Button size slider once, slowly, from one end to the other and let go [M, T-95]. Debug actions, **perf report**. *Agent reads*: `sized texture rebuilds` rose by about 1 per drag, last rebuild <= 5 ms with upload; no errors. Rings back to 2.
+4.2. UI scale 2.0 (if the game refuses it, say so and use 1.75). Open the menu (wheel, then material ring, then Grid): sharp, on screen, readable [M, NFR-5]. **Screenshot** the wheel at this scale.
+4.3. Architect: markers sharp, correctly placed on the button and in an open dropdown list, not covering the "+" slot [M, FR-19]. **Screenshot** (Architect with markers, scale 2.0) and **screenshot** (list open with entry marker).
+4.4. Settings: Size Auto, Button size at its maximum. Pin items from a stress tab until a pin gives the message "The quick menu is full…" or the menu says "The menu is full." [M, FR-5, M5 carry-over]. Unpin one: room again. Back to Fixed, button size default.
+4.5. UI scale back to 1.0.
+
+### Part 5: (a)S performance and markers (12 min)
+
+5.1. Debug actions, **self-test**. *Agent reads*: P-18 and no failed patches again.
+5.2. Do **Block P** in the "stress A" tab (it has the pins from Part 1.7). [M for P-4, P-19]
+5.3. Debug actions, **measure closed frames**. Leave the map idle for 3 min, hands off. *Agent reads*: closed-frame block, medianUs <= 5 (P-1), `allocatedBytesTotal=0` (P-2) [M].
+
+### Part 6: (a)S fault injection, marker and pin sites (8 min)
+
+Each fault is armed from Debug actions, **fault injection**, pick the item, then do what its line says. Expect exactly one error line in the log, then the feature stops and the game carries on. A site can be tested once per start. Perf measuring should be OFF.
+6.1. Arm **PinMarkerPatch.GizmoOnGUIInt**. Open the Architect with pins: buttons keep drawing and working, no markers [M].
+6.2. Arm **Textures.PinMarker**. Open the Architect: buttons draw, no markers (or markers stay off) [M].
+6.3. Arm **DropdownMarkerPatch** (map). Plain-click a dropdown button: the list opens and works, no entry marker [M].
+6.4. Arm **DropdownMarkerPatch.Draw**. Open a dropdown with a pinned entry: the list draws and works, no marker [M].
+6.5. Arm **PinClickPatch.ProcessInput**. Pin a button in the Architect: the click is passed on and the tool activates as in vanilla; no pin [M].
+6.6. Arm **DropdownEntryPatch.GetDesignatorSelectAction**. Open a dropdown, click an entry: it activates normally [M].
+6.7. With all markers now off: the menu and its pins still work [M, NFR-6].
+Say `done`; keep the game open for Part 7.
+
+### Part 7: (a)S fault injection, remaining sites (12 min)
+
+Same rules as Part 6. Do them in this order; the last ones switch the menu off.
+7.1. **Settings.Page**: open mod settings; error label, the window closes normally [M].
+7.2. **Settings.Preview**: open settings; the preview is missing, the rest works [M].
+7.3. **BindingCaptureWindow**: click the binding box; the capture window closes itself [M].
+7.4. **FirstRunNoticeWindow**: it opens the notice and closes it [M].
+7.5. **Compat.Notice**: no visible effect; one error line only [M].
+7.6. **Catalog.Ideology**: press the trigger or pin a button; vanilla and the menu still work [M].
+7.7. **Textures.Sized**: open the menu; it opens without ring textures or closes; game continues [M].
+7.8. **QuickMenuWindow.DoWindowContents**: press the trigger; the menu closes at once [M].
+7.9. **MenuController.Open**: press the trigger; nothing opens [M].
+7.10. **TriggerPoller.UIRootUpdate**: wait one frame; the trigger does nothing; pinning in the Architect still works [M].
+7.11. Open the log window: no red errors besides one per armed site. Say `done`. Quit the game after the agent has read the log. Set launch options to **(b)S**.
+
+### Part 8: (b)S Better Architect Menu, functional and markers (15 min)
+
+8.1. Start, load. Open the menu: pins from Part 1 are all there [M]. Debug actions, **self-test**. *Agent reads*: `bam=True`, patches, `failed=0`, `modCtorMs` <= 300.
+8.2. BAM Architect, Structure: pin Wall, Mine: pinned, tool not activated; pin again: unpinned [M, FR-8]. Move a building pin with BAM's own move button if you use it [S].
+8.3. Markers on pinned buttons in each BAM grid: flat, grouped, and the orders page; set one pin per page [M, FR-19]. Unpin: gone next frame; pin: back next frame [M].
+8.4. BAM Floors tab: a single entry (BAM shows entries as their own buttons) pinned shows a full marker on that button [M]. Pin a whole dropdown (stress group button, if BAM shows one): full marker on it [M].
+8.5. Open a dropdown list (stress group or the one BAM keeps): pin one entry; reopen: small marker on that entry, and a smaller white marker on the dropdown button (if the button is drawn) [M]. **Screenshot**. If a BAM page has no dropdown list, say so; that is a known limit.
+8.6. Close the Architect and select a colonist and a pinned building: no markers on command bars [M].
+8.7. Menu: wheel, material ring, sub-ring work as in Part 2 [M, NFR-2]. **Screenshot** the BAM Architect with markers.
+
+### Part 9: (b)S performance and BAM faults (12 min)
+
+9.1. Do **Block P** in BAM's largest page (stress A) [M: P-4, P-3/P-5 with BAM, P-19].
+9.2. Fault injection: **PinMarkerPatch.GizmoOnGUIInt**, then open BAM's Architect: buttons work, no markers [M]. Then **DropdownMarkerPatch.Draw** and open a list [M].
+Say `done`. Quit after the agent has read the log. Set launch options to **(d)S**.
+
+### Part 10: (d)S BAM + Dubs Mint Menus (15 min)
+
+10.1. Start, load. If Mint's one-time notice appears, note it [M, T-67]. Self-test: `mint=True`, `effectiveModifier=Alt`, patches, `failed=0`.
+10.2. Open Mint's architect window (its build menu, grid view). Alt+click Wall: pinned, not activated. Ctrl+click Wall: left to Mint, nothing pinned (with BAM loaded too) [M, FR-8, M5 carry-over]. Alt+click Wall again: unpinned.
+10.3. Markers on pinned buttons in Mint's grid view; gone next frame after unpin, back after pin [M, FR-19]. Whole-dropdown pin: full marker; single-entry pin in its open list: marker on the entry and the white marker on the button, if Mint's list opens vanilla-style [S].
+10.4. Switch Mint's view to **list view**: no markers there (known limit) [S, ADR 0009].
+10.5. Open Mint's **wheel**: Alt+click pins/unpins there, but **no markers** are drawn in the wheel (by design) [M, f.2].
+10.6. Select a colonist; open Mint's designator bars if enabled in its settings: no markers, no pinning there [S, f.3].
+10.7. Mint-only checks: the Quick Menu wheel opens and works next to Mint's wheel [M, NFR-2]. **Screenshot** Mint's grid with markers.
+
+### Part 11: (d)S performance (8 min)
+
+11.1. **Block P** in Mint's architect grid (largest category); use Alt for the pin clicks in P.4 [M: P-3/P-4/P-5 with Mint, P-19].
+11.2. Fault injection **PinMarkerPatch.GizmoOnGUIInt**, open Mint's window: works, no markers [S].
+Say `done`. Quit after the log is read. Set launch options to **(c)S**.
+
+### Part 12: (c)S Mint without BAM (8 min)
+
+12.1. Start, load. Self-test: `mint=True bam=False`, `failed=0` [M].
+12.2. Alt+click pins in Mint's architect window; markers show in the grid view; the wheel works; no marker in Mint's wheel [M].
+12.3. Remaining sites left alone. Say `done`. Do not quit yet.
+
+### Part 13: 8,000-def stress run (10 min)
+
+13.1. Quit the game. Terminal: `scripts/make-stress-mod.sh 8000 && scripts/link-stress-mod.sh`. Start with **(c)S** launch options.
+13.2. Load the quick-test map. Debug actions, **self-test**. *Agent reads*: catalog entries about 8,000+, `buildMs` (P-11c: <= 100, hard limit 200), `builds=1`, round trip 100 % [M, NFR-1].
+13.3. Open the menu, open and close it 10 times: no stutter or errors. Open a stress tab in the Architect and scroll it: usable [S].
+13.4. **Block P**, steps P.1 and P.2 only, in a stress tab: marker hook median <= 10 us [M].
+13.5. Quit. Terminal: `scripts/make-stress-mod.sh 2000 && scripts/link-stress-mod.sh`. Set launch options to **(R)**.
+
+### Part 14: (R) screenshots for the Preview and T-70 (15 min)
+
+Use your real colony (an attractive base, daytime, clear weather, camera zoomed in). Pins: 6 to 8 varied ones (Wall, Floors dropdown, a chair/furniture dropdown, Mine, Door, a lamp), arranged by Edit.
+14.1. Start, load your colony. Load a second save for a moment, then your colony again: the same pins show in both [M, FR-17].
+14.2. Preview shots, each a clean wheel centred on a good spot, no debug windows, UI scale 1.0 [S]: (1) wheel with a sub-ring open; (2) the material ring of a wall; (3) the grid layout; (4) edit mode. Say `shot taken` after each.
+14.3. T-70 shots: (5) edit-mode help panel (top centre) in the wheel; (6) a slot being dragged (drag ghost, hold the mouse); (7) last-used material highlighted while another slot is hovered; (8) grid with a sub-grid open [S].
+14.4. Quick checks on the real list: the menu opens, a Wall can be placed, no red errors in the log; self-test `failed=0` [M, NFR-2].
+
+### Part 15: (R) Frame Profiler cross-check (8 min)
+
+15.1. Find the Frame Profiler in the dev tools (debug toolbar or dev menu). Set its filter to `QuickMenu!*`. If you cannot find it, say so: the cross-check is then recorded as not done [S].
+15.2. Run it for 10 s with the menu closed and nothing selected. **Screenshot** the result. *Agent reads*: P-1 cost per frame of the trigger poller (Stopwatch median 0.2 us, expect the profiler to be the same order).
+15.3. Open the Architect with markers and run it again, then with the menu open and a sub-ring. **Screenshots** [S].
+
+### Part 16: (H) NFR-3 load test, missing pins, removal from a save (15 min)
+
+16.1. Quit. Set launch options to **(H)** (Harmony and Quick Menu only; the stress mod is off).
+16.2. Start. Expect the quick-test map loads, no red mod errors, no `[QuickMenu]` errors in the log [M, NFR-3]. Self-test: `failed=0`; About.xml needs nothing but Harmony.
+16.3. Open the menu. Expect the six stress pins missing, kept (hidden) and the others shown [M, FR-14]. Mod settings: "N pins are from mods that are not loaded" with **Forget missing pins**.
+16.4. Self-test: note `saves=` (settings writes). Click Forget missing pins. Expect a confirmation; Cancel does nothing. Click again, confirm. Expect the notice line goes away. Self-test again: `saves` rose by exactly 1 [M, T-66 carry-over].
+16.5. Save the game as `qm-removal-test`. Quit.
+16.6. Set launch options to `-mod=brrainz.harmony` (Quick Menu removed). Start, Load game, `qm-removal-test`. The game may warn that mods changed: accept. Expect it loads and runs for 30 s with no `QuickMenu` text and no red errors in the log [M, FR-17, NFR-6].
+16.7. Quit. Put your launch options back to normal. Move `Mod_QuickMenu_QuickMenuMod.xml.bak` back if you want your old pins and settings. Run `scripts/link-stress-mod.sh --remove`. Say `done`.
+
+### Not run
+
+- Setup (e) Multiplayer: blocked (no 1.7 build).
+
+### Time estimate
+
+| Part | Setup | Min |
+|---|---|---|
+| 0 Prep | terminal | 5 |
+| 1 Fresh start, settings | (a)S | 15 |
+| 2 Core wheel and grid | (a)S | 15 |
+| 3 Pin marker, vanilla | (a)S | 15 |
+| 4 UI scale 1.5 / 2.0 | (a)S | 12 |
+| 5 Performance, closed frames | (a)S | 12 |
+| 6 Faults: marker and pin sites | (a)S | 8 |
+| 7 Faults: remaining sites | (a)S | 12 |
+| 8 BAM functional and markers | (b)S | 15 |
+| 9 BAM performance, faults | (b)S | 12 |
+| 10 BAM + Mint | (d)S | 15 |
+| 11 Mint performance | (d)S | 8 |
+| 12 Mint only | (c)S | 8 |
+| 13 8,000-def stress | (c)S | 10 |
+| 14 Preview and T-70 shots | (R) | 15 |
+| 15 Frame Profiler | (R) | 8 |
+| 16 NFR-3, Forget, removal | (H) | 15 |
+| **Total** | 7 restarts | **about 200 (3.5 h)** |
+
+### Pass/fail marks the agent will read
+
+| Target | Where | Pass |
+|---|---|---|
+| Patches | self-test, every setup | `failed=0`; marker, map, row and grid patches `patched` |
+| P-1 closed poller | closed-frame block | median <= 5 us; P-2 `allocatedBytesTotal=0` |
+| P-3 plain-click prefix | perf report, vanilla, BAM, Mint | about 100 ns, 0 bytes |
+| P-4 idle prefix calls | perf report after hover | `calls=0` in vanilla, BAM and Mint |
+| P-5 pin click | perf report after 20 pins | median <= 1 ms, <= 2 KB |
+| P-19 marker hook | perf report, largest category; colonist bar | median <= 10 us per frame, 0 bytes; dropdown-entry hooks `calls=0` after the float-menu check |
+| P-11c catalog | self-test at 2,000 and 8,000 defs | <= 100 ms (hard 200), `builds=1`, round trip 100 % |
+| P-18 startup | self-test | <= 150 ms (a); <= 300 ms (b)/(d) |
+| Faults (NFR-6) | log, all 16 sites | one error line per armed site, site disabled, game continues |
+| Slider rebuild | perf report at UI 1.5, 5 rings | about 1 per drag, <= 5 ms |
+| Forget missing | self-test `saves=` | +1 exactly |
+| Settings writes | self-test `saves=` | no growth while idle |
+| FR-19 | your reports and screenshots | marker where listed, none on command bars, Mint wheel and list view; white marker on a partial dropdown; next-frame update |
+| NFR-3 / FR-17 | Part 16 log | loads with Harmony + Quick Menu only; no errors after removal |
+| NFR-5 | screenshots at 2.0 (or 1.75) | sharp, on screen |
+| Multiplayer (e) | none | blocked, not failed |
