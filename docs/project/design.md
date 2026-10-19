@@ -137,7 +137,7 @@ The slot is a circle of diameter B. The icon is drawn with `Command.DrawIcon` in
 | 3 | **Pressed** | `slotBgPressed` while the button is held | Activate on release inside the slot |
 | 4 | **Last-used material** | 3 px `accent` ring, no caret | Material ring/grid only |
 | 5 | **Greyed with reason** (FR-14) | Icon tinted `unavailableIcon`, lock badge at 7:30 (`textMuted`). Also used for "no materials". | Tooltip: designator tooltip + reason in `danger`. Click: `ClickReject` + `RejectInput` message with the reason. Reason = `disabledReason`, or our composed reason for hidden designators (research, tech level, required building, and so on), or the fallback **"Not available right now."** |
-| 6 | **Empty** (Fixed, use mode) | `slotBg` at 70% + 1 px `emptyBorder` | No hover, no click |
+| 6 | **Empty** (Fixed, use mode) | `slotBg` at 50% + 1 px `slotBorder` at 70% (T-34 revision: was 70% + `emptyBorder`, which made empties more outlined than filled slots) | No hover, no click |
 | 7 | **Empty** (edit mode) | Dashed `emptyBorder` ring + plus glyph | Click → becomes the insert cursor (10) |
 | 8 | **Reserved-missing** (pin from a mod that is not loaded) | Use mode: **invisible but reserved** (Fixed: drawn exactly as Empty (6); Auto: not in the layout). Edit mode, Fixed: dashed ring + "?" glyph. | Edit-mode tooltip: "{label}\nFrom {mod}, which is not loaded. It comes back when the mod is added back.\nRight-click to remove." Pins and the picker skip it. Right-click removes it. Auto: managed from settings (S7 "Forget missing pins") |
 | 9 | **Drag source** (edit) | Dashed empty ghost in place. The dragged icon follows the mouse at 0.9 B and 80% opacity, offset (+16, +16). | Drag starts after 6 px of movement (less movement is a click) |
@@ -156,7 +156,7 @@ The hub is designed so that accidents are harmless:
 
 | Mode | Main area (large) | Sub-button (small, below centre) |
 |---|---|---|
-| Use mode | **Close**: `slotBg` at 60% + 1 px `slotBorder` ring; × glyph (`IconClose`, 0.22 B, `textMuted`) centred at `(cx, cy − 0.12 B)`. Click → close. Hold-mode release → close (cancel). | **Edit**: `Circle` in `slotBg` + 1 px `accent` ring + pencil (`IconEdit`, 0.6 e, `text`). Left click (down and up inside) → edit mode. Hold-mode release → close, like the main area. |
+| Use mode | **Close**: `slotBg` at 60% + 1 px `slotBorder` ring; × glyph (`IconClose`, 0.22 B, `textMuted`) centred at `(cx, cy − 0.12 B)` when the sub-button is drawn, and at `(cx, cy)` when it is not (before T-44; T-34 revision). Click → close. Hold-mode release → close (cancel). | **Edit**: `Circle` in `slotBg` + 1 px `accent` ring + pencil (`IconEdit`, 0.6 e, `text`). Left click (down and up inside) → edit mode. Hold-mode release → close, like the main area. |
 | Edit mode | **Done**: as above with 2 px `accent` ring and check glyph (`IconDone`). Click → leave edit mode. | **Add**: plus glyph (`IconAdd`). Click → opens the picker. |
 | Satellite / sub-grid | The satellite's centre is the parent slot ("open parent", state 14). Click → back. There is no sub-button. | — |
 
@@ -430,3 +430,24 @@ N/A, because the game's UI volume applies.
 | U-3 | Modifier+click on an entry inside an open dropdown list pins that single entry. On the dropdown button it pins the whole dropdown. |
 
 No design questions are open.
+
+## 8. Visual reviews
+
+### UC-2 visual review (T-34, 2026-10-19)
+Evidence: [uc2-wheel-hover.png](design/spikes/uc2-wheel-hover.png) (wheel, Fixed, 2 rings, B 56, UI scale 1, Mine hovered, 7 pins). Compared with §1.1, §2, §3, S1, S4, S4a and [mockup-wheel-states.png](design/mockup-wheel-states.png).
+
+**Verdict: the wheel matches the design. Two minor fixes (T-81). No blocker.**
+
+| # | Area | Finding | Result |
+|---|---|---|---|
+| 1 | Geometry | Measured rim extent 333 × 334 px, against 2·D = 336 (the outline is the outer pixel). Ring 1 has 6 slots and ring 2 has 12, with even spacing, 8 px gaps and 12 px rim padding. Fill order is correct: ring 1 from 12 o'clock clockwise, then the shelf at the top of ring 2. | Pass |
+| 2 | Icon size | 0.75 B square. `Command.DrawIcon` fits at 0.85, so the drawn icon is about 0.64 B (36 px). Full-square textures (floor tiles) must stay at or below (B − 4)/√2 ≈ 0.66 B, or their corners touch the ring. The wall, pickaxe and tiles read well. The small shelf is small because of its own game icon scale (the same as in vanilla). | Pass, no change |
+| 3 | Rim and outlines | The 2 px accent rim with dark outlines is crisp and upright over dirt and rock. Not yet checked over snow or ice. | Pass (bright ground: check in UC-3/T-48) |
+| 4 | Disc contrast | The centre is dark enough for the icons. The edge lets ground detail through, as intended. | Pass |
+| 5 | Hover (state 2) | Accent ring, lighter fill and the label plate are clear at a glance. | Pass |
+| 6 | Empty (state 6) vs filled | **Inverted emphasis.** The empty ring (`emptyBorder` #8A96A0) is brighter than the filled ring (`slotBorder` #56626E), and the fill differs by only 70 % vs 92 % over the dark disc. With 11 empty slots out of 18, the empties dominate, and an empty slot looks like a button with no icon. Empty slots in use mode cannot be clicked, so they do not need 3:1 (WCAG 1.4.11 covers only active parts). This also keeps empties distinct from greyed pins (state 5: full fill + lock), which arrive with the FR-14 fix. | **Change (T-81)**: fill `slotBg` 50 %, border `slotBorder` at 70 %. `emptyBorder` stays for edit-mode dashed and reserved slots. |
+| 7 | Hub × | The × is 0.22 B in `textMuted`, at `cy − 0.12 B`. That offset leaves room for the Edit sub-button, which is not drawn until T-44, so the × sits about 7 px above the hub centre and looks misplaced. Its size and colour are right: it is a quiet target, and the user found it (UC-2 close via × passed). | **Change (T-81)**: centre the × at `cy` while the sub-button is absent. |
+| 8 | Label plate | It is centred under the disc, about 8 px below the rim, one line high, Small font, `plate` background. This matches §1.1. | Pass |
+| 9 | Tooltip | The vanilla tooltip opens at the mouse after the vanilla delay and covers 1 or 2 ring-2 slots to the right. This is the same as vanilla gizmos. It moves or disappears when the mouse moves, and the label plate gives the name without waiting. Moving the tooltip outside the disc would need a custom tooltip path. | Accept for v1 (user to confirm) |
+| 10 | Not shown | The dropdown pin has no sub-menu badge yet (state 12, T-42/M3). The morbid slabs draw as Empty: this is the known FR-14 bug, and they should be greyed with a lock (T-32 UC-2 fix). Pressed (3), hub hover, edge-dodge corners and UI scale 2 were not captured. | Check in T-48 (M3) |
+

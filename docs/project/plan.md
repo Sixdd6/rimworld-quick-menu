@@ -505,6 +505,18 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Tests**: screenshot review.
   - **Size**: S
 
+- [ ] **T-81**: Visual fixes from the M2 review · `parallel-ok`
+  - **Owner**: visual-designer
+  - **Requirements**: FR-4, NFR-5 (design.md S4 state 6, S4a, §8 UC-2 review rows 6 and 7)
+  - **Depends on**: T-34
+  - **Files**: `src/QuickMenu/Menu/{SlotRenderer,HubRenderer,QMStyle}.cs`, `src/QuickMenu.Core/Render/StyleTokens.cs` (if alphas are tokens there)
+  - **Acceptance criteria**:
+    - [ ] Given an empty Fixed slot in use mode, then it is drawn with `slotBg` at 50 % and a 1 px `slotBorder` ring at 70 % (both as named tokens, no literals); edit-mode empty and reserved slots keep `emptyBorder`.
+    - [ ] Given the Edit sub-button is not drawn (edit-mode flag off), then the hub × is centred at `(cx, cy)`; with the flag on, it stays at `(cx, cy − 0.12 B)`.
+    - [ ] *(UC-3)* A screenshot of a mostly empty Fixed wheel shows the filled and greyed slots reading stronger than the empty ones; the user confirms.
+  - **Tests**: build; the token values are checked in the existing style-token tests if present; visual check in T-48.
+  - **Size**: XS
+
 - [ ] **T-35**: M2 performance record · `parallel-ok`
   - **Owner**: performance-engineer
   - **Requirements**: NFR-1 (P-1, P-2, P-5, P-6, P-7a, P-8, P-9 with control run)
@@ -677,6 +689,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Files**: `docs/project/design/screens/m3/*`, `docs/project/design.md`
   - **Acceptance criteria**:
     - [ ] States 4, 5, 12, 13, 14, satellites, material ring and picker rows match design.md and the mockups; the user confirms.
+    - [ ] Carried over from T-34: pressed (3), hub hover, edge-dodge corners, the rim over snow or ice, and the T-81 changes are captured and checked.
   - **Tests**: screenshot review.
   - **Size**: S
 
