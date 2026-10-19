@@ -67,3 +67,9 @@ No secrets. Names only:
 - `scripts/package.sh`: `dist/QuickMenu-0.1.0.zip` created with About, LoadFolders.xml, Languages, 1.7/Assemblies (no pdb).
 - `scripts/setup.sh` run twice: idempotent. `dotnet build -p:UseLocalGameRefs=true` against the installed game DLLs: 0 warnings, 0 errors.
 - Not verified: dev container build, GitHub Actions run, `scripts/link-mod.sh` (deliberately not run), in-game loading.
+
+## Stress mod (test only, never shipped)
+
+- Generate: `scripts/make-stress-mod.sh [N=2000] [OUT_DIR]` writes `dist/stress/QuickMenuStress` (gitignored; `package.sh` zips only tracked `mod/` files). Use N=2000 and N=8000 (W-1, P-11c).
+- Enable: `scripts/link-stress-mod.sh` symlinks it into `Mods/`; launch with `-mod=brrainz.harmony,sixdd.QuickMenu,sixdd.QuickMenuStress -quicktest`, use a throwaway save, run the self-test.
+- Disable: `scripts/link-stress-mod.sh --remove` (or untick it in the Mods list). Regenerate with a new N, then restart the game.
