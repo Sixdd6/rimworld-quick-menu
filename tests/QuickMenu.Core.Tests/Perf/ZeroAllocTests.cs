@@ -151,4 +151,15 @@ public class ZeroAllocTests
         Assert.Equal(0L, bytes);
         Assert.True(sum > 0f);
     }
+
+    [Fact]
+    public void Grid_hit_testing_allocates_nothing()
+    {
+        var layout = new GridHitLayout(new Vec2(500f, 400f), 56f, 5, 3, new Rect2(450f, 520f, 100f, 30f));
+        long bytes = AllocatedBy(i =>
+        {
+            _ = HitTester.HitGrid(new Vec2(300f + (i % 400), 250f + (i % 300)), layout);
+        });
+        Assert.Equal(0, bytes);
+    }
 }
