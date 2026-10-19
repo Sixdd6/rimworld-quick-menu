@@ -162,4 +162,55 @@ public class ZeroAllocTests
         });
         Assert.Equal(0, bytes);
     }
+
+    [Fact]
+    public void Grid_hit_testing_with_plate_and_buttons_allocates_nothing()
+    {
+        var buttons = new[] { new HitButton(new Rect2(0f, 0f, 10f, 10f), 1) };
+        var layout = new GridHitLayout(new Vec2(500f, 400f), 56f, 7, 7, new Rect2(450f, 620f, 100f, 30f), buttons, buttons.Length);
+        int sink = 0;
+        long bytes = AllocatedBy(i =>
+        {
+            // Sweeps hub, slots, plate, panel padding and outside.
+            sink += (int)HitTester.HitGrid(new Vec2(150f + (i % 700), 100f + (i % 600)), layout).Kind;
+        });
+
+        Assert.Equal(0L, bytes);
+        Assert.NotEqual(int.MinValue, sink);
+    }
+
+    [Fact]
+    public void Capacity_Auto_queries_allocate_nothing()
+    {
+        var screen = new Vec2(960f, 540f);
+        int sink = 0;
+        long bytes = AllocatedBy(i =>
+        {
+            int count = i % 70;
+            int columns = 3 + (2 * (i % 5));
+            sink += Capacity.AutoWheelRings(count) + Capacity.AutoGridRows(count, columns);
+            sink += Capacity.IsAutoWheelFull(count, 56f, screen) ? 1 : 0;
+            sink += Capacity.IsAutoGridFull(count, columns, 56f, screen, 168f) ? 1 : 0;
+            sink += Capacity.FixedWheel(1 + (i % 4)) + Capacity.FixedGrid(columns, 3);
+        });
+
+        Assert.Equal(0L, bytes);
+        Assert.True(sink > 0);
+    }
+
+    [Fact]
+    public void WheelLayout_ComputeSpread_allocates_nothing()
+    {
+        var buffer = new SlotPlacement[60];
+        float sum = 0f;
+        long bytes = AllocatedBy(i =>
+        {
+            int n = i % 61;
+            WheelLayout.ComputeSpread(n, 56f, new Vec2(500f, 400f), buffer);
+            sum += buffer[0].Center.X;
+        });
+
+        Assert.Equal(0L, bytes);
+        Assert.True(sum > 0f);
+    }
 }
