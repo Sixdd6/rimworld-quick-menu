@@ -13,7 +13,7 @@ namespace QuickMenu.Activation;
 /// <summary>
 /// Activates a pinned designator exactly as the architect would (ADR 0006): <c>ProcessInput(Event.current)</c>, wrapped in
 /// <see cref="MenuActivation"/> so the pin prefix ignores the held modifier. Stuff builds take their material from the
-/// ring (<see cref="Activate(Designator, ThingDef?, Designator_Dropdown?)"/>); dropdowns use the vanilla menu until T-43. A fault in a foreign designator is logged once per type and never disables the menu.
+/// ring (<see cref="Activate(Designator, ThingDef?, Designator_Dropdown?)"/>). A fault in a foreign designator is logged once per type and never disables the menu.
 /// </summary>
 internal static class DesignatorActivator
 {

@@ -125,6 +125,7 @@ The same as S1, with a rounded panel instead of the disc and the hub in the cent
 - **Back** (one level): Esc, right-click anywhere, a click on the satellite hub, or a click outside the satellite or sub-grid. On the main level, the same inputs close the menu.
 - **Hold mode**: hovering a sub-menu or material slot for **150 ms** opens its ring (the dwell stops rings from opening while the mouse passes over). Releasing over an option picks it. Releasing anywhere else closes everything.
 - **Satellites do not open in edit mode.**
+- Dropdown elements that are not `Visible` are left out of the 0/1/2+ count and the ring, as vanilla 1.7 `Designator_Dropdown.SetupFloatMenu` skips them (checked in the IL, 2026-10-19).
 
 #### S4. Slot component: complete state list (one drawing routine for all layouts). See [mockup](design/mockup-wheel-states.png) (legend).
 The slot is a circle of diameter B. The icon is drawn with `Command.DrawIcon` in a square of 0.75 B centred on the slot, so the game applies icon proportions, angle and stuff colour. Badges are fixed-orientation textures, each on its own 45° diagonal at radius B/2 so they never collide: **1:30** sub-menu, **4:30** material, **7:30** lock. (10:30 is free: it held the insert caret, which was removed on 2026-10-19.)

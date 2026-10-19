@@ -258,8 +258,14 @@ internal static class MenuController
     private static void ActivateSlot(MenuCommand command)
     {
         SatelliteController? satellite = _satellite;
-        if (command.Level == MenuLevel.Satellite && satellite != null)
+        if (command.Level == MenuLevel.Satellite)
         {
+            if (satellite == null)
+            {
+                Close();
+                return;
+            }
+
             bool found = satellite.TryResolve(command.Index, out Designator designator, out ThingDef? stuff, out Designator_Dropdown? dropdown);
             Close();
             if (found)
@@ -301,7 +307,7 @@ internal static class MenuController
         string? reason;
         if (_satellite?.Active is { } ring)
         {
-            reason = slot >= 0 && slot < ring.Stuffs.Length ? ring.Reason(slot) : null;
+            reason = slot >= 0 && slot < ring.Count ? ring.Reason(slot) : null;
         }
         else
         {

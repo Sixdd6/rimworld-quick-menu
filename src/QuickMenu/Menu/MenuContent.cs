@@ -124,14 +124,7 @@ internal sealed class MenuContent
         Designator target = d;
         if (d is Designator_Dropdown dropdown)
         {
-            var elements = new System.Collections.Generic.List<Designator>();
-            foreach (Designator element in dropdown.Elements)
-            {
-                if (element != null)
-                {
-                    elements.Add(element);
-                }
-            }
+            System.Collections.Generic.List<Designator> elements = VisibleElements(dropdown);
 
             switch (SubMenuLayout.Classify(elements.Count))
             {
@@ -242,6 +235,37 @@ internal sealed class MenuContent
         }
 
         return _reasons[slot] ??= UnavailableReasons.For(d);
+    }
+
+    /// <summary>
+    /// The elements vanilla's dropdown menu offers: non-null and <c>Visible</c> (1.7 <c>SetupFloatMenu</c> skips the others),
+    /// so hidden ones count for neither the 0/1/2+ decision nor the ring.
+    /// </summary>
+    internal static System.Collections.Generic.List<Designator> VisibleElements(Designator_Dropdown dropdown)
+    {
+        var elements = new System.Collections.Generic.List<Designator>();
+        foreach (Designator element in dropdown.Elements)
+        {
+            if (element != null && IsVisible(element))
+            {
+                elements.Add(element);
+            }
+        }
+
+        return elements;
+    }
+
+    private static bool IsVisible(Designator d)
+    {
+        try
+        {
+            return d.Visible;
+        }
+        catch (Exception ex)
+        {
+            Log.LogOnce($"Menu.Visible.{d.GetType().FullName}", $"Reading Visible of {d.GetType().FullName} failed, hiding it: {ex.GetType().Name}");
+            return false;
+        }
     }
 
     internal static bool IsUsable(Designator d)

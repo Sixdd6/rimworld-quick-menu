@@ -225,8 +225,21 @@ internal sealed class WheelModel
     internal void PrepareSatellite()
     {
         IsSatellite = true;
-        _satelliteRim = Textures.EnsureSatelliteRim(RingsInUse < 1 ? 1 : RingsInUse);
+        RefreshSatelliteRim();
         PrepareLabels();
+    }
+
+    /// <summary>
+    /// Re-acquires the satellite rim. The texture cache keeps one satellite rim, so a later satellite (a material ring over
+    /// this sub-ring) may have replaced and destroyed the one this model holds: call this when this model becomes the
+    /// ring on screen again.
+    /// </summary>
+    internal void RefreshSatelliteRim()
+    {
+        if (IsSatellite)
+        {
+            _satelliteRim = Textures.EnsureSatelliteRim(RingsInUse < 1 ? 1 : RingsInUse);
+        }
     }
 
     private void PrepareLabels()

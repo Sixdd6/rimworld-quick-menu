@@ -12,6 +12,10 @@ case "$n" in ''|*[!0-9]*) echo "N must be a positive integer, got '$n'" >&2; exi
 [ "$n" -ge 1 ] && [ "$n" -le 50000 ] || { echo "N must be 1..50000" >&2; exit 1; }
 case "$out" in */QuickMenuStress) ;; *) echo "OUT_DIR must end in /QuickMenuStress (safety: it is deleted and recreated)" >&2; exit 1 ;; esac
 
+case "$out" in "$repo/mod"|"$repo/mod/"*) echo "OUT_DIR must not be under the repo's mod/ folder" >&2; exit 1 ;; esac
+if [ -e "$out" ]; then
+  grep -qs 'sixdd\.QuickMenuStress' "$out/About/About.xml" || { echo "$out exists and is not a Quick Menu stress mod (no sixdd.QuickMenuStress in About/About.xml); refusing to delete it" >&2; exit 1; }
+fi
 rm -rf "$out"
 mkdir -p "$out/About" "$out/Defs"
 
@@ -78,7 +82,7 @@ BEGIN {
     }
     if (i % 5 == 0) printf "    <researchPrerequisites>\n      <li>%s</li>\n    </researchPrerequisites>\n", rp[(int(i / 5) % nr) + 1] > things
     printf "    <uiOrder>%d</uiOrder>\n", 3000 + i > things
-    print "    <building>\n      <canPlaceOverWall>false</canPlaceOverWall>\n    </building>\n  </ThingDef>" > things
+    print "  </ThingDef>" > things
   }
   print "</Defs>" > things
   print "</Defs>" > groups

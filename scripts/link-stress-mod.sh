@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Symlink the generated stress mod into the game's Mods folder, or remove the link with --remove.
-# Usage: scripts/link-stress-mod.sh [--remove]    (run scripts/make-stress-mod.sh [N] first)
+# Usage: scripts/link-stress-mod.sh [--remove] | [OUT_DIR]    (run scripts/make-stress-mod.sh [N] first)
 # Enable in game: Mods list -> "Quick Menu STRESS (TEST ONLY)" after Core/Harmony/Quick Menu. Use a throwaway save.
 # Disable: untick it in the Mods list (restart), or run with --remove. Never ship or leave enabled.
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo="$(cd "$here/.." && pwd)"
-src="$repo/dist/stress/QuickMenuStress"
+src="$(readlink -f "${1:-$repo/dist/stress/QuickMenuStress}")"
 game="${RIMWORLD_DIR:-$HOME/.steam/steam/steamapps/common/RimWorld}"
 target="$game/Mods/QuickMenuStress"
 if [ "${1:-}" = "--remove" ]; then

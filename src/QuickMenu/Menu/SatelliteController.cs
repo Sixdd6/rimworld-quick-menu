@@ -30,6 +30,8 @@ internal sealed class RingContent
         ParentSlot = parentSlot;
         Designators = new Designator?[count];
         Stuffs = new ThingDef?[count];
+        Sets = new StuffOptionSet[count];
+        Count = count;
         _tips = new string?[count];
         _reasons = new string?[count];
     }
@@ -46,6 +48,12 @@ internal sealed class RingContent
     internal int ParentSlot { get; }
 
     internal bool IsMaterial { get; init; }
+
+    /// <summary>Number of options in the ring.</summary>
+    internal int Count { get; }
+
+    /// <summary>Sub-ring: the materials of each option, kept so opening its material ring does not recompute them.</summary>
+    internal StuffOptionSet[] Sets { get; }
 
     /// <summary>Sub-ring: the designator behind each option. Material ring: unused.</summary>
     internal Designator?[] Designators { get; }
@@ -138,14 +146,19 @@ internal sealed class SatelliteController
             return false;
         }
 
+        if (_main.Targets[slot] is { } target)
+        {
+            _material = BuildMaterial(slot, target, _main.Dropdowns[slot], _main.StuffSets[slot], _main.Model, slot);
+            return _material != null;
+        }
+
         if (d is Designator_Dropdown dropdown)
         {
             _sub = BuildSub(slot, dropdown);
             return _sub != null;
         }
 
-        Designator target = _main.Targets[slot] ?? d;
-        _material = BuildMaterial(slot, target, _main.Dropdowns[slot], _main.StuffSets[slot], _main.Model, slot);
+        _material = BuildMaterial(slot, d, _main.Dropdowns[slot], _main.StuffSets[slot], _main.Model, slot);
         return _material != null;
     }
 
@@ -158,7 +171,7 @@ internal sealed class SatelliteController
             return false;
         }
 
-        _material = BuildMaterial(sub.ParentSlot, d, sub.Dropdown, StuffOptions.For(d), sub.Model, index);
+        _material = BuildMaterial(sub.ParentSlot, d, sub.Dropdown, sub.Sets[index], sub.Model, index);
         return _material != null;
     }
 
@@ -168,6 +181,7 @@ internal sealed class SatelliteController
         if (_material != null)
         {
             _material = null;
+            _sub?.Model.RefreshSatelliteRim();
             return _sub != null;
         }
 
@@ -182,7 +196,7 @@ internal sealed class SatelliteController
         stuff = null;
         dropdown = null;
         designator = null!;
-        if (ring == null || index < 0 || index >= ring.Stuffs.Length)
+        if (ring == null || index < 0 || index >= ring.Count)
         {
             return false;
         }
@@ -214,15 +228,7 @@ internal sealed class SatelliteController
 
     private RingContent? BuildSub(int slot, Designator_Dropdown dropdown)
     {
-        var elements = new List<Designator>();
-        foreach (Designator element in dropdown.Elements)
-        {
-            if (element != null)
-            {
-                elements.Add(element);
-            }
-        }
-
+        List<Designator> elements = MenuContent.VisibleElements(dropdown);
         if (SubMenuLayout.Classify(elements.Count) != SubMenuOutcome.Open)
         {
             return null;
@@ -232,12 +238,14 @@ internal sealed class SatelliteController
         PlacedSatellite placed = SubMenuLayout.PlaceSatellite(elements.Count, main.ButtonSize, main.Slots[slot].Center, Screen, WheelModel.DefaultPlateHeight);
         var model = new WheelModel(placed.Hub, main.ButtonSize, placed.Rings, placed.Slots, placed.Slots.Length, WheelModel.DefaultPlateHeight);
         var ring = new RingContent(model, main, slot, slot, elements.Count) { Dropdown = dropdown };
+        List<ThingDef> present = StuffOptions.Present();
         for (int i = 0; i < elements.Count; i++)
         {
             Designator d = elements[i];
             ring.Designators[i] = d;
             bool usable = MenuContent.IsUsable(d);
-            StuffOptionSet set = StuffOptions.For(d);
+            StuffOptionSet set = StuffOptions.For(d, present);
+            ring.Sets[i] = set;
             if (!set.IsStuffBuild)
             {
                 model.SetSlot(i, d, usable ? SlotKind.Normal : SlotKind.Disabled);
@@ -245,17 +253,20 @@ internal sealed class SatelliteController
             }
 
             model.SetSlot(i, d, StuffSlotPolicy.KindFor(set.Outcome, usable));
-            if (set.Outcome == StuffRingOutcome.Ring)
+            if (model.Kinds[i] == SlotKind.Disabled)
+            {
+                if (StuffSlotPolicy.IsNoMaterials(set.Outcome, usable))
+                {
+                    ring.SetReason(i, "NoStuffsToBuildWith".Translate().Resolve());
+                }
+            }
+            else if (set.Outcome == StuffRingOutcome.Ring)
             {
                 model.SetDecor(i, SlotDecor.Material, LastUsedColor(d, set));
             }
             else if (set.Outcome == StuffRingOutcome.Skip)
             {
                 ring.Stuffs[i] = set.Options[0].Def;
-            }
-            else if (StuffSlotPolicy.IsNoMaterials(set.Outcome, usable))
-            {
-                ring.SetReason(i, "NoStuffsToBuildWith".Translate().Resolve());
             }
         }
 
