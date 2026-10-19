@@ -1,6 +1,6 @@
 # Implementation Plan: rimworld-quick-menu (Quick Menu)
 
-- **Status**: approved (2026-10-19); revised 2026-10-19 after UC-2 (user decision: the in-menu picker, the "+"/Add slots and the edit-mode insert cursor are removed, FR-7 → Won't; UC-2b added to M2)
+- **Status**: approved (2026-10-19); revised 2026-10-19 after UC-2 (user decision: the in-menu picker, the "+"/Add slots and the edit-mode insert cursor are removed, FR-7 → Won't; UC-2b added to M2); revised 2026-10-19 for FR-19 (pin marker on pinned architect buttons and dropdown entries, M6 tasks T-87 … T-92, last feature before release prep; user request)
 - **Spec**: [spec.md](spec.md) · **Architecture**: [architecture.md](architecture.md) · **ADRs**: [decisions/](decisions/) · **Design**: [design.md](design.md) · **Performance**: [performance.md](performance.md) · **Environment**: [environment.md](environment.md)
 
 ## Planning notes
@@ -13,6 +13,7 @@
 - **`parallel-ok`** on a task means it has no file overlap with the other `parallel-ok` tasks of the same milestone, and it can start as soon as its listed dependencies are done.
 - **Gated mode**: each milestone ends with its user session and the user's approval before the next milestone starts.
 - **Scope change (user, 2026-10-19, after UC-2)**: pins are added only by modifier+click in the architect menu (vanilla or BAM, FR-8). There is no picker window, no search index or search UI, no "+"/Add slot and no insert cursor; empty slots stay empty. New pins go into the first free slot (Fixed) or at the end (Auto); the user rearranges by dragging in edit mode. Edit mode stays (centre button = Edit/Done; drag to swap; modifier+click on a slot unpins, also in use mode; right-click and click-outside close). The designator catalog stays (it resolves pins), including its Ideology part (T-40). Removed tasks keep their IDs and are marked `[-]`; nothing was renumbered.
+- **Scope change (user, 2026-10-19, FR-19)**: a small pin marker is drawn on every pinned architect button (a dropdown button when the whole dropdown is pinned) and on pinned single entries inside an open dropdown list, in any architect UI that pinning works in (vanilla, BAM, …), updating on the next frame after a pin or unpin. It is the last feature of M6, before release prep: an offline hook spike and ADR 0009 (T-87), the P-19 budget (T-88), the marker glyph (T-89), a Core pinned-set cache with a zero-allocation O(1) lookup (T-90), then the two adapter hooks (T-91 buttons, T-92 dropdown entries). UC-6 (T-75) checks it in game. Existing tasks keep their IDs; only T-75 (dependencies, scope), T-78 (README line) and the M4 count (T-86 is removed) changed.
 
 ## Milestones
 | ID | Milestone | Goal / demoable outcome | Tasks | Count |
@@ -20,12 +21,12 @@
 | M1 | Walking skeleton + spike build | The mod loads on 1.7.4982 with Harmony 3. Mouse 4 on a colony map opens a crude wheel with two hard-coded pins (Mine, Wall); clicking one selects the designator. A dev-mode spike build answers S-1 … S-7 in one user session (UC-1); results go into the ADRs. CI is green on GitHub | T-1 … T-15 | 15 |
 | M2 | Pin by click, use the wheel | Ctrl+click any designator in vanilla or BAM pins it (message; full; toggle). The bindable trigger opens the styled Fixed wheel centred on the mouse, dodging edges; clicking a slot activates it like the architect. Unavailable pins (e.g. Ideology morbid slabs) always show greyed with the reason. The centre is the Edit button (it does nothing until M3 and never closes the menu); modifier+click on a slot unpins it. Pins and settings persist across saves and restarts. A short follow-up session (UC-2b) checks the post-UC-2 fixes and re-measures settings load, texture prewarm and window allocations | T-16 … T-35, T-81, T-82 | 22 |
 | M3 | Sub-menus, materials, edit mode shell | Whole dropdowns pinned from the architect fan out as a sub-ring; stuff builds open a material ring (last-used first); Ideology designators resolve and refresh; edit mode shell (the centre Edit button enters it and shows Done; Done/Esc leave; modifier+click unpins; plain clicks do nothing); design, performance and architecture documents aligned with the picker removal | T-36, T-37, T-40 … T-44, T-46 … T-49, T-83 … T-85 | 14 |
-| M4 | Edit mode, grid, Auto sizing | Drag to swap (Fixed: onto an empty slot moves the pin there), help panel, full state, one settings write per edit session; grid layout with sub-grids; Auto sizing (new pins at the end); full layout settings with live preview; empty-menu hint; satellite underlay (T-86) | T-50 … T-62, T-86 | 14 |
+| M4 | Edit mode, grid, Auto sizing | Drag to swap (Fixed: onto an empty slot moves the pin there), help panel, full state, one settings write per edit session; grid layout with sub-grids; Auto sizing (new pins at the end); full layout settings with live preview; empty-menu hint (the satellite underlay T-86 was removed by the user) | T-50 … T-62 | 13 |
 | M5 | Hold mode, availability, compatibility | Hold-and-release with 150 ms hover-open; greyed slots with the game's (or composed) reason for every cause; missing-mod pins kept and restored; Mint detection with Alt default and notices; first-run notice; Multiplayer-safe audit | T-63 … T-71 | 9 |
-| M6 | Hardening and release prep | Fault isolation verified, string and clean-room audits, final performance pass, final regression on all setups, Preview.png, README, CHANGELOG, Workshop description, release package (publishing is the separate gated Phase 7) | T-72 … T-80 | 9 |
-| | | | **Total** | **82** active (85 IDs; T-38, T-39, T-45 removed) |
+| M6 | Pin marker, hardening and release prep | Pinned designators show a small pin marker on their architect button and pinned single entries show it in an open dropdown list, in vanilla and BAM, updating the next frame after pin/unpin at no measurable per-frame cost (FR-19, last feature, before release prep); fault isolation verified, string and clean-room audits, final performance pass, final regression on all setups (marker included), Preview.png, README, CHANGELOG, Workshop description, release package (publishing is the separate gated Phase 7) | T-72 … T-74, T-87 … T-92, T-75 … T-80 | 15 |
+| | | | **Total** | **88** active (92 IDs; T-38, T-39, T-45, T-86 removed) |
 
-**Critical path** (milestone gates included): T-3 → T-6 → T-7 / T-9 → T-13 **[UC-1]** → T-14 → T-28 → T-29 → T-32 → T-33 **[UC-2]** → T-34 → T-81 → T-82 **[UC-2b]** → T-41 → T-43 → T-47 **[UC-3]** → T-56 → T-57 → T-60 **[UC-4]** → T-64 → T-69 **[UC-5]** → T-72 → T-75 **[UC-6]** → T-77 → T-80. Each user session sits on the path, so how soon you can run a session decides the schedule more than agent work does.
+**Critical path** (milestone gates included): T-3 → T-6 → T-7 / T-9 → T-13 **[UC-1]** → T-14 → T-28 → T-29 → T-32 → T-33 **[UC-2]** → T-34 → T-81 → T-82 **[UC-2b]** → T-41 → T-43 → T-47 **[UC-3]** → T-56 → T-57 → T-60 **[UC-4]** → T-64 → T-69 **[UC-5]** → T-87 → T-90 → T-91 → T-92 → T-75 **[UC-6]** → T-77 → T-80. In M6, T-72 (fault-injection list), T-88 (P-19 budget) and T-89 (marker glyph) run beside T-87/T-90 and must finish before T-91; T-73 and T-74 run beside the whole marker chain. Each user session sits on the path, so how soon you can run a session decides the schedule more than agent work does.
 
 ## User in-game sessions
 
@@ -37,7 +38,7 @@
 | **UC-3** | End of M3 (T-47) | (a), (b), (R), stress mod | Sub-rings and material rings from pins made in the architect (vanilla and BAM chair dropdown), Ideology designators and refresh, edit mode shell (enter, Done, Esc, modifier+click unpin, plain click does nothing), self-test on (R) and the stress mod, measurement actions | T-48, T-49 |
 | **UC-4** | End of M4 (T-60) | (a) | Edit mode drag swap (wheel and grid, Fixed and Auto), help panel and full, grid, Auto, settings preview, empty-menu hint, UI scale 1.0 and 2.0 screenshots | T-61, T-62 |
 | **UC-5** | End of M5 (T-69) | (a), (c), (d); remove-mod test | Hold mode, greyed slots, missing-mod pins, Mint Alt default and notices, first-run notice, removing the mod from a save | T-70, T-71 |
-| **UC-6** | M6 (T-75) | (a)–(d), (R), (e) if available | Full regression checklist, fault-injection action, final measurements, Preview screenshots (wheel with a sub-ring, grid, edit mode) | T-76, T-77, release |
+| **UC-6** | M6 (T-75), after T-92 | (a)–(d), (R), (e) if available | Full regression checklist; pin marker (FR-19): marker on pinned buttons in vanilla (a), BAM (b) and Mint's architect (c/d), on a pinned whole dropdown button, on a pinned single entry in an open dropdown list, gone the next frame after unpin and shown the next frame after pin (architect menu open), readable at UI scale 1.0 and 2.0, P-19 marker-hook measurement with the architect menu open on a full category and with a pawn's command bar shown; fault-injection action (marker sites included); final measurements; Preview screenshots (wheel with a sub-ring, grid, edit mode) | T-76, T-77, release |
 
 ## Tasks
 
@@ -774,7 +775,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: unit `CapacityTests` (UI screen 1920 × 1080 and 960 × 540).
   - **Size**: M
 
-- [ ] **T-52**: Core `PinBoard` Auto semantics, mode conversion, forget missing; remove the insert cursor · `parallel-ok`
+- [x] **T-52**: Core `PinBoard` Auto semantics, mode conversion, forget missing; remove the insert cursor · `parallel-ok`
   - **Owner**: developer
   - **Requirements**: FR-5, FR-9, FR-14, FR-15, NFR-8 (architecture §4, U-2)
   - **Depends on**: T-18
@@ -788,7 +789,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: unit `PinBoardAutoTests`.
   - **Size**: M
 
-- [ ] **T-53**: Perf gates v2: grid, Auto and sub-menu layout
+- [x] **T-53**: Perf gates v2: grid, Auto and sub-menu layout
   - **Owner**: performance-engineer
   - **Requirements**: NFR-1 (P-9 Core part, P-10)
   - **Depends on**: T-36, T-50, T-51
@@ -809,7 +810,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-4 (user)
   - **Size**: M
 
-- [ ] **T-55**: Edit-mode states, help panel and hint plate renderer; drop the Add and caret glyphs · `parallel-ok`
+- [x] **T-55**: Edit-mode states, help panel and hint plate renderer; drop the Add and caret glyphs · `parallel-ok`
   - **Owner**: visual-designer
   - **Requirements**: FR-9, FR-14, FR-16 (look) (design.md S4 states 8, 9, 11, S5, as revised by T-83)
   - **Depends on**: T-29, T-81, T-83
@@ -823,7 +824,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-4 (user)
   - **Size**: M
 
-- [ ] **T-56**: Grid layout and Auto sizing in the window
+- [x] **T-56**: Grid layout and Auto sizing in the window
   - **Owner**: developer
   - **Requirements**: FR-4, FR-5, FR-11, FR-12, FR-6 (design.md S2, S3)
   - **Depends on**: T-43, T-51, T-54
@@ -836,7 +837,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-4 (user)
   - **Size**: M
 
-- [ ] **T-57**: Edit interactions: drag swap, help panel, full, one write per session (wheel and grid, Fixed and Auto)
+- [x] **T-57**: Edit interactions: drag swap, help panel, full, one write per session (wheel and grid, Fixed and Auto)
   - **Owner**: developer
   - **Requirements**: FR-9, FR-5, FR-4, FR-14, NFR-1 (P-17 write count)
   - **Depends on**: T-44, T-52, T-55, T-56
@@ -853,7 +854,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-4 (user)
   - **Size**: M
 
-- [ ] **T-58**: Empty-menu state
+- [x] **T-58**: Empty-menu state
   - **Owner**: developer
   - **Requirements**: FR-16, FR-1 (journey 1)
   - **Depends on**: T-55, T-56
@@ -865,7 +866,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-4 (user)
   - **Size**: S
 
-- [ ] **T-59**: Settings page v2: shape, size, grid, preview, missing pins
+- [x] **T-59**: Settings page v2: shape, size, grid, preview, missing pins
   - **Owner**: developer
   - **Requirements**: FR-4, FR-5, FR-6, FR-14, NFR-5 (design.md S7 right column)
   - **Depends on**: T-31, T-51, T-52, T-54
@@ -1077,13 +1078,102 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: audit commands recorded in the report.
   - **Size**: S
 
+#### FR-19 pin marker (last feature; before UC-6 and release prep)
+
+- [ ] **T-87**: Spike S-8 (offline): pin-marker hook sites and pinned lookup; ADR 0009 · `parallel-ok`
+  - **Owner**: architect (visual-designer advises on the free corner of the gizmo)
+  - **Requirements**: FR-19, NFR-1, NFR-2, NFR-6 (architecture §6, ADR 0005 and its spike result, performance.md per-frame budgets)
+  - **Depends on**: T-69 (M5 gate; the spike itself needs no M5 code)
+  - **Files**: `docs/project/decisions/0009-pin-marker-hooks.md` (new), `docs/project/architecture.md` (§6 patch sites 4 and 5, §7 per-frame cost note, risk row "Only three patch sites")
+  - **Time box**: one session. Output: a decision (ADR 0009), not production code. Any inspection script lives outside the repo (or in a gitignored scratch folder) and reads the DLLs by path; nothing is decompiled into the repo (NFR-7 applies to BAM too).
+  - **Acceptance criteria**:
+    - [ ] Given the 1.7.4982 `Assembly-CSharp.dll` (`$(RIMWORLD_DIR)` or the Krafs reference) and the Better Architect Menu DLL in the Steam workshop folder, when the candidates are inspected offline (`Command.GizmoOnGUI`, `Command.GizmoOnGUIInt`, `Gizmo.GizmoOnGUI` overrides in `Designator` and its subclasses incl. `Designator_Dropdown`, `Command.DrawIcon` / `Designator.DrawIcon`), then the ADR records for each: signature, which overrides exist (in the game and in BAM), whether vanilla `GizmoGridDrawer` and BAM's `DrawFlatGrid` / `DrawGroupedGrid` / `DrawOrdersPanel` all reach it, whether the button rect is available to the patch, and how often it runs per frame (per event type: Layout and Repaint).
+    - [ ] Given dropdown list entries, when the candidates are inspected (the float menu that `Designator_Dropdown.ProcessInput` builds: `FloatMenuOption` icon / `extraPartOnGUI` / `DoGUI`, or a postfix on the dropdown's menu construction; plus how BAM shows dropdown lists), then the ADR chooses one site and states how a drawn option is mapped back to its element designator without per-frame work (e.g. an option → designator identity map filled once when the menu opens).
+    - [ ] Given the chosen sites, then the ADR states: the patch type (postfix only; no transpiler), exact parameter types bound by index (`__0`, Harmony 3 type-checks), the fast path for every gizmo that is not a pinned designator (including pawn and building command bars, which go through the same base method), the guard (`if (Site.Disabled) return; try {…} catch → Site.Fail`), draw only on `EventType.Repaint`, and which corner of the gizmo rect is free of vanilla overlays (hotkey label, dropdown triangle, disabled overlay, BAM additions) at UI scale 1–2.
+    - [ ] Given the lookup, then the ADR defines a zero-allocation O(1) "is pinned" check: an identity set of pinned designator instances (reference equality), rebuilt off the hot path when the board changes (pin, unpin, edit-mode swap is not a membership change), when settings load, when the catalog is built and when the Ideology part refreshes; the rules for a whole dropdown pin (marks the dropdown button only) vs a single-entry pin (marks the entry in the open list only); unresolved, opaque and missing-mod pins mark nothing; and how `build:` keys that resolve through `FindAllowedDesignator` map to the instance the architect draws.
+    - [ ] Given ADR 0009, then architecture §6 lists the new site(s) as patch sites 4 (and 5) with their tasks (T-91, T-92), the "three patch sites" wording in §6 and the risk table is updated, and CLAUDE.md's patch-site count is reported to the orchestrator for update (this task does not edit CLAUDE.md).
+    - [ ] Given BAM does not reach a candidate, or no site gives a rect for dropdown entries, then the ADR says so, names the fallback (or "not supported" for that UI), and the user is told before T-91 starts.
+  - **Tests**: none (decision record); the decision is verified by T-90/T-91/T-92 and UC-6.
+  - **Size**: S
+
+- [ ] **T-88**: P-19 budget and gate for the marker hook · `parallel-ok`
+  - **Owner**: performance-engineer
+  - **Requirements**: FR-19, NFR-1
+  - **Depends on**: T-87
+  - **Files**: `docs/project/performance.md` (budget table row P-19, CI gate table, in-game measurement steps)
+  - **Acceptance criteria**:
+    - [ ] Given performance.md, then row P-19 reads: marker hook cost per gizmo draw call (pinned and not pinned, designator and non-designator gizmo), ≤ 100 ns and 0 bytes; in-game total with the architect menu open on the largest category ≤ 10 µs per frame; methods: Core Perf-trait test and BenchmarkDotNet on the pinned-set lookup (T-90), and a dev-mode counter plus `MeasureScope` around the hook body reported by "Quick Menu: perf report" (T-91).
+    - [ ] Given the gate table, then the Core lookup gate is "0 bytes strict; fail above 5 × 100 ns", like P-3, and P-1's note says the marker hook runs only while gizmos are drawn (it is not part of the closed-menu cost unless a command bar is shown).
+  - **Tests**: none (budget definition); the gates live in T-90.
+  - **Size**: S
+
+- [ ] **T-89**: Pin-marker glyph and style tokens · `parallel-ok`
+  - **Owner**: visual-designer
+  - **Requirements**: FR-19, NFR-5, NFR-7 (design.md §2 tokens, §3 glyphs, §6 texture level; the corner from T-87)
+  - **Depends on**: T-87
+  - **Files**: `src/QuickMenu.Core/Render/{Glyphs,StyleTokens}.cs`, `tests/QuickMenu.Core.Tests/Render/{GlyphsTests,StyleTokensTests}.cs`, `src/QuickMenu/Menu/{Textures,QMStyle}.cs`, `docs/project/design.md` (new subsection "Architect pin marker")
+  - **Acceptance criteria**:
+    - [ ] Given the glyph set, then `Glyphs.PinMarker` (our own pin shape, not Mint's or BAM's art) is rasterized in its final orientation, deterministic, with a coverage test (alpha mass in the expected region, empty margin) like the other glyphs, test first.
+    - [ ] Given the marker size is a fixed fraction of the gizmo (design.md states it, e.g. about 0.2 × the 75 px gizmo), then the texture is rasterized at its drawn size in screen px (`Glyphs.MinSize` rules), with a `rimOutline` copy 1 px larger under it, and rebuilt with the other glyphs on UI-scale change within the existing ≤ 5 ms rebuild budget; never per frame.
+    - [ ] Given `QMStyle` / `StyleTokens`, then the marker colour and outline are tokens (no colour literals), with a contrast note against a typical gizmo background (the marker is a shape, not colour alone).
+    - [ ] Given design.md, then the new subsection states the corner (from ADR 0009), size, tokens and draw order (drawn last, after the game's own gizmo drawing), and that it is drawn only for pinned designators.
+  - **Tests**: unit `GlyphsTests` (PinMarker coverage, determinism), `StyleTokensTests` (new tokens), texture sizing test if a sizing helper is added.
+  - **Size**: S
+
+- [ ] **T-90**: Core pinned-set cache rules and perf gate (test first) · `parallel-ok`
+  - **Owner**: developer
+  - **Requirements**: FR-19, FR-10, FR-14, FR-15, NFR-1, NFR-8 (ADR 0009)
+  - **Depends on**: T-87
+  - **Files**: `src/QuickMenu.Core/Pins/{PinnedSet,PinnedSetBuilder}.cs`, `tests/QuickMenu.Core.Tests/Pins/PinnedSetTests.cs`, `tests/QuickMenu.Core.Tests/Perf/PinnedSetPerfTests.cs`, `tests/QuickMenu.Core.Benchmarks/PinBenchmarks.cs` (new benchmark method)
+  - **Acceptance criteria**:
+    - [ ] Given Core cannot reference game types, then `PinnedSet<T> where T : class` uses reference identity (`ReferenceEqualityComparer`), and the builder takes the board's pins plus a resolver delegate/interface (key → instance or none) supplied by the adapter.
+    - [ ] Given a board with a whole-dropdown pin (`dropdown:` / `moddrop:`), then the dropdown instance is in the set and its elements are not; given a single-entry pin, then that element instance is in the set and its dropdown is not; given unresolved, opaque or missing-mod pins, then nothing is added for them; given pins hidden beyond capacity, then they are still members (they are pinned; toggling them unpins).
+    - [ ] Given a pin, unpin, settings load, catalog build or Ideology refresh, when `Rebuild` runs, then membership matches the board exactly; given an edit-mode swap, then membership is unchanged; a `Version` counter increments on each rebuild so the adapter can detect staleness cheaply.
+    - [ ] Given warm-up, when `Contains` runs 10,000 times for members and non-members (and `null`), then 0 bytes are allocated and the time per call fails above 5 × 100 ns (P-19 gate, trait `Category=Perf`); `Rebuild` for 200 pins reuses its storage (no growth after the first build) and is benchmarked.
+    - [ ] Core line coverage stays ≥ 90 % and `CoreIsolationTests` still pass.
+  - **Tests**: unit `PinnedSetTests` (rules table above); perf `PinnedSetPerfTests`; benchmark `PinBenchmarks.PinnedSetContains`.
+  - **Size**: M
+
+- [ ] **T-91**: Pin marker on architect buttons (hook site 4: vanilla, BAM, Mint's architect)
+  - **Owner**: developer
+  - **Requirements**: FR-19, NFR-1, NFR-2, NFR-5, NFR-6 (ADR 0009, architecture §6)
+  - **Depends on**: T-72 (fault-injection list), T-88, T-89, T-90
+  - **Files**: `src/QuickMenu/Pinning/{PinMarkerPatch,PinnedDesignators}.cs` (new), `src/QuickMenu/Pinning/PinService.cs` (rebuild on change), `src/QuickMenu/Catalog/DesignatorCatalog.cs` (rebuild after build and Ideology refresh), `src/QuickMenu/QuickMenuMod.cs` (patch registration), `src/QuickMenu/Diagnostics/{FaultInjection,PerfCounters,SelfTest}.cs` (new site, counter, report)
+  - **Acceptance criteria**:
+    - [ ] Given the site chosen in ADR 0009, then a Harmony postfix with exact parameter types bound by index follows the patch-guard convention (`if (Site.Disabled) return; try {…} catch (Exception ex) { Site.Fail(ex); }`), returns on anything but `EventType.Repaint`, and for a gizmo that is not a `Designator` or not in the set returns after one type check and one `Contains` (no LINQ, closures, string building or allocation).
+    - [ ] Given `PinnedDesignators` (adapter wrapper over Core `PinnedSet<Designator>`), then it is rebuilt by `PinService` after every toggle, by settings load and by the catalog after its build and after the Ideology refresh, never by the hook; the hook only reads it.
+    - [ ] Given a pinned designator drawn by vanilla `GizmoGridDrawer` or by BAM, then `Textures.PinMarker` is drawn in the corner from ADR 0009 with `QMStyle` tokens via `GUI.DrawTexture` (no rotation, no new texture per frame), scaled with the gizmo rect so it is correct at UI scale 1–2; a whole-dropdown pin marks the dropdown button.
+    - [ ] Given a pin or unpin by modifier+click while the architect menu is open, then the marker appears or disappears on the next frame.
+    - [ ] Given "Quick Menu: inject fault" for the marker site, then one error is logged, the site is disabled, and architect buttons keep drawing and working without markers.
+    - [ ] Given dev mode, then a counter and `MeasureScope` around the hook body feed "Quick Menu: perf report" (calls per frame, median/p99 ns per call, allocated bytes), and the self-test lists the marker patch as patched or failed; with dev mode off the measurement costs one cached bool check.
+    - [ ] *(UC-6)* Markers show on pinned buttons in setups (a), (b) and (c)/(d) (Mint's architect, where pinning works), not on unpinned ones, at UI scale 1.0 and 2.0; P-19 is within budget with the architect open and with a pawn's command bar shown.
+  - **Tests**: Core rules in T-90; build; `scripts/test.sh`, `scripts/perf.sh`; in-game UC-6.
+  - **In-game check**: UC-6 (user)
+  - **Size**: M
+
+- [ ] **T-92**: Pin marker on pinned entries in an open dropdown list (hook site 5)
+  - **Owner**: developer
+  - **Requirements**: FR-19, FR-10, NFR-1, NFR-2, NFR-6 (ADR 0009; T-27 entry pinning)
+  - **Depends on**: T-91
+  - **Files**: `src/QuickMenu/Pinning/{DropdownMarkerPatch,PinnedDesignators}.cs`, `src/QuickMenu/QuickMenuMod.cs` (patch registration), `src/QuickMenu/Diagnostics/{FaultInjection,SelfTest}.cs`
+  - **Acceptance criteria**:
+    - [ ] Given the site chosen in ADR 0009 for dropdown entries, then the option → element mapping is built once when the list opens (allocation allowed there), and the per-frame draw path does only an identity lookup and a `Contains` (0 bytes), under the same patch-guard convention; if ADR 0009 found a UI (e.g. BAM's dropdown list) with no usable site, that UI is listed as a known limit for T-79 and the user is told.
+    - [ ] Given a single entry of an open dropdown list is pinned, then that entry shows the marker in the same corner logic as T-91 (adapted to the list row); given only the whole dropdown is pinned, then no entry shows it.
+    - [ ] Given a modifier+click on an entry in the open list (T-27 path), then its marker appears or disappears on the next frame if the list stays open.
+    - [ ] Given "Quick Menu: inject fault" for this site, then one error is logged, the site is disabled, and the dropdown list keeps working without markers.
+    - [ ] *(UC-6)* In setups (a) and (b), a pinned entry shows the marker in the open list and an unpinned one does not.
+  - **Tests**: Core rules in T-90 (entry vs whole dropdown); build; `scripts/test.sh`, `scripts/perf.sh`; in-game UC-6.
+  - **In-game check**: UC-6 (user)
+  - **Size**: M
+
 - [ ] **T-75**: UC-6 final regression session
   - **Owner**: test-engineer
-  - **Requirements**: all FR-1 … FR-18, NFR-1, NFR-2, NFR-3, NFR-5, NFR-6
-  - **Depends on**: T-72, T-73, T-74
+  - **Requirements**: all FR-1 … FR-19, NFR-1, NFR-2, NFR-3, NFR-5, NFR-6
+  - **Depends on**: T-72, T-73, T-74, T-88, T-91, T-92
   - **Files**: `docs/project/test-checklist.md` (UC-6 = full checklist), `docs/project/test-reports/uc-6.md`
   - **Acceptance criteria**:
     - [ ] The guide covers the whole checklist on (a)–(d) and (R), (e) if Multiplayer supports 1.7, the fault-injection action, the NFR-3 load test (only Harmony + Quick Menu), final measurement actions, and 3–5 clean screenshots for the Preview (wheel with a sub-ring, material ring, grid, edit mode) on an attractive colony.
+    - [ ] The guide has an FR-19 section: with the architect menu open, the marker is on pinned buttons in vanilla (a), BAM (b) and Mint's architect (c or d), on a dropdown button whose whole dropdown is pinned, and on a pinned single entry in an open dropdown list (vanilla and BAM); after a modifier+click unpin it is gone on the next frame and after a pin it appears; one screenshot at UI scale 1.0 and one at 2.0; the fault-injection action for both marker sites; and the P-19 measurement ("perf report" after 600 frames with the architect open on the largest category, and again with a colonist selected so its command bar is drawn).
     - [ ] *(UC-6)* Every Must item passes, or the user accepts a documented exception.
   - **Tests**: the session itself.
   - **In-game check**: UC-6 (user)
@@ -1115,7 +1205,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Depends on**: T-75
   - **Files**: `README.md`, `docs/workshop-description.txt` (Steam BBCode), `mod/About/About.xml` (`description`)
   - **Acceptance criteria**:
-    - [ ] README covers what it does, install (Harmony required), default trigger and the middle-mouse fallback, pinning (Ctrl/Alt+click in the architect menu, vanilla or BAM; modifier+click on a slot to unpin; edit mode to rearrange), wheel/grid, settings, compatibility notes (BAM, Mint, Multiplayer status), building from source, license MIT, and the optional attribution line from assets.md.
+    - [ ] README covers what it does, install (Harmony required), default trigger and the middle-mouse fallback, pinning (Ctrl/Alt+click in the architect menu, vanilla or BAM; modifier+click on a slot to unpin; edit mode to rearrange; pinned items show a pin marker in the architect menu, FR-19), wheel/grid, settings, compatibility notes (BAM, Mint, Multiplayer status), building from source, license MIT, and the optional attribution line from assets.md.
     - [ ] The Workshop description says the same in BBCode, under Steam's length limit, and states the 1.7 beta status.
   - **Tests**: link check and a read-through by the user.
   - **Size**: S
@@ -1163,20 +1253,21 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
 | FR-16 empty-menu hint | T-55, T-58 | UC-4 (journey 1) |
 | FR-17 global settings, nothing in saves | T-3, T-9, T-19, T-25, T-32, T-66, T-72 | `PinSerializerTests`; grep for Game/World/MapComponent (T-25); UC-2 (second save, restart), UC-5 (remove mod from save) · M1: nothing persisted yet; `PinKeyTests` / `PinKeyRoundTripTests` cover key stability · M2: `PinSerializerTests`, `PinSerializerEdgeTests`, `PinWriteLimitTests`; `scripts/test.sh` Component grep gate; UC-2 PASS (restart + second save) |
 | FR-18 Multiplayer-safe | T-32, T-41, T-68 | Source audit (T-68); UC-6 setup (e) when Multiplayer supports 1.7, else blocked per A-2 |
-| NFR-1 no per-frame cost closed; open in one frame; catalog built once < 200 ms | T-5, T-7, T-8, T-10, T-15, T-24, T-35, T-40, T-46, T-49, T-53, T-62, T-71, T-76, T-82, T-84 | `ZeroAllocTests`, `LayoutTimingTests`, `PinBoardPerfTests`, `SerializerPerfTests`, `TextureRebuildPerfTests`; in-game P-rows at every UC (UC-2b: P-16 breakdown, texture prewarm, P-9 sub-buckets; P-11c catalog build on (R) and the stress mod in UC-3) · M1: UC-1 P-1, P-2, P-4, P-6, P-7a, P-8, P-9, P-11c, P-12, P-18 all PASS; `MeasureStatsTests`, `SampleRingTests`; 2 Perf-trait tests · M2: `ZeroAllocTests`, `LayoutTimingTests`, `PinBoardPerfTests`, `SerializerPerfTests`, `TextureRebuildPerfTests` (15 Perf tests pass); UC-2/UC-2b P-1, P-6, P-7a, P-8, P-16, P-18 PASS; P-9 p99 attributed to game sound call; P-3 pin prefix never measured; settings-change texture rebuild time not recorded |
-| NFR-2 vanilla / BAM / Mint / DLC | T-6, T-8, T-9, T-13, T-26, T-40, T-47, T-67, T-68, T-75 | Self-test on (a), (b), (R); UC-2 (a, b), UC-3 (a, b), UC-5 (c, d), UC-6 (all) · M1: UC-1 S-1/S-4 on (a) and (b); (c) Mint, (d), (R) not run |
+| FR-19 pin marker on pinned architect buttons and pinned dropdown entries (vanilla, BAM, …), next-frame update, no per-frame cost | T-87, T-88, T-89, T-90, T-91, T-92, T-75 | `PinnedSetTests` (whole dropdown vs entry, unresolved/opaque, hidden beyond capacity, rebuild/version), `PinnedSetPerfTests` (P-19: 0 bytes, ≤ 100 ns gate), `GlyphsTests` (PinMarker), `StyleTokensTests`; UC-6 FR-19 section (a, b, c/d; dropdown entry; pin/unpin next frame; UI scale 1.0/2.0; fault injection; P-19 in game) |
+| NFR-1 no per-frame cost closed; open in one frame; catalog built once < 200 ms | T-5, T-7, T-8, T-10, T-15, T-24, T-35, T-40, T-46, T-49, T-53, T-62, T-71, T-76, T-82, T-84, T-88, T-90, T-91, T-92 | `ZeroAllocTests`, `LayoutTimingTests`, `PinBoardPerfTests`, `SerializerPerfTests`, `TextureRebuildPerfTests`; in-game P-rows at every UC (UC-2b: P-16 breakdown, texture prewarm, P-9 sub-buckets; P-11c catalog build on (R) and the stress mod in UC-3) · M1: UC-1 P-1, P-2, P-4, P-6, P-7a, P-8, P-9, P-11c, P-12, P-18 all PASS; `MeasureStatsTests`, `SampleRingTests`; 2 Perf-trait tests · M2: `ZeroAllocTests`, `LayoutTimingTests`, `PinBoardPerfTests`, `SerializerPerfTests`, `TextureRebuildPerfTests` (15 Perf tests pass); UC-2/UC-2b P-1, P-6, P-7a, P-8, P-16, P-18 PASS; P-9 p99 attributed to game sound call; P-3 pin prefix never measured; settings-change texture rebuild time not recorded |
+| NFR-2 vanilla / BAM / Mint / DLC | T-6, T-8, T-9, T-13, T-26, T-40, T-47, T-67, T-68, T-75, T-87, T-91, T-92 | Self-test on (a), (b), (R); UC-2 (a, b), UC-3 (a, b), UC-5 (c, d), UC-6 (all) · M1: UC-1 S-1/S-4 on (a) and (b); (c) Mint, (d), (R) not run |
 | NFR-3 Harmony only dependency | T-1, T-5, T-13, T-74, T-80 | About.xml review and zip listing (T-74, T-80); UC-1 and UC-6 load with Harmony + Quick Menu only · M1: UC-1 loads with Harmony + Quick Menu; `mod/1.7/Assemblies` holds only QuickMenu.dll and QuickMenu.Core.dll; CI green |
 | NFR-4 every string Keyed | T-5, T-25, T-30, T-31, T-44, T-55, T-58, T-59, T-65, T-67, T-73 | `scripts/check-strings.sh` in CI (T-73) · M1: none (only dev-mode diagnostic strings exist) · M2: none (check-strings.sh is T-73) |
-| NFR-5 button size; UI scale | T-2, T-12, T-16, T-28, T-29, T-31, T-32, T-81, T-82, T-51, T-59, T-61 | `WheelLayoutTests` (all B), `CapacityTests` (960 × 540); UC-1 texture probe, UC-4 screenshots at 1.0 and 2.0 · M1: `WheelLayoutTests`, `WheelLayoutExtremesTests` (all B); UC-1 S-7 screenshots at 1.0 and 1.5 (2.0 refused at 2560x1440) · M2: `TextureSizingTests`, `StyleTokensTests`, `WheelVisualsTests`; UC-2 look PASS at 1.0; 2.0 not yet |
-| NFR-6 failures never break the game; log once | T-5, T-19, T-25, T-26, T-65, T-66, T-72 | `PinSerializerTests` (bad lines); fault-injection action in UC-6; UC-5 missing-mod test · M1: `PatchGuard`/`PatchSite` verified by build only; UC-1 no errors logged; fault injection is T-72 · M2: `PinSerializerEdgeTests` (bad/oversize lines); UC-2 no errors logged; fault injection is T-72 |
-| NFR-7 clean-room | T-4, T-22, T-23, T-28, T-74, T-77 | Mint string diff and asset audit (T-74); visual reviews · M1: `MaskRasterizerTests`, `MaskRasterizerEdgeTests`, `PngWriterTests` (own assets); audit is T-74 · M2: `MaskSetTests`, `GlyphsTests`, `DiscRimTests`; audit is T-74 |
-| NFR-8 layout and pins unit-tested | T-2, T-3, T-16, T-17, T-18, T-19, T-20, T-21, T-81, T-36, T-37, T-50, T-51, T-52, T-63 | Whole Core suite, `scripts/test.sh` with ≥ 90 % line coverage in CI · M1: 322 tests, Core line coverage 99.4 %; `CoreIsolationTests` (Core references only the BCL) · M2: 934 functional tests, Core line coverage 99.5 %, 15 Perf tests |
+| NFR-5 button size; UI scale | T-2, T-12, T-16, T-28, T-29, T-31, T-32, T-81, T-82, T-51, T-59, T-61, T-89, T-91 | `WheelLayoutTests` (all B), `CapacityTests` (960 × 540); UC-1 texture probe, UC-4 screenshots at 1.0 and 2.0 · M1: `WheelLayoutTests`, `WheelLayoutExtremesTests` (all B); UC-1 S-7 screenshots at 1.0 and 1.5 (2.0 refused at 2560x1440) · M2: `TextureSizingTests`, `StyleTokensTests`, `WheelVisualsTests`; UC-2 look PASS at 1.0; 2.0 not yet |
+| NFR-6 failures never break the game; log once | T-5, T-19, T-25, T-26, T-65, T-66, T-72, T-91, T-92 | `PinSerializerTests` (bad lines); fault-injection action in UC-6; UC-5 missing-mod test · M1: `PatchGuard`/`PatchSite` verified by build only; UC-1 no errors logged; fault injection is T-72 · M2: `PinSerializerEdgeTests` (bad/oversize lines); UC-2 no errors logged; fault injection is T-72 |
+| NFR-7 clean-room | T-4, T-22, T-23, T-28, T-74, T-77, T-89 | Mint string diff and asset audit (T-74); visual reviews · M1: `MaskRasterizerTests`, `MaskRasterizerEdgeTests`, `PngWriterTests` (own assets); audit is T-74 · M2: `MaskSetTests`, `GlyphsTests`, `DiscRimTests`; audit is T-74 |
+| NFR-8 layout and pins unit-tested | T-2, T-3, T-16, T-17, T-18, T-19, T-20, T-21, T-81, T-36, T-37, T-50, T-51, T-52, T-63, T-90 | Whole Core suite, `scripts/test.sh` with ≥ 90 % line coverage in CI · M1: 322 tests, Core line coverage 99.4 %; `CoreIsolationTests` (Core references only the BCL) · M2: 934 functional tests, Core line coverage 99.5 %, 15 Perf tests |
 
-All FR-1 … FR-18 (except FR-7, Won't) and NFR-1 … NFR-8 have at least one task and one test. Revision 2026-10-19 (picker removal): FR-7 now has no task or test by design; T-38/T-39/T-45 were removed from FR-7, FR-10, FR-15, NFR-1, NFR-2, NFR-4 and NFR-8, and each of those rows still has other tasks and tests; FR-9's use-mode unpin had no task (added to T-81) and the centre-button and greyed-pin fixes had no in-game check after UC-2 (added UC-2b, T-82); the leftover insert-cursor code (`PinBoard.SetCursor`, from T-18) and the `IconAdd`/`Caret` glyphs (from T-23) had no removal task (added to T-52 and T-55). Gaps found and fixed while planning: FR-16 had no owner beyond the renderer (added T-58); FR-17 "removing the mod from a save" had no check (added to UC-5 via T-69); NFR-3 had no load test (added to UC-1 and UC-6); FR-18 had no verification path (added T-68 with the A-2 blocked status); NFR-4 had only "review grep" (made a CI script, T-73).
+All FR-1 … FR-19 (except FR-7, Won't) and NFR-1 … NFR-8 have at least one task and one test. Revision 2026-10-19 (FR-19 pin marker): FR-19 is covered by T-87 … T-92 and the UC-6 FR-19 section (T-75); its NFR-1 clause ("no measurable per-frame cost or allocation while the architect menu is open") had no budget, so P-19 was added (T-88) with a CI gate (T-90) and an in-game measurement (T-91, UC-6); fault isolation for the two new patch sites is in T-91/T-92 because T-72 audits the sites that exist before them; the README line is added to T-78. Revision 2026-10-19 (picker removal): FR-7 now has no task or test by design; T-38/T-39/T-45 were removed from FR-7, FR-10, FR-15, NFR-1, NFR-2, NFR-4 and NFR-8, and each of those rows still has other tasks and tests; FR-9's use-mode unpin had no task (added to T-81) and the centre-button and greyed-pin fixes had no in-game check after UC-2 (added UC-2b, T-82); the leftover insert-cursor code (`PinBoard.SetCursor`, from T-18) and the `IconAdd`/`Caret` glyphs (from T-23) had no removal task (added to T-52 and T-55). Gaps found and fixed while planning: FR-16 had no owner beyond the renderer (added T-58); FR-17 "removing the mod from a save" had no check (added to UC-5 via T-69); NFR-3 had no load test (added to UC-1 and UC-6); FR-18 had no verification path (added T-68 with the A-2 blocked status); NFR-4 had only "review grep" (made a CI script, T-73).
 
 ## Risks and spikes
 
-### Spikes (all in the M1 spike build, run by the user once in UC-1)
+### Spikes (S-1 … S-7 in the M1 spike build, run by the user once in UC-1; S-8 is an offline M6 spike)
 | Spike | Question | Task | How the user runs it | Result goes to |
 |---|---|---|---|---|
 | S-1 | Does Harmony 3 rc.3 patch every `ProcessInput` override, including one in a mod assembly? | T-8 (+ count in T-9) | self-test on (a) and on (b)/(R) | ADR 0001, 0005 |
@@ -1186,6 +1277,8 @@ All FR-1 … FR-18 (except FR-7, Won't) and NFR-1 … NFR-8 have at least one ta
 | S-5 | How to detect dev-only designators; which `Visible` causes produce which reasons | T-9 | catalog dump | ADR 0006; T-40, T-65 |
 | S-6 | Full-screen window: non-pausing, absorbs map clicks, same-frame open, closes on map/world change | T-7 | skeleton wheel steps in T-13 step 7 | ADR 0007 |
 | S-7 | Runtime `Texture2D`, loose PNG, 9-slice under Waylith | T-12 | texture probe + 2 screenshots | ADR 0007, design.md §6; T-28 level |
+
+| S-8 (M6, offline, no user session) | Which hook do vanilla and BAM both go through when drawing a designator button and an open dropdown list entry; which gizmo corner is free; how to make "is pinned" O(1) and allocation-free | T-87 | none: the architect inspects the 1.7 `Assembly-CSharp.dll` and the BAM DLL offline; the result is checked in UC-6 | ADR 0009, architecture §6; T-90, T-91, T-92 |
 
 Each spike is time-boxed to one session of agent work; the UC-1 session is about 45–60 minutes for the user. Probe code is deleted in T-14; only the self-test and the patch enumeration stay as production code.
 
@@ -1200,6 +1293,8 @@ Each spike is time-boxed to one session of agent work; the UC-1 session is about
 | S-3 shows `ProcessInput` is called outside clicks (P-4 ≠ 0) | Low | Medium | T-15/T-71 reopen R-1; the classifier fast path is already zero-alloc and gated (T-24) |
 | Auto full rule and UI scale 2.0 make the menu feel cramped | Medium | Low | Settings preview warning (T-59); checked in UC-4 |
 | Hard-coded strings slip in | Medium | Low | CI string check (T-73) |
+| The FR-19 marker hook runs for every gizmo every frame (architect buttons and also pawn/building command bars), unlike the click-only pin prefix | Medium | Medium (frame cost with many gizmos) | Repaint-only, one type check and one identity `Contains` per call (T-91); P-19 budget ≤ 100 ns and 0 bytes with a strict CI gate (T-88, T-90) and an in-game measurement in UC-6 |
+| BAM (or another architect UI) draws buttons or dropdown lists through a path the chosen hook does not reach | Medium | Low (no marker in that UI; pinning still works) | Checked offline against the BAM DLL before coding (T-87); any unsupported UI is told to the user and listed as a known limit (T-92, T-79) |
 | GitHub repo or push not available | Medium | Low | T-1 is independent; local `scripts/test.sh`/`perf.sh` remain the gate until CI runs |
 
 ## Decisions (user, 2026-10-19)
@@ -1218,3 +1313,6 @@ Each spike is time-boxed to one session of agent work; the UC-1 session is about
 - **Question 8**: resolved — the menu stays open after an unpin (implemented in T-81, 00f1671).
 - **Question 9**: resolved — spec journey 5 now says Ctrl+click unpins (FR-9).
 - **Question 10**: resolved — design.md (099d1c0) now says modifier+click in use mode unpins (user decision).
+- **Question 11 (FR-19)**: when only a single entry of a dropdown is pinned (not the whole dropdown), should the dropdown's own button in the architect also show a marker (for example a hint that something inside is pinned)? The plan assumes **no**: the button is marked only when the whole dropdown is pinned, and the entry is marked inside the open list (T-90 rules).
+- **Question 12 (FR-19)**: a pinned designator can also appear outside the architect menu (for example the Install/Reinstall or copy-build gizmos on a selected building, if they are the same designator instance). Should the marker show there too? The plan assumes the marker appears wherever the same pinned designator instance is drawn as a gizmo; T-87 reports where that happens so you can decide before T-91.
+- **Question 13 (FR-19)**: pins hidden because the ring count was reduced (Fixed sizing) are still pinned. The plan marks them too (a modifier+click would unpin them). Confirm.
