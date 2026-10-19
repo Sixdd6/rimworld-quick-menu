@@ -50,9 +50,9 @@ internal static class SettingsPage
     private static string? _modAlt;
     private static string? _modShift;
 
-    private static int _ringsFor = int.MinValue;
-    private static StepKind _stepKindFor = (StepKind)(-1);
-    private static string _ringsText = string.Empty;
+    // One cached value text per stepper, so no stepper re-formats its number when another one is drawn (indexed by StepKind).
+    private static readonly int[] _stepValueFor = { int.MinValue, int.MinValue, int.MinValue };
+    private static readonly string[] _stepText = { string.Empty, string.Empty, string.Empty };
     private static float _sizeFor = float.NaN;
     private static string _sizeText = string.Empty;
 
@@ -348,15 +348,15 @@ internal static class SettingsPage
             result = Step(kind, value, -1);
         }
 
-        if (value != _ringsFor || kind != _stepKindFor)
+        int slot = (int)kind;
+        if (value != _stepValueFor[slot])
         {
-            _ringsFor = value;
-            _stepKindFor = kind;
-            _ringsText = value.ToString(CultureInfo.CurrentCulture);
+            _stepValueFor[slot] = value;
+            _stepText[slot] = value.ToString(CultureInfo.CurrentCulture);
         }
 
         Text.Anchor = TextAnchor.MiddleCenter;
-        Widgets.Label(new Rect(x + 30f, row.y, 30f, row.height), _ringsText);
+        Widgets.Label(new Rect(x + 30f, row.y, 30f, row.height), _stepText[slot]);
         Text.Anchor = TextAnchor.UpperLeft;
         if (Widgets.ButtonText(new Rect(x + 60f, row.y, 30f, row.height), "+"))
         {

@@ -26,6 +26,9 @@ public enum TriggerEventKind
 
     /// <summary>The colony map is no longer shown.</summary>
     MapLost,
+
+    /// <summary>The pressed mouse button is no longer held and its MouseUp never arrived (released outside the window): drop the pending press and any drag.</summary>
+    PressLost,
 }
 
 /// <summary>Plain input snapshot. Build with the factory methods.</summary>
@@ -62,6 +65,9 @@ public readonly record struct TriggerEvent(
 
     public static TriggerEvent Escape(Vec2 position) =>
         new(TriggerEventKind.Escape, position, Hit.Outside, 0, SlotKind.Normal);
+
+    public static TriggerEvent PressLost() =>
+        new(TriggerEventKind.PressLost, default, Hit.Outside, 0, SlotKind.Normal);
 
     public static TriggerEvent MapLost() =>
         new(TriggerEventKind.MapLost, default, Hit.Outside, 0, SlotKind.Normal);

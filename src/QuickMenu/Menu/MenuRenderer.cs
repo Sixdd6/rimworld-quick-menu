@@ -92,7 +92,7 @@ internal static class MenuRenderer
         HubRenderer.Draw(model, transform, EditVisuals.Hub(hover, pressed, drag));
         if (openParent < 0)
         {
-            if (!model.Editing && HasNoPins(model))
+            if (model.ShowEmptyHint && !model.Editing && HasNoPins(model))
             {
                 HelpPanelRenderer.DrawHint(model, transform);
             }

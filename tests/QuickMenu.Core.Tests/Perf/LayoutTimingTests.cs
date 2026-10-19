@@ -105,10 +105,11 @@ public class LayoutTimingTests
             {
                 int rings = Capacity.AutoWheelRings(40);
                 bool full = Capacity.IsAutoWheelFull(40, 56f, screen);
-                SlotPlacement[] slots = WheelLayout.Compute(new WheelParams(56f, rings, center));
-                Rect2 bounds = MenuBounds.ForWheel(center, 56f, rings);
-                PlacedSatellite sat = SubMenuLayout.PlaceSatellite(12, 56f, slots[7].Center, screen);
-                return slots[^1].Center.X + EdgeDodger.Fit(bounds, screen).X + sat.Slots[^1].Center.Y + (full ? 1 : 0);
+                PlacedAutoWheel wheel = WheelLayout.PlaceAuto(40, 56f, center, screen);
+                var spread = new SlotPlacement[40];
+                WheelLayout.ComputeSpread(40, 56f, center, spread);
+                PlacedSatellite sat = SubMenuLayout.PlaceSatellite(12, 56f, wheel.Slots[7].Center, screen);
+                return wheel.Slots[^1].Center.X + spread[^1].Center.X + wheel.Rings + rings + sat.Slots[^1].Center.Y + (full ? 1 : 0);
             },
             "Auto wheel + satellite");
     }

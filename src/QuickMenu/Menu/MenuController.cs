@@ -400,15 +400,7 @@ internal static class MenuController
     private static void UpdateHelp()
     {
         Settings.QuickMenuSettings settings = QuickMenuMod.Settings;
-        int used = 0;
-        foreach (PinEntry? entry in PinService.Board.Entries)
-        {
-            if (entry != null)
-            {
-                used++;
-            }
-        }
-
+        int used = PinService.Board.VisibleCount(PinService.Resolver);
         bool auto = settings.Sizing == SizingMode.Auto;
         int capacity = PinService.Board.Capacity;
         bool full = auto

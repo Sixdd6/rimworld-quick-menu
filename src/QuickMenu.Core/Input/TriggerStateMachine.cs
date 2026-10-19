@@ -64,6 +64,10 @@ public sealed class TriggerStateMachine
                 }
 
                 return MenuCommand.None;
+            case TriggerEventKind.PressLost:
+                _pressValid = false;
+                EndDrag();
+                return MenuCommand.None;
             case TriggerEventKind.Escape:
                 if (_dragging)
                 {

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using QuickMenu.Core.Pins;
+using QuickMenu.Core.Settings;
 using Xunit;
 
 namespace QuickMenu.Core.Tests.Pins;
@@ -188,6 +189,61 @@ public class PinBoardFixedTests
         Assert.Equal(0, b.CountUnresolved(r));
         Assert.Equal(new string?[] { "build:thing/A" }, Keys(b, 1));
         Assert.Equal(0, b.ForgetUnresolved(r));
+    }
+
+    [Fact]
+    public void Forget_predicate_removes_only_matching_and_keeps_opaque_pins()
+    {
+        PinBoard b = PinSerializer.FromLines(new[] { "0|future:x||L", "1|build:thing/Gone||", "2|build:thing/B||" }).Board;
+        b.Capacity = 3;
+        Assert.Equal(1, b.Forget(e => e.Key.Value == "build:thing/Gone"));
+        Assert.Equal(new[] { "0|future:x||L", "2|build:thing/B||" }, PinSerializer.ToLines(b));
+    }
+
+    [Fact]
+    public void VisibleCount_fixed_counts_pins_below_capacity_only()
+    {
+        var b = new PinBoard(3);
+        b.Toggle(K("A"));
+        b.Toggle(K("Gone"));
+        b.Toggle(K("C"));
+        b.Capacity = 2;
+        Assert.Equal(2, b.VisibleCount(new Resolver(K("Gone"))));
+    }
+
+    [Fact]
+    public void VisibleCount_auto_counts_resolved_pins_only()
+    {
+        var b = new PinBoard(10);
+        b.Toggle(K("A"));
+        b.Toggle(K("Gone"));
+        b.Toggle(K("C"));
+        b.Mode = SizingMode.Auto;
+        Assert.Equal(2, b.VisibleCount(new Resolver(K("Gone"))));
+    }
+
+    [Fact]
+    public void Switching_to_Auto_and_back_without_edits_restores_the_fixed_positions()
+    {
+        var b = new PinBoard(5);
+        b.SetSlot(1, new PinEntry(K("A"), "", null));
+        b.SetSlot(4, new PinEntry(K("B"), "", null));
+        b.Mode = SizingMode.Auto;
+        Assert.Equal(new string?[] { "build:thing/A", "build:thing/B" }, Keys(b, 2));
+        b.Mode = SizingMode.Fixed;
+        Assert.Equal(new string?[] { null, "build:thing/A", null, null, "build:thing/B" }, Keys(b, 5));
+    }
+
+    [Fact]
+    public void Switching_back_to_Fixed_after_an_edit_in_Auto_keeps_the_compact_order()
+    {
+        var b = new PinBoard(5);
+        b.SetSlot(1, new PinEntry(K("A"), "", null));
+        b.SetSlot(4, new PinEntry(K("B"), "", null));
+        b.Mode = SizingMode.Auto;
+        b.Toggle(K("C"));
+        b.Mode = SizingMode.Fixed;
+        Assert.Equal(new string?[] { "build:thing/A", "build:thing/B", "build:thing/C", null, null }, Keys(b, 5));
     }
 
     [Fact]

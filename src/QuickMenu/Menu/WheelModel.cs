@@ -95,6 +95,9 @@ internal sealed class WheelModel
     private float _editLabelWidth;
     private float _doneLabelWidth;
 
+    /// <summary>False for the settings preview: its slots are blank on purpose, so it never shows the empty-menu hint (FR-16).</summary>
+    internal bool ShowEmptyHint { get; set; } = true;
+
     /// <summary>True in edit mode: the hub is Done (check mark, "Done" plate, accent tint). Set by the window from the state machine.</summary>
     internal bool Editing { get; set; }
 
@@ -109,8 +112,11 @@ internal sealed class WheelModel
     /// <summary>Slot kinds, indexed like <see cref="Slots"/> (length <see cref="SlotCount"/>).</summary>
     internal SlotKind[] Kinds => _kinds;
 
-    /// <summary>Hit layout for <see cref="HitTester"/>; no plate (the plate is not interactive in M2).</summary>
-    internal HitLayout HitLayout => new(Center, ButtonSize, DiscRadius, Slots, SlotCount);
+    /// <summary>Hit layout for <see cref="HitTester"/>; a main wheel has the plate (at its widest) so a click on it is <see cref="HitKind.Plate"/>, not Outside.</summary>
+    internal HitLayout HitLayout => new(Center, ButtonSize, DiscRadius, Slots, SlotCount, IsSatellite ? null : WidestPlate());
+
+    /// <summary>The plate at its maximum width: a stable hit area that does not depend on which label is shown.</summary>
+    private Rect2 WidestPlate() => PlateRect(float.MaxValue / 2f);
 
     /// <summary>Plate height for the current Small font: line height + 8 (design.md §1.1, 30 by default).</summary>
     internal static float DefaultPlateHeight => Text.LineHeightOf(GameFont.Small) + 8f;
@@ -164,7 +170,7 @@ internal sealed class WheelModel
         }
 
         return GridColumns > 0
-            ? HitTester.HitGrid(point, new GridHitLayout(Center, ButtonSize, GridColumns, GridRows))
+            ? HitTester.HitGrid(point, new GridHitLayout(Center, ButtonSize, GridColumns, GridRows, WidestPlate()))
             : HitTester.HitSubGrid(point, panel, Slots, SlotCount, ButtonSize);
     }
 
@@ -261,7 +267,8 @@ internal sealed class WheelModel
 
     /// <summary>
     /// Truncates and measures every label in the Small font once. With <paramref name="ensureTextures"/> it also sizes
-    /// the menu textures for this B and ring count (<see cref="Textures.EnsureSized"/>); the settings preview passes
+    /// the menu textures for this B and ring count (<see cref="Textures.EnsureSized"/>); the settings preview also
+    /// passes true (it draws with those textures, scaled, and the next open rebuilds them anyway), a satellite passes
     /// false. Call once per open, never per frame.
     /// </summary>
     internal void Prepare(bool ensureTextures = true)

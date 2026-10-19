@@ -19,6 +19,7 @@ public sealed class PinBoard
     private readonly IReadOnlyList<PinEntry?> _view;
     private int _capacity;
     private SizingMode _mode = SizingMode.Fixed;
+    private PinEntry?[]? _fixedSnapshot;
 
     public PinBoard(int capacity)
     {
@@ -39,17 +40,32 @@ public sealed class PinBoard
 
     /// <summary>
     /// Sizing mode. Switching to Auto closes the gaps, keeping order; switching to Fixed keeps every pin in its position.
-    /// No pin is lost either way (pins beyond <see cref="Capacity"/> stay hidden).
+    /// Switching back to Fixed with no pin changed in between restores the Fixed positions from before Auto, so
+    /// trying Auto in the settings does not compact a Fixed layout for good. No pin is lost either way (pins beyond
+    /// <see cref="Capacity"/> stay hidden).
     /// </summary>
     public SizingMode Mode
     {
         get => _mode;
         set
         {
+            if (value == _mode)
+            {
+                return;
+            }
+
             _mode = value;
             if (value == SizingMode.Auto)
             {
+                _fixedSnapshot = _slots.ToArray();
                 Compact();
+            }
+            else if (_fixedSnapshot is { } snapshot)
+            {
+                _fixedSnapshot = null;
+                _slots.Clear();
+                _slots.AddRange(snapshot);
+                Trim();
             }
         }
     }
@@ -61,6 +77,7 @@ public sealed class PinBoard
     public void SetSlot(int index, PinEntry? entry)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(index);
+        _fixedSnapshot = null;
         while (_slots.Count <= index)
         {
             _slots.Add(null);
@@ -173,6 +190,26 @@ public sealed class PinBoard
         return result;
     }
 
+    /// <summary>
+    /// How many pins the menu shows and counts toward its size: Auto, the resolved pins (hidden unresolved ones reserve no
+    /// space); Fixed, the pins in slots below <see cref="Capacity"/> (unresolved ones reserve their slot, hidden ones are not counted).
+    /// </summary>
+    public int VisibleCount(IPinResolver resolver)
+    {
+        ArgumentNullException.ThrowIfNull(resolver);
+        int n = 0;
+        int limit = _mode == SizingMode.Auto ? _slots.Count : Math.Min(_slots.Count, _capacity);
+        for (int i = 0; i < limit; i++)
+        {
+            if (_slots[i] is { } e && (_mode != SizingMode.Auto || IsResolved(resolver, e.Key)))
+            {
+                n++;
+            }
+        }
+
+        return n;
+    }
+
     /// <summary>Counts unresolved pins, hidden ones included.</summary>
     public int CountUnresolved(IPinResolver resolver)
     {
@@ -193,14 +230,26 @@ public sealed class PinBoard
     public int ForgetUnresolved(IPinResolver resolver)
     {
         ArgumentNullException.ThrowIfNull(resolver);
+        return Forget(e => !IsResolved(resolver, e.Key));
+    }
+
+    /// <summary>Removes exactly the pins for which <paramref name="shouldForget"/> is true (opaque ones too, if it says so); returns how many.</summary>
+    public int Forget(Func<PinEntry, bool> shouldForget)
+    {
+        ArgumentNullException.ThrowIfNull(shouldForget);
         int n = 0;
         for (int i = 0; i < _slots.Count; i++)
         {
-            if (_slots[i] is { } e && !IsResolved(resolver, e.Key))
+            if (_slots[i] is { } e && shouldForget(e))
             {
                 _slots[i] = null;
                 n++;
             }
+        }
+
+        if (n > 0)
+        {
+            _fixedSnapshot = null;
         }
 
         Trim();
@@ -223,6 +272,7 @@ public sealed class PinBoard
 
     private void RemoveAt(int i)
     {
+        _fixedSnapshot = null;
         if (_mode == SizingMode.Auto)
         {
             _slots.RemoveAt(i);

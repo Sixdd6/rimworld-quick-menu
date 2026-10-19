@@ -134,7 +134,7 @@ internal static class PinService
     /// <summary>Removes the missing pins only (see <see cref="IsMissing"/>) and writes the settings once; returns how many.</summary>
     internal static int ForgetMissing()
     {
-        int n = Board.ForgetUnresolved(new MissingResolver());
+        int n = Board.Forget(IsMissing);
         if (n > 0)
         {
             QuickMenuMod.SaveSettings();
@@ -239,21 +239,15 @@ internal static class PinService
             return false;
         }
 
-        int count = 0;
         foreach (PinEntry? stored in Board.Entries)
         {
-            if (stored == null)
-            {
-                continue;
-            }
-
-            if (stored.Key.Equals(key))
+            if (stored != null && stored.Key.Equals(key))
             {
                 return false;
             }
-
-            count++;
         }
+
+        int count = Board.VisibleCount(Resolver);
 
         float buttonSize = SettingsRules.ClampButtonSize(settings.ButtonSize);
         return SettingsRules.IsAutoFull(settings.Layout, settings.Sizing, count, settings.GridColumns, buttonSize, new Vec2(UI.screenWidth, UI.screenHeight), Menu.WheelModel.DefaultPlateHeight);
@@ -310,25 +304,6 @@ internal static class PinService
         {
             _resolved[key] = found;
         }
-    }
-
-    /// <summary>Reports every pin that is not missing as resolved, so ForgetUnresolved removes exactly the missing ones.</summary>
-    private sealed class MissingResolver : IPinResolver
-    {
-        private readonly Dictionary<PinKey, bool> _missing = new();
-
-        public MissingResolver()
-        {
-            foreach (PinEntry? entry in Board.Entries)
-            {
-                if (entry != null)
-                {
-                    _missing[entry.Key] = IsMissing(entry);
-                }
-            }
-        }
-
-        public bool IsResolved(PinKey key) => !_missing.TryGetValue(key, out bool missing) || !missing;
     }
 
     private sealed class CacheResolver : IPinResolver

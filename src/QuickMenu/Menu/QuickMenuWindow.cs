@@ -204,6 +204,7 @@ internal sealed class QuickMenuWindow : Window
                 if (_pressHit.Kind != HitKind.Outside && !Input.GetMouseButton(0))
                 {
                     _pressHit = Hit.Outside; // released outside our window (MouseUp never arrived)
+                    MenuController.Dispatch(TriggerEvent.PressLost()); // so a drag in progress does not stay stuck
                 }
 
                 MenuController.Dispatch(TriggerEvent.MouseMove(mouse));

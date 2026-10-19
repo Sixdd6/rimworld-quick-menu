@@ -37,6 +37,19 @@ public class TriggerStateMachineDragTests
     }
 
     [Fact]
+    public void PressLost_ends_a_drag_and_forgets_the_press()
+    {
+        var m = Editing();
+        Press(m, 3);
+        Move(m, 20);
+        Assert.Equal(3, m.DragSource);
+        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.PressLost()));
+        Assert.Equal(-1, m.DragSource);
+        Assert.Equal(MenuState.Edit, m.State);
+        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseUp(_p, new Hit(HitKind.Slot, 7), SlotKind.Empty, 0)));
+    }
+
+    [Fact]
     public void Drop_on_another_slot_swaps()
     {
         var m = Editing();

@@ -66,7 +66,7 @@ internal static class LayoutPreview
     private static void Refresh(QuickMenuSettings settings)
     {
         float buttonSize = SettingsRules.ClampButtonSize(settings.ButtonSize);
-        int pins = StoredPins();
+        int pins = PinService.Board.VisibleCount(PinService.Resolver);
         var key = new ModelKey(
             settings.Layout,
             settings.Sizing,
@@ -122,6 +122,7 @@ internal static class LayoutPreview
             model.SetGridShape(key.Columns, rows);
         }
 
+        model.ShowEmptyHint = false;
         model.SetHubLabels(string.Empty, string.Empty);
         model.Prepare();
         return model;
@@ -191,20 +192,6 @@ internal static class LayoutPreview
             GUI.color = Color.white;
             Text.Font = GameFont.Small;
         }
-    }
-
-    private static int StoredPins()
-    {
-        int n = 0;
-        foreach (Core.Pins.PinEntry? e in PinService.Board.Entries)
-        {
-            if (e != null)
-            {
-                n++;
-            }
-        }
-
-        return n;
     }
 
     private readonly record struct ModelKey(

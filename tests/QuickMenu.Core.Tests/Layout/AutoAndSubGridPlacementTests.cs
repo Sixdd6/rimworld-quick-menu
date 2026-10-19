@@ -45,12 +45,19 @@ public class AutoAndSubGridPlacementTests
         Assert.True(bounds.Y >= LayoutConstants.Margin - 0.01f);
     }
 
-    [Theory]
-    [InlineData(-1)]
-    [InlineData(10_000)]
-    public void PlaceAuto_rejects_a_count_out_of_range(int count)
+    [Fact]
+    public void PlaceAuto_rejects_a_negative_count()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => WheelLayout.PlaceAuto(count, 56f, _mouse, _screen));
+        Assert.Throws<ArgumentOutOfRangeException>(() => WheelLayout.PlaceAuto(-1, 56f, _mouse, _screen));
+    }
+
+    [Fact]
+    public void PlaceAuto_clamps_a_count_above_the_maximum_capacity()
+    {
+        var max = RingCapacity.Total(LayoutConstants.AutoMaxRings);
+        var placed = WheelLayout.PlaceAuto(max + 100, 56f, _mouse, _screen);
+        Assert.Equal(max, placed.Slots.Length);
+        Assert.Equal(LayoutConstants.AutoMaxRings, placed.Rings);
     }
 
     [Fact]
