@@ -221,6 +221,54 @@ internal static class DesignatorCatalog
         }
     }
 
+    /// <summary>
+    /// The one place a designator becomes a descriptor (kind, empty def name downgraded to Other, dropdown group, children,
+    /// category). The catalog and the pin click's uncatalogued fallback both use it, so their keys always agree.
+    /// </summary>
+    internal static DesignatorDescriptor BuildDescriptor(Designator designator, string categoryDefName, IReadOnlyList<DesignatorDescriptor> children, out BuildableDef? placing)
+    {
+        placing = (designator as Designator_Build)?.PlacingDef;
+        DescriptorKind kind = designator switch
+        {
+            Designator_Dropdown => DescriptorKind.Dropdown,
+            Designator_Build when placing is TerrainDef => DescriptorKind.BuildTerrain,
+            Designator_Build when placing is ThingDef => DescriptorKind.BuildThing,
+            _ => DescriptorKind.Other,
+        };
+        string? group = placing switch
+        {
+            ThingDef t => t.designatorDropdown?.defName,
+            TerrainDef t => t.designatorDropdown?.defName,
+            _ => null,
+        };
+        string? defName = kind is DescriptorKind.BuildThing or DescriptorKind.BuildTerrain ? placing?.defName : null;
+        if (kind is DescriptorKind.BuildThing or DescriptorKind.BuildTerrain && string.IsNullOrEmpty(defName))
+        {
+            kind = DescriptorKind.Other;
+        }
+
+        Type type = designator.GetType();
+        return new DesignatorDescriptor(kind, type.FullName ?? type.Name, defName, categoryDefName, group, children);
+    }
+
+    /// <summary>Descriptor of a designator that is not in the catalog, with its dropdown elements, built by <see cref="BuildDescriptor"/>.</summary>
+    internal static DesignatorDescriptor DescribeTree(Designator designator, string categoryDefName, int depth = 0)
+    {
+        var children = new List<DesignatorDescriptor>();
+        if (designator is Designator_Dropdown dropdown && depth < PinKeyFactory.MaxDepth)
+        {
+            foreach (Designator element in dropdown.Elements)
+            {
+                if (element != null)
+                {
+                    children.Add(DescribeTree(element, categoryDefName, depth + 1));
+                }
+            }
+        }
+
+        return BuildDescriptor(designator, categoryDefName, children, out _);
+    }
+
     // One bad third-party designator must not take the whole catalog down (NFR-6).
     private static Node? MakeNode(Designator designator, DesignationCategoryDef category, ModLookup mods, int depth)
     {
@@ -246,28 +294,9 @@ internal static class DesignatorCatalog
                 }
             }
 
-            BuildableDef? placing = (designator as Designator_Build)?.PlacingDef;
-            DescriptorKind kind = designator switch
-            {
-                Designator_Dropdown => DescriptorKind.Dropdown,
-                Designator_Build when placing is TerrainDef => DescriptorKind.BuildTerrain,
-                Designator_Build when placing is ThingDef => DescriptorKind.BuildThing,
-                _ => DescriptorKind.Other,
-            };
-            string? group = placing switch
-            {
-                ThingDef t => t.designatorDropdown?.defName,
-                TerrainDef t => t.designatorDropdown?.defName,
-                _ => null,
-            };
-            string? defName = kind is DescriptorKind.BuildThing or DescriptorKind.BuildTerrain ? placing?.defName : null;
-            if (kind is DescriptorKind.BuildThing or DescriptorKind.BuildTerrain && string.IsNullOrEmpty(defName))
-            {
-                kind = DescriptorKind.Other;
-            }
-
+            DesignatorDescriptor descriptor = BuildDescriptor(designator, category.defName, childDescriptors, out BuildableDef? placing);
+            DescriptorKind kind = descriptor.Kind;
             Type type = designator.GetType();
-            var descriptor = new DesignatorDescriptor(kind, type.FullName ?? type.Name, defName, category.defName, group, childDescriptors);
             ModContentPack? pack = placing?.modContentPack ?? mods.Of(type);
             string modName = pack?.Name ?? string.Empty;
             string packageId = pack?.PackageId ?? string.Empty;

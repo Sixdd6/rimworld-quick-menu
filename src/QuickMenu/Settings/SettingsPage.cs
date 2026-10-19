@@ -4,6 +4,7 @@ using QuickMenu.Core.Input;
 using QuickMenu.Core.Layout;
 using QuickMenu.Core.Settings;
 using QuickMenu.Menu;
+using QuickMenu.Pinning;
 using UnityEngine;
 using Verse;
 
@@ -30,6 +31,15 @@ internal static class SettingsPage
     private static string? _buttonSize;
     private static string? _reset;
     private static string? _resetTip;
+
+    private static string? _modCtrl;
+    private static string? _modAlt;
+    private static string? _modShift;
+
+    private static int _ringsFor = int.MinValue;
+    private static string _ringsText = string.Empty;
+    private static float _sizeFor = float.NaN;
+    private static string _sizeText = string.Empty;
 
     private static int _slotsFor = -1;
     private static string _slotsText = string.Empty;
@@ -94,6 +104,9 @@ internal static class SettingsPage
         _clearConfirm = "QuickMenu.Settings.ClearAllPinsConfirm".Translate();
         _rings = "QuickMenu.Settings.Rings".Translate();
         _buttonSize = "QuickMenu.Settings.ButtonSize".Translate();
+        _modCtrl = "QuickMenu.Settings.Modifier.Ctrl".Translate();
+        _modAlt = "QuickMenu.Settings.Modifier.Alt".Translate();
+        _modShift = "QuickMenu.Settings.Modifier.Shift".Translate();
         _reset = "QuickMenu.Settings.ResetDefaults".Translate();
         _resetTip = "QuickMenu.Settings.ResetDefaultsTip".Translate();
     }
@@ -122,7 +135,7 @@ internal static class SettingsPage
 
         Widgets.Label(new Rect(button.xMax + 8f, row.y, row.width - button.xMax - 8f, row.height), _pinSuffix);
 
-        if (!settings.PinModifierUserSet && QuickMenuMod.EffectiveModifier != settings.PinModifier)
+        if (!settings.PinModifierUserSet && QuickMenuMod.MintActive)
         {
             Text.Font = GameFont.Tiny;
             GUI.color = QMStyle.TextMuted;
@@ -134,9 +147,9 @@ internal static class SettingsPage
 
     private static string ModifierLabel(PinModifier modifier) => modifier switch
     {
-        PinModifier.Alt => "QuickMenu.Settings.Modifier.Alt".Translate(),
-        PinModifier.Shift => "QuickMenu.Settings.Modifier.Shift".Translate(),
-        _ => "QuickMenu.Settings.Modifier.Ctrl".Translate(),
+        PinModifier.Alt => _modAlt!,
+        PinModifier.Shift => _modShift!,
+        _ => _modCtrl!,
     };
 
     private static FloatMenuOption ModifierOption(PinModifier modifier) => new(ModifierLabel(modifier), () =>
@@ -150,7 +163,7 @@ internal static class SettingsPage
 
     private static void ClearAllPins()
     {
-        QuickMenuMod.Settings.ClearAllPins();
+        PinService.ClearAll();
         QuickMenuMod.Settings.NotifyChanged();
         QuickMenuMod.SaveSettings();
     }
@@ -166,7 +179,13 @@ internal static class SettingsPage
             rings--;
         }
 
-        Widgets.Label(new Rect(x + 30f, row.y, 30f, row.height), rings.ToString(CultureInfo.CurrentCulture));
+        if (rings != _ringsFor)
+        {
+            _ringsFor = rings;
+            _ringsText = rings.ToString(CultureInfo.CurrentCulture);
+        }
+
+        Widgets.Label(new Rect(x + 30f, row.y, 30f, row.height), _ringsText);
         if (Widgets.ButtonText(new Rect(x + 60f, row.y, 30f, row.height), "+") && rings < LayoutConstants.MaxRings)
         {
             rings++;
@@ -190,7 +209,13 @@ internal static class SettingsPage
     private static void DrawButtonSize(Listing_Standard listing, QuickMenuSettings settings)
     {
         Rect row = listing.GetRect(RowHeight);
-        Widgets.Label(new Rect(row.x, row.y, 110f, row.height), $"{_buttonSize} {settings.ButtonSize.ToString("0", CultureInfo.CurrentCulture)}");
+        if (settings.ButtonSize != _sizeFor)
+        {
+            _sizeFor = settings.ButtonSize;
+            _sizeText = $"{_buttonSize} {settings.ButtonSize.ToString("0", CultureInfo.CurrentCulture)}";
+        }
+
+        Widgets.Label(new Rect(row.x, row.y, 110f, row.height), _sizeText);
         float value = Widgets.HorizontalSlider(
             new Rect(row.x + 120f, row.y + 6f, row.width - 120f, row.height - 6f),
             settings.ButtonSize,

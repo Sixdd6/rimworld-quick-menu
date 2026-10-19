@@ -16,6 +16,7 @@ internal static class BindingRow
     private const float RowHeight = 30f;
 
     private static TriggerBinding _cachedFor;
+    private static PinModifier _cachedModifier;
     private static bool _cacheValid;
     private static string _label = string.Empty;
     private static string? _conflict;
@@ -33,7 +34,7 @@ internal static class BindingRow
         _note ??= "QuickMenu.Settings.BindingNote".Translate();
 
         QuickMenuSettings settings = QuickMenuMod.Settings;
-        Refresh(settings.Trigger);
+        Refresh(settings.Trigger, QuickMenuMod.EffectiveModifier);
 
         Rect row = listing.GetRect(RowHeight);
         float labelWidth = row.width * 0.3f;
@@ -82,14 +83,15 @@ internal static class BindingRow
         QuickMenuMod.SaveSettings();
     }
 
-    private static void Refresh(TriggerBinding binding)
+    private static void Refresh(TriggerBinding binding, PinModifier modifier)
     {
-        if (_cacheValid && _cachedFor == binding)
+        if (_cacheValid && _cachedFor == binding && _cachedModifier == modifier)
         {
             return;
         }
 
         _cachedFor = binding;
+        _cachedModifier = modifier;
         _cacheValid = true;
         _conflict = null;
         string? key = binding.LabelKey;
@@ -100,9 +102,18 @@ internal static class BindingRow
         }
 
         var code = (KeyCode)binding.Code;
-        _label = code.ToString();
-        _conflict = FindConflict(code, _label);
+        _label = code.ToStringReadable();
+        _conflict = IsPinModifierKey(code, modifier)
+            ? "QuickMenu.Settings.KeyIsPinModifier".Translate(_label)
+            : FindConflict(code, _label);
     }
+
+    private static bool IsPinModifierKey(KeyCode code, PinModifier modifier) => modifier switch
+    {
+        PinModifier.Ctrl => code is KeyCode.LeftControl or KeyCode.RightControl,
+        PinModifier.Alt => code is KeyCode.LeftAlt or KeyCode.RightAlt,
+        _ => code is KeyCode.LeftShift or KeyCode.RightShift,
+    };
 
     private static string? FindConflict(KeyCode code, string keyName)
     {

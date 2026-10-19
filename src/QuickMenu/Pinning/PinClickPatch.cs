@@ -17,7 +17,7 @@ namespace QuickMenu.Pinning;
 /// <summary>
 /// Shared Harmony prefix on every declared, non-abstract <c>ProcessInput(Event)</c> in <see cref="Designator"/> and its
 /// subclasses (ADR 0005). The event is bound by index (<c>Event __0</c>) because Harmony binds named parameters by name
-/// and overrides do not agree on the parameter name. In this build (spike S-1/S-3) the prefix only observes and always returns <c>true</c>.
+/// and overrides do not agree on the parameter name. On a pin gesture the prefix returns <c>false</c> so the designator does not activate.
 /// </summary>
 internal static class PinClickPatch
 {
@@ -66,45 +66,28 @@ internal static class PinClickPatch
     internal static int LastLeftDownFrame { get; set; } = PinClickDeduper.NoPress;
 
     private static readonly PinClickDeduper _deduper = new();
-    private static bool _busy;
 
     /// <summary>
     /// Pins or unpins on modifier+left-click, otherwise observes. S-3 (ADR 0005): the Event is already used when this
     /// runs, so click versus hotkey comes from <c>UnityEngine.Input</c> and the modifiers from the event and from <c>Input</c>.
-    /// The fast path (no mouse button change this frame) allocates nothing. <c>_busy</c> stops a nested call (an override that
-    /// calls <c>base.ProcessInput</c>) from toggling twice.
+    /// Fast path (P-3): the effective modifier's two keys and the event flag are checked first, so a normal click costs two
+    /// <c>Input</c> calls and allocates nothing. A nested call (an override that calls <c>base.ProcessInput</c>) cannot
+    /// toggle twice: the deduper rejects a second call in the same frame, and a pin gesture returns false so the nested
+    /// call is never reached.
     /// </summary>
     internal static bool Prefix(Designator __instance, Event __0)
     {
-        if (Site.Disabled || MenuActivation.Depth > 0 || _busy)
+        if (Site.Disabled || MenuActivation.Depth > 0 || PinSuppress.Depth > 0)
         {
             return true;
         }
 
-        bool down = UnityEngine.Input.GetMouseButtonDown(0);
-        bool up = UnityEngine.Input.GetMouseButtonUp(0);
-        if (!down && !up)
-        {
-            return true;
-        }
-
-        _busy = true;
+        using var scope = new MeasureScope(StatId.PinPrefix);
         try
         {
-            Event? ev = __0;
-            var input = new PinClickInput(
-                IsKeyEvent: false,
-                RawType: RawEventType.Other,
-                Button: 0,
-                EventCtrl: ev != null && (ev.control || ev.command),
-                EventAlt: ev != null && ev.alt,
-                EventShift: ev != null && ev.shift,
-                RawCtrl: UnityEngine.Input.GetKey(KeyCode.LeftControl) || UnityEngine.Input.GetKey(KeyCode.RightControl),
-                RawAlt: UnityEngine.Input.GetKey(KeyCode.LeftAlt) || UnityEngine.Input.GetKey(KeyCode.RightAlt),
-                RawShift: UnityEngine.Input.GetKey(KeyCode.LeftShift) || UnityEngine.Input.GetKey(KeyCode.RightShift),
-                LeftDownThisFrame: down,
-                LeftUpThisFrame: up);
-            if (PinClickClassifier.Classify(input, QuickMenuMod.EffectiveModifier) != PinClickAction.Pin)
+            PinModifier modifier = QuickMenuMod.EffectiveModifier;
+            if (!TryBuildInput(__0, modifier, out PinClickInput input)
+                || PinClickClassifier.Classify(input, modifier) != PinClickAction.Pin)
             {
                 return true;
             }
@@ -122,12 +105,68 @@ internal static class PinClickPatch
             Site.Fail(ex);
             return true;
         }
-        finally
-        {
-            _busy = false;
-        }
     }
 
+    /// <summary>
+    /// Builds the classifier input for a left-button press or release with the effective modifier held. Returns false
+    /// (no input built) as soon as the modifier is not held or the left button did not change. Only the effective
+    /// modifier's raw keys are read; the classifier looks at no others. <paramref name="ev"/> may be null.
+    /// </summary>
+    internal static bool TryBuildInput(Event? ev, PinModifier modifier, out PinClickInput input)
+    {
+        bool rawHeld;
+        bool eventHeld;
+        switch (modifier)
+        {
+            case PinModifier.Ctrl:
+                eventHeld = ev != null && (ev.control || ev.command);
+                rawHeld = UnityEngine.Input.GetKey(KeyCode.LeftControl) || UnityEngine.Input.GetKey(KeyCode.RightControl);
+                break;
+            case PinModifier.Alt:
+                eventHeld = ev != null && ev.alt;
+                rawHeld = UnityEngine.Input.GetKey(KeyCode.LeftAlt) || UnityEngine.Input.GetKey(KeyCode.RightAlt);
+                break;
+            default:
+                eventHeld = ev != null && ev.shift;
+                rawHeld = UnityEngine.Input.GetKey(KeyCode.LeftShift) || UnityEngine.Input.GetKey(KeyCode.RightShift);
+                break;
+        }
+
+        input = default;
+        if (!eventHeld && !rawHeld)
+        {
+            return false;
+        }
+
+        bool down = UnityEngine.Input.GetMouseButtonDown(0);
+        bool up = UnityEngine.Input.GetMouseButtonUp(0);
+        if (!down && !up)
+        {
+            return false;
+        }
+
+        bool ctrl = modifier == PinModifier.Ctrl;
+        bool alt = modifier == PinModifier.Alt;
+        bool shift = !ctrl && !alt;
+        input = new PinClickInput(
+            IsKeyEvent: false,
+            RawType: RawEventType.Other,
+            Button: 0,
+            EventCtrl: ctrl && eventHeld,
+            EventAlt: alt && eventHeld,
+            EventShift: shift && eventHeld,
+            RawCtrl: ctrl && rawHeld,
+            RawAlt: alt && rawHeld,
+            RawShift: shift && rawHeld,
+            LeftDownThisFrame: down,
+            LeftUpThisFrame: up);
+        return true;
+    }
+
+    /// <summary>
+    /// Pins or unpins <paramref name="designator"/>. Never throws: an uncatalogued designator whose key cannot be built
+    /// (or would be the shared dropdown key) is refused with a Keyed message.
+    /// </summary>
     internal static void Toggle(Designator designator)
     {
         if (DesignatorCatalog.Find(designator) is { } entry)
@@ -136,19 +175,40 @@ internal static class PinClickPatch
             return;
         }
 
-        // Not in the catalog (for example a designator a mod adds after startup): key it on its own.
-        Type type = designator.GetType();
-        BuildableDef? placing = (designator as Designator_Build)?.PlacingDef;
-        DescriptorKind kind = placing switch
+        // Not in the catalog (for example a designator a mod adds after startup): describe it with the catalog's own builder.
+        string label = designator.Label ?? string.Empty;
+        try
         {
-            TerrainDef => DescriptorKind.BuildTerrain,
-            ThingDef => DescriptorKind.BuildThing,
-            _ => DescriptorKind.Other,
-        };
-        var descriptor = new DesignatorDescriptor(kind, type.FullName ?? type.Name, placing?.defName, string.Empty);
-        PinKey key = PinKeyFactory.Assign(new[] { descriptor })[0];
-        string? packageId = placing?.modContentPack?.PackageId;
-        PinService.Toggle(key, designator.Label ?? string.Empty, string.IsNullOrEmpty(packageId) ? null : packageId);
+            DesignatorDescriptor descriptor = DesignatorCatalog.DescribeTree(designator, string.Empty);
+            PinKey key = PinKeyFactory.Assign(new[] { descriptor })[0];
+            if (designator is Designator_Dropdown && key.Kind == PinKeyKind.Order)
+            {
+                // Every childless dropdown would share one order key, so pinning one would pin them all.
+                Refuse(label, "uncatalogued dropdown without a def group");
+                return;
+            }
+
+            BuildableDef? placing = (designator as Designator_Build)?.PlacingDef;
+            string? packageId = placing?.modContentPack?.PackageId;
+            PinService.Toggle(key, label, string.IsNullOrEmpty(packageId) ? null : packageId);
+        }
+        catch (Exception ex)
+        {
+            Refuse(label, ex.GetType().Name + ": " + ex.Message);
+        }
+    }
+
+    private static void Refuse(string label, string reason)
+    {
+        Diagnostics.Log.LogOnce("Pinning.Uncatalogued." + label, $"{label} was not pinned: {reason}");
+        try
+        {
+            Messages.Message("QuickMenu.Pin.Unavailable".Translate(label), MessageTypeDefOf.RejectInput, historical: false);
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Log.LogOnce("Pinning.Refuse", $"Showing the pin refusal failed: {ex}");
+        }
     }
 
     /// <summary>

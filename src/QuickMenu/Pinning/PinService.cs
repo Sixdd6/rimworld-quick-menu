@@ -140,6 +140,13 @@ internal static class PinService
         return n;
     }
 
+    /// <summary>Removes every pin and the resolved cache with it, so no stale entry outlives its pin.</summary>
+    internal static void ClearAll()
+    {
+        QuickMenuMod.Settings.ClearAllPins();
+        _resolved.Clear();
+    }
+
     internal static PinBoard Board => QuickMenuMod.Settings.Board;
 
     /// <summary>Toggles the pin of <paramref name="entry"/>, shows the S9 message with its sound and writes the settings once.</summary>

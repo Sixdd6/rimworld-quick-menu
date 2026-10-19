@@ -22,6 +22,19 @@ internal static class TriggerPoller
 
     internal static void Postfix()
     {
+        // Recorded before the disabled check: a disabled poller must never break pinning (the deduper reads this frame).
+        try
+        {
+            if (UnityEngine.Input.GetMouseButtonDown(0))
+            {
+                PinClickPatch.LastLeftDownFrame = Time.frameCount;
+            }
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Log.LogOnce("TriggerPoller.LeftDown", $"Recording the left button press failed: {ex}");
+        }
+
         if (Site.Disabled)
         {
             return;
@@ -35,11 +48,6 @@ internal static class TriggerPoller
             }
 
             using var scope = new MeasureScope(StatId.Poller); // one cached bool check while measuring is off
-            if (UnityEngine.Input.GetMouseButtonDown(0))
-            {
-                PinClickPatch.LastLeftDownFrame = Time.frameCount; // for the pin click deduper (T-26)
-            }
-
             if (!TriggerPressed())
             {
                 return;
@@ -78,6 +86,12 @@ internal static class TriggerPoller
     private static bool CanOpen()
     {
         if (Current.ProgramState != ProgramState.Playing || Find.CurrentMap == null || WorldRendererUtility.WorldRendered)
+        {
+            return false;
+        }
+
+        // Typing in a text field must not open the menu. Only key bindings: a mouse button is not text input.
+        if (QuickMenuMod.Settings.Trigger.Kind == TriggerBindingKind.Key && GUIUtility.keyboardControl != 0)
         {
             return false;
         }

@@ -4,7 +4,6 @@ using QuickMenu.Core.Input;
 using QuickMenu.Diagnostics;
 using QuickMenu.Menu;
 using RimWorld;
-using UnityEngine;
 using Verse;
 
 namespace QuickMenu.Pinning;
@@ -26,7 +25,8 @@ internal static class DropdownEntryPatch
         try
         {
             var original = AccessTools.Method(typeof(Designator_Dropdown), "GetDesignatorSelectAction");
-            if (original == null || original.ReturnType != typeof(Action) || original.GetParameters().Length != 2)
+            if (original == null || original.ReturnType != typeof(Action) || original.GetParameters() is not { Length: 2 } parameters
+                || !typeof(Designator).IsAssignableFrom(parameters[1].ParameterType))
             {
                 Site.Fail(new MissingMethodException(typeof(Designator_Dropdown).FullName, "GetDesignatorSelectAction"));
                 return;
@@ -73,38 +73,37 @@ internal static class DropdownEntryPatch
         {
             if (!Site.Disabled && MenuActivation.Depth == 0)
             {
+                bool pin = false;
                 try
                 {
-                    if (IsPinGesture())
+                    pin = IsPinGesture();
+                    if (pin)
                     {
                         PinClickPatch.Toggle(_entry);
-                        return;
                     }
                 }
                 catch (Exception ex)
                 {
                     Site.Fail(ex);
                 }
+
+                if (pin)
+                {
+                    // Once the gesture is detected the game's action never runs, even if toggling failed.
+                    return;
+                }
             }
 
+            // The pin prefix must not see this call as a pin gesture on the dropdown if our check failed.
+            using var suppress = PinSuppress.Enter();
             _original();
         }
 
         private static bool IsPinGesture()
         {
-            var input = new PinClickInput(
-                IsKeyEvent: false,
-                RawType: RawEventType.Other,
-                Button: 0,
-                EventCtrl: false,
-                EventAlt: false,
-                EventShift: false,
-                RawCtrl: UnityEngine.Input.GetKey(KeyCode.LeftControl) || UnityEngine.Input.GetKey(KeyCode.RightControl),
-                RawAlt: UnityEngine.Input.GetKey(KeyCode.LeftAlt) || UnityEngine.Input.GetKey(KeyCode.RightAlt),
-                RawShift: UnityEngine.Input.GetKey(KeyCode.LeftShift) || UnityEngine.Input.GetKey(KeyCode.RightShift),
-                LeftDownThisFrame: UnityEngine.Input.GetMouseButtonDown(0),
-                LeftUpThisFrame: UnityEngine.Input.GetMouseButtonUp(0));
-            return PinClickClassifier.Classify(input, QuickMenuMod.EffectiveModifier) == PinClickAction.Pin;
+            PinModifier modifier = QuickMenuMod.EffectiveModifier;
+            return PinClickPatch.TryBuildInput(null, modifier, out PinClickInput input)
+                && PinClickClassifier.Classify(input, modifier) == PinClickAction.Pin;
         }
     }
 }

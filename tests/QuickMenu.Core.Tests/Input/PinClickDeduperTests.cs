@@ -55,4 +55,22 @@ public class PinClickDeduperTests
         Assert.True(d.Accept(5, None, Up()));
         Assert.True(d.Accept(9, None, Up()));
     }
+
+    [Fact]
+    public void Stale_older_down_frame_never_rejects_and_does_not_move_the_accepted_press_back()
+    {
+        var d = new PinClickDeduper();
+        Assert.True(d.Accept(100, 100, Down()));
+        Assert.True(d.Accept(103, 50, Up()));
+        Assert.False(d.Accept(105, 100, Up()));
+    }
+
+    [Fact]
+    public void Stale_down_frame_before_any_accepted_press_is_accepted()
+    {
+        var d = new PinClickDeduper();
+        Assert.True(d.Accept(200, 150, Up()));
+        Assert.False(d.Accept(203, 150, Up()));
+        Assert.True(d.Accept(300, 100, Up()));
+    }
 }

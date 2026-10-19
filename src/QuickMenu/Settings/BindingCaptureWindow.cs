@@ -29,13 +29,13 @@ internal sealed class BindingCaptureWindow : Window
         doCloseButton = false;
         closeOnClickedOutside = false;
         closeOnAccept = false;
-        closeOnCancel = false;
+        closeOnCancel = true;
         absorbInputAroundWindow = true;
         preventCameraMotion = true;
         draggable = false;
     }
 
-    public override Vector2 InitialSize => new(360f, 150f);
+    public override Vector2 InitialSize => new(360f, 190f);
 
     public override void WindowUpdate()
     {
@@ -59,7 +59,7 @@ internal sealed class BindingCaptureWindow : Window
         if (_showRejected)
         {
             GUI.color = Menu.QMStyle.Danger;
-            Widgets.Label(new Rect(inRect.x, inRect.y + 62f, inRect.width, 24f), _rejected);
+            Widgets.Label(new Rect(inRect.x, inRect.y + 82f, inRect.width, 24f), _rejected);
             GUI.color = Color.white;
         }
 

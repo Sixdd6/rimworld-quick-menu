@@ -6,7 +6,7 @@ namespace QuickMenu.Core.Input;
 /// the classifier said <see cref="PinClickAction.Pin"/>, plus the frame of the last raw left-button DOWN
 /// (recorded by the per-frame poller; <see cref="NoPress"/> if none). The down frame wins; an up is
 /// suppressed only when it belongs to the press already accepted, so a later separate up-only click
-/// (down not seen by the prefix) is still accepted. A repeated call within one frame is rejected too.
+/// (down not seen by the prefix) is still accepted. A down frame older than the last accepted press is stale and is ignored. A repeated call within one frame is rejected too.
 /// Note: the T-26 prefix must still return false (swallow the click) on a suppressed frame of a pinned
 /// click, so the original designator never sees the up.
 /// </summary>
@@ -37,7 +37,13 @@ public sealed class PinClickDeduper
             return false;
         }
 
-        _acceptedPress = lastLeftDownFrame;
+        // A down frame older than the last accepted press is stale (the poller missed a press): it never rejects and
+        // never moves the accepted press backwards.
+        if (lastLeftDownFrame > _acceptedPress)
+        {
+            _acceptedPress = lastLeftDownFrame;
+        }
+
         return true;
     }
 }

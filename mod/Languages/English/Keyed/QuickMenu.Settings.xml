@@ -9,6 +9,7 @@
   <QuickMenu.Settings.UseMiddleMouse>Use middle mouse instead</QuickMenu.Settings.UseMiddleMouse>
   <QuickMenu.Settings.BindingNote>Mice do not report their side buttons. If Mouse 4 does nothing, use the middle mouse button or bind a key. Middle mouse also drags the camera while held.</QuickMenu.Settings.BindingNote>
   <QuickMenu.Settings.KeyConflict>{0} is also used for: {1}.</QuickMenu.Settings.KeyConflict>
+  <QuickMenu.Settings.KeyIsPinModifier>{0} is also the key you hold to pin, so pinning will open the menu. Pick another key or another pin key.</QuickMenu.Settings.KeyIsPinModifier>
   <QuickMenu.Settings.Title>Quick Menu</QuickMenu.Settings.Title>
   <QuickMenu.Settings.HeadOpening>Opening the menu</QuickMenu.Settings.HeadOpening>
   <QuickMenu.Settings.HeadPinning>Pinning</QuickMenu.Settings.HeadPinning>

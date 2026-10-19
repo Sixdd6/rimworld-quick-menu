@@ -16,6 +16,9 @@ internal enum StatId
     /// <summary>DoWindowContents and WindowUpdate of the menu window share one per-frame bucket (P-8).</summary>
     Window,
     Control,
+
+    /// <summary>The pin click prefix (P-3).</summary>
+    PinPrefix,
 }
 
 /// <summary>
@@ -48,6 +51,7 @@ internal static class PerfCounters
         new("open path (WindowStack.Add of the menu; one sample per open)", 256),
         new("menu window per frame (DoWindowContents + WindowUpdate)", FrameRing),
         new("control window per frame (DoWindowContents)", FrameRing),
+        new("pin click prefix (P-3; one sample per designator ProcessInput call)", 256),
     };
 
     internal static MeasureStats Get(StatId id) => EnsureStats()[(int)id];

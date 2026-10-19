@@ -29,6 +29,9 @@ public sealed class QuickMenuMod : Mod
 
     private static bool _mintActive;
 
+    /// <summary>Whether Dubs Mint Menus was active when the game started.</summary>
+    internal static bool MintActive => _mintActive;
+
     /// <summary>
     /// The pin modifier in effect, cached at startup and by <see cref="RefreshEffectiveModifier"/>. The pin prefix reads
     /// only this field, never <c>ModsConfig</c> or the settings.

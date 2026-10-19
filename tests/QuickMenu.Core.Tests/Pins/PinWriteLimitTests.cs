@@ -60,7 +60,7 @@ public class PinWriteLimitTests
         Assert.Equal(PinSerializer.MaxLineLength, line.Length);
         Assert.Equal(exact, PinSerializer.FromLines(new[] { line }).Board.Entries[0]!.Label);
 
-        // One filler less: the pair no longer fits, and is dropped whole rather than split.
+        // One filler more: the pair no longer fits, and is dropped whole rather than split.
         string over = new string('a', budget - 1) + special;
         var c = new PinBoard(1);
         c.Toggle(K("X"), over);
