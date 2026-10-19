@@ -7,7 +7,7 @@
 
 Quick Menu is a RimWorld 1.7 C# mod. It shows a radial wheel or a grid of pinned architect designators around the mouse. It has no server, no network and no save-game data. Everything runs inside the game process. The mod is a single shipped folder with two assemblies:
 
-- **QuickMenu.Core**: pure, engine-free logic (layout maths, edge dodging, sizing, pin identity and storage, trigger state machine, search). It is unit-tested outside the game (NFR-8).
+- **QuickMenu.Core**: pure, engine-free logic (layout maths, edge dodging, sizing, pin identity and storage, trigger state machine). Search was dropped with the picker (section 3.1). It is unit-tested outside the game (NFR-8).
 - **QuickMenu**: a thin adapter between the game and Core. It holds the Harmony patches, input polling, designator catalog and activation, IMGUI drawing, and mod settings.
 
 **RimWorld 1.7 is a new platform.** The installed game is `1.7.4982 rev1280`. It runs on Ludeon's **Waylith** engine and a patched **CoreCLR, .NET 10** (`RimWorld.runtimeconfig.json`: `tfm net10.0`, framework `10.0.13-waylithclr.dev`). Unity and Mono are gone. Unity APIs are provided by `UnityStubs.dll`, and `UnityEngine*` references are redirected to it. Mods target `net10.0` and reference `Assembly-CSharp.dll`, `UnityStubs.dll` and `Waylith.dll`. Harmony is **Harmony 3** (workshop `brrainz.harmony` ships `0Harmony 3.0.0-rc.3` built for .NETCoreApp 10.0). See [ADR 0001](decisions/0001-target-rimworld-1-7-waylith-net10.md).
@@ -66,14 +66,13 @@ The exact geometry (constants, ring capacity table, fill order, hub, buttons, la
 | **Layout.Capacity** | Fixed capacity from settings; Auto growth (next ring/row) until the next step would not fit on screen, then full (FR-5, FR-6) | `Capacity.Fixed(settings)`, `Capacity.AutoShape(count, screen)` |
 | **Layout.HitTest** | Point to a typed hit: `Slot(i)`, `HubEdit`, `Button(kind)`, `Plate`, `Inside`, `Outside`. The hub has **one** hit kind, `HubEdit` (wheel: distance ≤ P/2; grid: the centre cell); there is no `HubClose` and no sub-target (`HasHubSub` and the `e`/`ey` constants are removed). Hub first, then buttons, then slots. The hub is never returned as a slot. Geometry comes from design.md §1.1 | `HitTester.Hit(Vec2, layout) -> Hit` |
 | **Pins.PinKey** | Stable identity string, parse and format ([0004](decisions/0004-pin-identity-and-storage.md)) | `PinKey.Build(thing/terrain, defName)`, `.Dropdown(defName)`, `.Order(type, ordinal)`, `.ModDropdown(type, category, children)`, `TryParse` |
-| **Pins.PinBoard** | Pin list with Fixed/Auto semantics: toggle (FR-15), swap, clear, insert cursor (FR-9), full detection (FR-5), reserved slots for unresolved pins (FR-14), forget missing pins, mode conversion | `Toggle(key) -> PinResult {Pinned, Unpinned, Full}`, `Swap(a,b)`, `Clear(i)`, `SetCursor(i)`, `VisibleSlots(resolver)`, `ForgetUnresolved(resolver) -> int removed`, `CountUnresolved(resolver)` |
+| **Pins.PinBoard** | Pin list with Fixed/Auto semantics: toggle (FR-15; a new pin goes into the first free slot in Fixed or at the end in Auto), swap (FR-9; in Fixed, swapping with an empty slot moves the pin), clear, full detection (FR-5), reserved slots for unresolved pins (FR-14), forget missing pins, mode conversion | `Toggle(key) -> PinResult {Pinned, Unpinned, Full}`, `Swap(a,b)`, `Clear(i)`, `VisibleSlots(resolver)`, `ForgetUnresolved(resolver) -> int removed`, `CountUnresolved(resolver)` |
 | **Pins.PinSerializer** | Versioned one-line-per-pin text records; unknown or unresolvable keys kept verbatim | `ToLines(board)`, `FromLines(lines)` |
 | **Pins.ModDropdownMatcher** | Best match for a non-def dropdown by type, category and child-key overlap | `Match(stored, candidates) -> index or none` |
 | **Input.TriggerBinding** | `None`, `Key(keyCode)`, `Mouse(index 2..4)`; label; serialise | value type |
 | **Input.TriggerStateMachine** | Toggle and hold behaviour (FR-2): trigger press and release, Esc, click or release on a `Hit`, map lost. It produces `Open`, `Close`, `Back`, `Activate(slot)`, `OpenSub(slot)`, `EnterEdit` and `ExitEdit`. Hub rules (design.md S4a): **the hub never closes the menu on a click**. **HubEdit reacts only to a deliberate click** (MouseDown and MouseUp both on it, in either trigger mode): in the main level it gives `EnterEdit` when `EditEnabled` is true (set by T-44) and `None` before that; in edit mode it is **Done** (`ExitEdit`, settings written once); with a satellite open the centre is the parent slot and a click there = Back. A **hold-mode release over the hub cancels** (Close, no action) and never enters edit mode. Right-click: Close on the main level, Back with a satellite, **Close (`CloseFromEdit`) in edit mode** (it never unpins). Esc: Back / ExitEdit / Close. A left-click outside does nothing in edit mode. Unpinning in edit mode is a pin-modifier+click on a slot, handled by the edit-mode controller, not by this machine | `Handle(TriggerEvent) -> MenuCommand` |
 | **Input.ModifierPolicy** | Effective pin modifier: user choice, or Alt when Mint is active and the user has not chosen (FR-8). The adapter computes it once at startup and again when settings change, then caches it. The click prefix reads the cached value and never calls `ModsConfig` | `Effective(settings, mintActive)` |
 | **Render.MaskRasterizer** | Generates anti-aliased grayscale masks as byte arrays: disc, ring of a given stroke, rounded rect, small glyphs for badges. Deterministic and unit-tested (pixel coverage at edges, sizes). The adapter turns them into textures ([0007](decisions/0007-menu-host-fullscreen-imgui-window.md)) | `MaskRasterizer.Disc(size)`, `.Ring(size, stroke)`, `.RoundedRect(w, h, radius)` → `byte[]` |
-| **Search.SearchIndex** | Case-insensitive token match on label, category and mod name (FR-7). Entries are a plain Core record `SearchEntry { int Id; string Label; string Category; string ModName; bool DevOnly; int ParentId }`. It holds no game types. `Id` indexes the adapter's designator table. Allocation-free queries into a caller-owned result list | `Build(IReadOnlyList<SearchEntry>)`, `Query(text, List<int> results)` |
 | **Materials.StuffOrdering** | Order materials last-used first; skip the ring when there is one; "none" state (FR-12) | `Order(options, lastUsed)` |
 
 ### Game adapter (`src/QuickMenu/`, thin, tested in-game)
@@ -85,17 +84,16 @@ The exact geometry (constants, ring capacity table, fill order, hub, buttons, la
 | **Settings.BindingCaptureWindow** | Custom "press a key or mouse button" dialog: keys from IMGUI `KeyDown` events; mouse buttons by polling `Input.GetMouseButtonDown(2..4)` in `WindowUpdate`; Esc cancels; left/right buttons rejected; warns on conflicts with game key bindings ([0003](decisions/0003-custom-trigger-binding-and-input-polling.md)) | UnityStubs `Input`, `KeyPrefs` |
 | **Input.TriggerPoller** | Harmony postfix on `RimWorld.UIRoot_Play.UIRootUpdate` (runs once per frame). Polls only the bound key or button. Opens or toggles the menu when a colony map is shown | Core.Input, MenuController |
 | **Compat.ModDetection** | `ModsConfig.IsActive("Dubwise.DubsMintMenus")`, BAM (`ferny.BetterArchitect`), Multiplayer; one-time Mint notice | — |
-| **Catalog.DesignatorCatalog** | Lists every architect designator independently of the architect UI: all `DesignationCategoryDef`s, `AllResolvedAndIdeoDesignators`, dropdown children flattened for search. Builds `PinKey` for each designator and resolves `PinKey` to a live designator (FR-7, FR-10). **Static part is built once at startup** (`[StaticConstructorOnStartup]`, on the loading screen, after defs are resolved): designator table, key map, `SearchEntry[]` and `SearchIndex`. **Ideology part** is refreshed only when its change signature differs: (current `Game` instance, player's primary `Ideo`, ideo precept count). It is checked on open in O(1) ([0006](decisions/0006-designator-catalog-and-activation.md)) | Core.Pins, Core.Search |
+| **Catalog.DesignatorCatalog** | Lists every architect designator independently of the architect UI: all `DesignationCategoryDef`s, `AllResolvedAndIdeoDesignators`, dropdown children flattened. Builds `PinKey` for each designator and resolves `PinKey` to a live designator (FR-8, FR-10, FR-14). **Static part is built once at startup** (`[StaticConstructorOnStartup]`, on the loading screen, after defs are resolved): designator table and key map (no search entries or index since 2026-10-19). **Ideology part** is refreshed only when its change signature differs: (current `Game` instance, player's primary `Ideo`, ideo precept count). It is checked on open in O(1) ([0006](decisions/0006-designator-catalog-and-activation.md)) | Core.Pins |
 | **Catalog.AvailabilityResolver** | Visible/disabled state and reason text: `Gizmo.Disabled` + `disabledReason`; for `Visible == false` composes a reason from the known causes (research, tech level, building/discovery prerequisites, monolith, grav engine), else a generic keyed string (FR-14) | Keyed strings |
 | **Catalog.StuffOptions** | Materials the architect would offer: map resource-counter stuffs that `CanMake` the def and exist on the map (or god mode), as vanilla `Designator_Build.ProcessInput` does (FR-12) | Core.Materials |
 | **Activation.DesignatorActivator** | Activates a slot exactly like the architect (FR-13): plain designators get `designator.ProcessInput(Event.current)`; stuff builds get `SetStuffDef(stuff)` then the base select path (interaction check, activate sound, `DesignatorManager.Select`); dropdown elements get the same treatment as a direct element ([0006](decisions/0006-designator-catalog-and-activation.md)) | Catalog |
 | **Pinning.PinClickPatch** | Harmony prefix on every declared `ProcessInput(Event)` override in the `Designator` hierarchy (all loaded assemblies). If the effective modifier is held and the event is a left mouse click, it toggles the pin, shows a message, and skips the original (FR-8, FR-15) ([0005](decisions/0005-pin-by-click-processinput-prefix.md)) | Harmony, PinService |
-| **Pinning.PinService** | Owns the runtime `PinBoard`, resolves keys through the catalog key map (built at startup, so opening the menu does no catalog work), sends player messages (pinned, unpinned, full). **Settings writes**: once per pin-by-click or picker pin, and in edit mode once when edit mode ends or the menu closes (dirty flag). Never per drag step and never per frame | Core.Pins, Catalog, Settings |
+| **Pinning.PinService** | Owns the runtime `PinBoard`, resolves keys through the catalog key map (built at startup, so opening the menu does no catalog work), sends player messages (pinned, unpinned, full). **Settings writes**: once per pin or unpin by modifier+click (architect menu or a menu slot in use mode), and in edit mode once when edit mode ends or the menu closes (dirty flag). Never per drag step and never per frame | Core.Pins, Catalog, Settings |
 | **UI.MenuController** | Opens and closes `QuickMenuWindow`, computes layout once per open or settings change, routes Core state machine commands | Core.Layout, Core.Input |
-| **UI.QuickMenuWindow** (`Verse.Window`) | Full-screen, transparent, non-pausing window. Draws the wheel or grid, sub-rings and the material ring; hit tests via Core; edit mode (drag swap, pin-modifier+click unpin, click a "+" or slot to set the insert cursor and open the picker); hold-mode release polling in `WindowUpdate`; closes on Esc, outside click, selection, or map change ([0007](decisions/0007-menu-host-fullscreen-imgui-window.md)) | Core, Activation, PinService |
-| **UI.PickerWindow** | Searchable list of the catalog; greyed locked items; dev-only items only in dev mode; click to pin (FR-7) | Catalog, Core.Search |
+| **UI.QuickMenuWindow** (`Verse.Window`) | Full-screen, transparent, non-pausing window. Draws the wheel or grid, sub-rings and the material ring; hit tests via Core; edit mode (drag swap or move into an empty slot, pin-modifier+click unpin; no Add, no picker, no insert cursor); pin-modifier+click unpin on a main-level slot in use mode too; hold-mode release polling in `WindowUpdate`; closes on Esc, outside click, selection, or map change ([0007](decisions/0007-menu-host-fullscreen-imgui-window.md)) | Core, Activation, PinService |
 | **UI.Textures / Sounds** | `[StaticConstructorOnStartup]` texture cache. Masks are generated at runtime from Core's `MaskRasterizer` into `Texture2D` at the current button size and UI scale. The fallback is shipped PNG masks in `mod/Textures/QuickMenu/UI/` via `ContentFinder<Texture2D>`, and the last resort is the game's asset baker (spike S-7). Vanilla `SoundDefOf` sounds only | — |
-| **Diagnostics.SelfTest** | Dev-mode debug action: enumerate the catalog, round-trip every designator through `PinKey`, report duplicates, unresolved keys, patch count and index build time. This is the in-game integration test | Catalog, PinClickPatch |
+| **Diagnostics.SelfTest** | Dev-mode debug action: enumerate the catalog, round-trip every designator through `PinKey`, report duplicates, unresolved keys, patch count and catalog build time. This is the in-game integration test | Catalog, PinClickPatch |
 | **Diagnostics.Log** | `LogOnce(key, message)`: errors logged once per key (NFR-6) | `Verse.Log` |
 
 ```mermaid
@@ -110,10 +108,8 @@ flowchart TB
     TP --> MC[MenuController]
     MC --> W[QuickMenuWindow]
     W --> ACT[DesignatorActivator]
-    W --> PK[PickerWindow]
     PC --> PS[PinService]
     W --> PS
-    PK --> PS
     PS --> CAT[DesignatorCatalog<br/>AvailabilityResolver<br/>StuffOptions]
     ACT --> CAT
   end
@@ -121,16 +117,31 @@ flowchart TB
     L[Layout: Wheel, Grid, SubMenu,<br/>EdgeDodge, Capacity, HitTest]
     P[Pins: PinKey, PinBoard,<br/>PinSerializer, ModDropdownMatcher]
     I[Input: TriggerBinding,<br/>TriggerStateMachine, ModifierPolicy]
-    S[Search, Materials]
+    S[Materials]
   end
   MC --> L
   W --> L
   PS --> P
   TP --> I
   PC --> I
-  PK --> S
   CAT --> P
 ```
+
+### 3.1 Dropped components (user decision 2026-10-19, after UC-2; spec FR-7 Won't)
+
+The in-menu picker is removed. Pins are added **only** by modifier+click in the architect menu (FR-8). Empty slots stay empty in use and edit mode (no "+", no Add). The insert cursor is dropped too: new pins go into the first free slot (Fixed) or at the end (Auto), and the player drags them in edit mode. Modifier+click on a menu slot unpins it in use and edit mode; in edit mode right-click and a left-click outside close the menu (design.md S5, Q-D6).
+
+| Dropped | Was | What remains |
+|---|---|---|
+| **Core.Search.SearchIndex** and the `SearchEntry` record | Token search over label, category and mod name for the picker | Nothing. Not implemented in code |
+| **UI.PickerWindow** | Searchable, virtualised catalog list; click to pin | Nothing. Not implemented in code |
+| Catalog's `SearchEntry[]` and index build | Part of the startup catalog pass | The catalog itself stays (designator table, key map, pin resolution, availability, self-test round trip; ADR-0006) |
+| **PinBoard insert cursor** (`SetCursor`, `Cursor`) | Edit-mode click set where the next pins go | Exists in code from M2; no caller will set it, so `Toggle` always uses the first free slot. Removing it is a plan task (the planner owns it) |
+| Auto edit-mode "append" slot (count + 1) | The Add target in Auto | Edit mode uses the same layout count as use mode |
+| Masks `IconAdd`, `Caret` | "+" glyph and insert caret | Still generated, **unused** (design.md §3, §6) |
+| Dev-only filter for the picker (S-5 rule) | Hid debug designators from the list | Not needed; no list |
+
+The ADR context that referred to the picker is marked superseded in [ADR 0006](decisions/0006-designator-catalog-and-activation.md) (picker part only). [ADR 0005](decisions/0005-pin-by-click-processinput-prefix.md) and [ADR 0007](decisions/0007-menu-host-fullscreen-imgui-window.md) still mention the picker as a fallback or a window; those mentions are historical. Budgets P-11a/b and P-13 to P-15 are dropped in performance.md.
 
 ## 4. Data model
 
@@ -169,7 +180,7 @@ moddrop    := "moddrop:" typeFullName "@" categoryDefName "~" child ("," child)*
 ```
 
 - **Resolution order**: exact key → for `build:` keys, `BuildCopyCommandUtility.FindAllowedDesignator(def)` (it finds builds inside dropdowns and in other categories, for example after BAM regroups them) → for `moddrop:`, `ModDropdownMatcher` (same type, best child overlap ≥ 0.5, same category breaks ties) → unresolved.
-- **Unresolved pins** (mod removed, FR-14) stay in the list unchanged and are written back unchanged. In **Fixed** sizing the slot is *reserved*. Pin-by-click and the picker skip it. In use mode it draws as an empty slot. In edit mode it shows "?" with the stored label (and mod) in its tooltip, and it can be removed with pin-modifier+click. In **Auto** sizing it is hidden (left out of the layout), keeps its order, and returns in place when the mod returns. Settings shows the count of missing pins in both modes, with a **"Forget missing pins"** button (`PinBoard.ForgetUnresolved`, with a confirmation dialog). (User decision U-2.)
+- **Unresolved pins** (mod removed, FR-14) stay in the list unchanged and are written back unchanged. In **Fixed** sizing the slot is *reserved*. New pins skip it. In use mode it draws as an empty slot. In edit mode it shows "?" with the stored label (and mod) in its tooltip, and it can be removed with pin-modifier+click. In **Auto** sizing it is hidden (left out of the layout), keeps its order, and returns in place when the mod returns. Settings shows the count of missing pins in both modes, with a **"Forget missing pins"** button (`PinBoard.ForgetUnresolved`, with a confirmation dialog). (User decision U-2.)
 - **Migrations**: `schemaVersion` gates conversion in `ExposeData`. Unknown future fields are ignored by Scribe. Pin lines with an unknown prefix are kept verbatim.
 
 ## 5. Key flows
@@ -235,7 +246,7 @@ sequenceDiagram
   M->>M: Harmony: postfix UIRootUpdate; prefix every declared Designator*.ProcessInput (try/catch each, LogOnce)
   G->>S: after defs are resolved (loading screen)
   S->>S: textures (ContentFinder)
-  S->>S: build static DesignatorCatalog + key map + SearchIndex (budget P-11c, at most 200 ms; timed, reported by self-test)
+  S->>S: build static DesignatorCatalog + key map (budget P-11c, at most 200 ms; timed, reported by self-test)
   S->>S: resolve stored pins against the key map
   Note over S: Opening the menu does no catalog work; only an O(1) Ideology signature check (NFR-1, opens within one frame)
 ```
@@ -263,7 +274,7 @@ sequenceDiagram
 - **Performance** (NFR-1; budgets are in performance.md). In-game budgets are measured on the user's main machine. To cover players on hardware about **2x slower**, a measured value passes only if it is at most **50 % of its budget** there. Allocation budgets (zero bytes) are unaffected:
   - Closed: one postfix per frame doing a switch and one `Input` call, with no allocations. ProcessInput prefixes run only on clicks.
   - Opening: layout comes from a cached placement array, rebuilt only when settings or screen size change; the window is added in the same frame.
-  - Catalog and search index: the static part is built once during loading (`[StaticConstructorOnStartup]`), not on first open. The first open therefore costs the same as any other open. The Ideology part is rebuilt only when its signature (game, primary ideo, precept count) changes. This happens at most once per loaded game or ideo change, and costs well under the 200 ms index budget.
+  - Catalog: the static part is built once during loading (`[StaticConstructorOnStartup]`), not on first open. The first open therefore costs the same as any other open. The Ideology part is rebuilt only when its signature (game, primary ideo, precept count) changes. This happens at most once per loaded game or ideo change, and costs well under the 200 ms index budget.
   - Pin-by-click reads a cached effective modifier. Settings are written on pin change or edit end, never per drag step.
   - Per-frame drawing while open: no LINQ, no string building (labels and tooltips are cached per open), availability is evaluated on open and on hover.
 - **Accessibility / i18n**: English only. Every player-facing string is Keyed (NFR-4). Button size is a setting. Layout works in UI units (`UI.screenWidth/Height`, `UI.MousePositionOnUIInverted`), so the game's UI scale applies automatically (NFR-5). Hold mode has a toggle alternative. The binding accepts keyboard keys for players without side buttons, plus the one-click "use middle mouse" option.
@@ -299,16 +310,16 @@ rimworld-quick-menu/
 
 | Level | Scope | Tooling | Where / when |
 |---|---|---|---|
-| **Unit** | All of QuickMenu.Core: wheel/grid placement, ring capacity, edge dodging (min shift, oversize → centre), Auto growth and full detection, sub-menu placement near edges, hit testing (slots, the single hub target `HubEdit`, buttons, outside), PinKey parse/format round-trip including escaping, PinBoard operations (toggle/no-duplicates, swap, clear, insert cursor in Fixed vs Auto, full, reserved unresolved slots, forget-missing-pins, Fixed↔Auto conversion, mask rasterizer output, capacity shrink keeps pins), serializer (v1 lines, unknown lines kept verbatim, bad lines skipped), ModDropdownMatcher scoring, TriggerStateMachine (toggle and hold transitions, Esc, outside click, map lost, hub click never closes, hold release on hub cancels, HubEdit only on deliberate click and only when edit is enabled, Done exits edit, right-click in edit mode closes), ModifierPolicy (Mint default), SearchIndex (label/category/mod matches), StuffOrdering | xUnit v3, `dotnet test` | Every commit, CI. Test-first per task |
-| **Perf gates** | Time and zero-allocation tests (trait `Category=Perf`): 20k synthetic entries indexed in under 200 ms; zero allocations on trigger decision, modifier policy, layout/hit test/state machine per-frame calls, and search with a reused result list (budgets in performance.md §4) | xUnit v3, Release, **separate CI step without coverage instrumentation** | Every commit, CI |
-| **Benchmarks** | BenchmarkDotNet (`MemoryDiagnoser`) for layout, search, serializer and PinBoard | `tests/QuickMenu.Core.Benchmarks` | Compiled in CI; run manually or by a manual workflow |
+| **Unit** | All of QuickMenu.Core: wheel/grid placement, ring capacity, edge dodging (min shift, oversize → centre), Auto growth and full detection, sub-menu placement near edges, hit testing (slots, the single hub target `HubEdit`, buttons, outside), PinKey parse/format round-trip including escaping, PinBoard operations (toggle/no-duplicates, swap, clear, new pin into first free slot (Fixed) or at the end (Auto), swap with an empty slot moves the pin, full, reserved unresolved slots, forget-missing-pins, Fixed↔Auto conversion, mask rasterizer output, capacity shrink keeps pins), serializer (v1 lines, unknown lines kept verbatim, bad lines skipped), ModDropdownMatcher scoring, TriggerStateMachine (toggle and hold transitions, Esc, outside click, map lost, hub click never closes, hold release on hub cancels, HubEdit only on deliberate click and only when edit is enabled, Done exits edit, right-click and a left-click outside in edit mode close), ModifierPolicy (Mint default), StuffOrdering | xUnit v3, `dotnet test` | Every commit, CI. Test-first per task |
+| **Perf gates** | Time and zero-allocation tests (trait `Category=Perf`): zero allocations on trigger decision, modifier policy, layout/hit test/state machine per-frame calls (the search gates were dropped with the picker) (budgets in performance.md §4) | xUnit v3, Release, **separate CI step without coverage instrumentation** | Every commit, CI |
+| **Benchmarks** | BenchmarkDotNet (`MemoryDiagnoser`) for layout, serializer, PinBoard and masks | `tests/QuickMenu.Core.Benchmarks` | Compiled in CI; run manually or by a manual workflow |
 | **Hardware margin** | In-game timing results from the user's main machine must be at most 50 % of each budget (2x headroom for slower machines) | Self-test report + Frame Profiler | Each milestone and before release |
 | **In-game integration** | Catalog enumeration and `PinKey` round-trip for every designator, patch application count, index build time, settings load/save, unresolved pin retention | Dev-mode debug action "Quick Menu: self-test" + log review | Each milestone, on each setup below |
 | **Manual end-to-end** | User journeys 1–6 and every FR acceptance criterion, as a checklist (test-engineer writes `docs/project/test-checklist.md`) | Game launched with `-mod=brrainz.harmony,sixdd.QuickMenu[,...] -quicktest` for a fast tiny map | Setups: (a) vanilla + all DLC; (b) + Better Architect Menu; (c) + Dubs Mint Menus; (d) + BAM + Mint; (e) + Multiplayer when it supports 1.7 (A-2) |
 | **Visual review** | Wheel and grid in every state from design.md, at UI scale 1.0 and 2.0 | In-game screenshots saved to `docs/project/design/screens/`, reviewed by the visual-designer, then confirmed by the user | End of each UI milestone. Automated pixel diffing is **not** feasible: the game is proprietary, needs a GPU, and has no headless mode |
 | **Performance** | NFR-1 budgets | Waylith Frame Profiler (dev mode), Core micro-benchmarks as xUnit timing tests | See performance.md |
 
-- **Synthetic data**: `tests/Shared/SyntheticCatalog.cs` is a seeded generator of `SearchEntry` lists (performance.md §2 W-1, W-1x). It is linked into both the test and benchmark projects with `<Compile Include>`.
+- **Synthetic data**: `tests/Shared/SyntheticCatalog.cs` is a seeded generator of synthetic test data, linked into both the test and benchmark projects with `<Compile Include>`. Its planned `SearchEntry` generator (performance.md §2 W-1, W-1x) is dropped with the search index.
 - **Faking external services**: there are none. Core has no game dependencies, so no fakes of the game are needed. The adapter is kept thin enough to be covered by the self-test and the checklist. Harmony patches are not unit-tested.
 - **Coverage target**: at least 90 % line coverage on QuickMenu.Core, enforced in CI. No numeric target for `QuickMenu.dll`: every adapter component is covered by the self-test or a checklist item.
 - **Traceability**: each FR/NFR has at least one unit test or checklist item. The planner attaches them per task using the table in section 12.
@@ -325,14 +336,14 @@ rimworld-quick-menu/
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
 | RimWorld 1.7 is an unstable beta. APIs, the Waylith shim and Harmony 3 (still `rc.3`) can change between builds | High | Medium | Pin `Krafs.Rimworld.Ref 1.7.4982-unstable` and `Lib.Harmony 3.0.0-rc.3`. Recompile and run the self-test after each game update. Only three patch sites, no transpilers |
-| Harmony 3 on the patched CoreCLR fails to patch some `ProcessInput` overrides (for example small mod methods inlined; `JitPatchableAssemblies` lists only Assembly-CSharp) | Medium | Medium (pin-by-click misses some mod designators) | **Spike S-1 (passed: 8 of 8 patched, 0 failed; no third-party override seen yet)**. Virtual calls are not inlined. Per-method try/catch with patch count in the self-test. The picker (FR-7) always works as a fallback |
+| Harmony 3 on the patched CoreCLR fails to patch some `ProcessInput` overrides (for example small mod methods inlined; `JitPatchableAssemblies` lists only Assembly-CSharp) | Medium | Medium (pin-by-click misses some mod designators) | **Spike S-1 (passed: 8 of 8 patched, 0 failed; no third-party override seen yet)**. Virtual calls are not inlined. Per-method try/catch with patch count in the self-test. There is no fallback since the picker was dropped (FR-7 Won't, 2026-10-19): a designator whose override cannot be patched cannot be pinned. The self-test reports failed patches |
 | The `Event` passed to `ProcessInput` may not show the modifier or mouse button reliably (already `Used`; a FloatMenu option path; a hotkey path) | Medium | Medium | **Spike S-3 (resolved 2026-10-19)**: the event is already `used`, so click vs hotkey and modifiers are read from `UnityEngine.Input`. Hotkey presses (no left button down) are never intercepted |
 | Side-button index mapping: Waylith maps index 3 to `Forward` and 4 to `Back`. Which physical button is "Mouse 4" may differ from the Windows convention | Medium | Low | **Spike S-2 (resolved)**: on the user's mouse back = index 3 = "Mouse 4", front = index 4 = "Mouse 5". The binding is captured by pressing, so any mapping works. Default label is "Mouse 4" (index 3). One-click middle-mouse option (FR-1) |
 | Middle mouse as trigger also starts the vanilla camera drag | Medium | Low | Toggle mode opens on press. Document it. If annoying, set `preventCameraMotion` on the open window |
 | Better Architect Menu has no native 1.7 build (it declares 1.7 but ships only a 1.6 net472 assembly, loaded through the shim). Multiplayer is not installed and not known to support 1.7 | High | Medium (verification blocked, not failed: A-2) | The design does not depend on either: no patches or reflection into them. Recheck when they update |
 | "Game's reason" for hidden designators (FR-14) does not exist in vanilla: `Visible == false` has no reason string | Certain (S-5: `disabledReason` is never set) | Low | `AvailabilityResolver` composes reasons from the known `Designator_Build.Visible` causes, with the keyed fallback "Not available right now" for mod visibility checks (user decision U-4) |
 | Mod-made non-def dropdowns that rebuild their elements (for example per ideology) defeat exact matching | Low | Low | `moddrop` keys store child keys; fuzzy matcher; unresolved means the pin is kept, not lost |
-| Dev-only item detection (FR-7) has no single flag | Medium | Low | **Spike S-5 (resolved)**: no name-hint dev-only designators found. Rule: hide from the picker only clearly debug designator types; other god-only entries are "unavailable" with composed reasons (ADR 0006) |
+| ~~Dev-only item detection (FR-7)~~ No longer a risk: there is no picker list to hide dev-only items from (2026-10-19) | — | — | **Spike S-5 (resolved)**: no name-hint dev-only designators found. God-only entries are "unavailable" with composed reasons (ADR 0006) |
 | Runtime texture creation or loose PNG loading behaves differently under the Waylith asset pipeline ("mods that change asset loading will likely break" per the Modder Primer) | Medium | Medium (no round shapes) | **Spike S-7 (passed)**: runtime masks work and are primary; loose PNG also works (fallback confirmed); asset baker not needed |
 | IMGUI under Waylith: `GUI.matrix` and `RotateAroundPivot` look fragile (both BAM and Mint patch `GUIUtility.RotateAroundPivot`) | Medium | Low | Visual constraint: no rotated IMGUI drawing; use pre-made textures at fixed orientation |
 | Tooling: no .NET SDK on the machine yet; VS2022 and older Rider cannot build net10 | Certain | Low | The environment-engineer installs `dotnet-sdk-10.0` (Fedora package) and pins it in `global.json`. The CLI is enough |
@@ -353,6 +364,7 @@ rimworld-quick-menu/
 - **U-4** Composed reasons for hidden designators, with the fallback "Not available right now" (ADR 0006).
 - **U-5** Depend on Harmony 3.0.0-rc.3 until 3.0 final ships, then bump (ADR 0001).
 - **Hub**: the centre is the Edit button only (revised after UC-2, 2026-10-19; it replaces the earlier Close/Edit hub). A deliberate click enters edit mode and the button shows Done there; a hold-mode release over it cancels; it never closes the menu on a click. The menu closes with Esc, a click outside, right-click or the trigger. In edit mode pin-modifier+click on a slot unpins it; right-click does not (sections 3 and 5, design.md S4a and S5).
+- **No picker** (2026-10-19, after UC-2; FR-7 Won't): pins only by modifier+click in the architect menu; no Add, no "+", no insert cursor; modifier+click on a menu slot unpins in use and edit mode; in edit mode right-click and a left-click outside close the menu (section 3.1).
 - **Performance**: budgets are measured on the user's main machine, and must still pass on a machine about 2x slower (section 7).
 
 ## 12. Requirement coverage
@@ -365,9 +377,9 @@ rimworld-quick-menu/
 | FR-4 wheel and grid, same features | Core.Layout.Wheel / Grid / SubMenu; UI.QuickMenuWindow (one interaction model, two renderers) |
 | FR-5 Fixed / Auto sizing, full | Core.Layout.Capacity; Core.Pins.PinBoard |
 | FR-6 size settings | Settings; Core.Layout |
-| FR-7 searchable picker independent of architect UI | Catalog.DesignatorCatalog; Core.Search; UI.PickerWindow; Catalog.AvailabilityResolver |
+| FR-7 searchable picker | **Won't** (user decision 2026-10-19). Its components were dropped (section 3.1) |
 | FR-8 modifier+click on any designator, Mint → Alt | Pinning.PinClickPatch; Core.Input.ModifierPolicy; Compat.ModDetection ([0005](decisions/0005-pin-by-click-processinput-prefix.md)) |
-| FR-9 edit mode: centre Edit button, picker via "+" slots, drag swap, modifier+click unpin, insert cursor | UI.QuickMenuWindow; Core.Pins.PinBoard |
+| FR-9 edit mode: centre Edit button, drag swap, modifier+click unpin; new pins to the first free slot / end | UI.QuickMenuWindow; Core.Pins.PinBoard |
 | FR-10 pin a whole dropdown | Core.Pins.PinKey (`dropdown:`, `moddrop:`); Catalog |
 | FR-11 dropdown expands as sub-ring / sub-grid | Core.Layout.SubMenu; UI.QuickMenuWindow |
 | FR-12 material sub-ring | Catalog.StuffOptions; Core.Materials; Activation.DesignatorActivator |
@@ -377,7 +389,7 @@ rimworld-quick-menu/
 | FR-16 empty-menu hint | UI.QuickMenuWindow (empty state) |
 | FR-17 global settings, nothing in saves | Settings (ModSettings); no game/world/map components ([0004](decisions/0004-pin-identity-and-storage.md)) |
 | FR-18 Multiplayer safe | Activation via the game's own select and Designate paths; menu is a local Window; no sync API dependency ([0006](decisions/0006-designator-catalog-and-activation.md)) |
-| NFR-1 no per-frame cost when closed; open in 1 frame; index < 200 ms | Input.TriggerPoller (allocation-free); cached layout; catalog + Core.Search built at startup; performance.md |
+| NFR-1 no per-frame cost when closed; open in 1 frame; catalog < 200 ms | Input.TriggerPoller (allocation-free); cached layout; catalog built at startup; performance.md |
 | NFR-2 vanilla / BAM / Mint / DLC | PinClickPatch (convergence on `ProcessInput`); Catalog via `DesignationCategoryDef`; Compat.ModDetection |
 | NFR-3 Harmony only dependency | About.xml; `Lib.Harmony` compile-only ([0001](decisions/0001-target-rimworld-1-7-waylith-net10.md)) |
 | NFR-4 Keyed strings | `mod/Languages/English/Keyed/QuickMenu.xml`; review grep |

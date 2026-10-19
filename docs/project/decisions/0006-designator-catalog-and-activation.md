@@ -3,6 +3,8 @@
 - **Status**: accepted (2026-10-19)
 - **Date**: 2026-10-19
 
+> **Superseded in part (2026-10-19).** The **picker** part of this ADR is superseded: spec FR-7 is now Won't (user decision after UC-2), so there is no picker window, no `SearchEntry` records and no `SearchIndex`. References below to "the picker", FR-7, search entries and the dev-only filter for the picker are historical. **The catalog decision stands**: the `DesignatorCatalog` is still built once at startup from `DesignationCategoryDef`s (designator table and key map), with the Ideology refresh, and it still resolves pins, feeds `AvailabilityResolver`, `StuffOptions` and the self-test. Activation is unchanged. See architecture.md section 3.1.
+
 ## Context
 - FR-7: the picker lists every architect designator, whichever architect UI is installed.
 - FR-13: selecting a slot activates the designator exactly as the architect menu would.

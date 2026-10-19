@@ -2,7 +2,7 @@
 
 - **Status**: approved (2026-10-19)
 - **Spec**: [spec.md](spec.md) · **Architecture**: [architecture.md](architecture.md) · **Assets**: [assets.md](assets.md)
-- **Mockups**: [wheel and slot states](design/mockup-wheel-states.png) · [material sub-ring and grid edit mode](design/mockup-subring-grid-edit.png) · [settings and picker](design/mockup-settings-picker.png). Source: [design/mockups/make_mockups.py](design/mockups/make_mockups.py). The script uses the geometry in §1.1, so the mockups also check the layout maths. Icons in the mockups are neutral placeholders; in the game, slots show the game's own designator icons. Where a mockup and this text disagree, this text wins. (Known gap: the binding capture is drawn inline in the mockup, but it is a dialog per ADR-0003.)
+- **Mockups**: [wheel and slot states](design/mockup-wheel-states.png) · [material sub-ring and grid edit mode](design/mockup-subring-grid-edit.png) · [settings and picker](design/mockup-settings-picker.png). Source: [design/mockups/make_mockups.py](design/mockups/make_mockups.py). The script uses the geometry in §1.1, so the mockups also check the layout maths. Icons in the mockups are neutral placeholders; in the game, slots show the game's own designator icons. Where a mockup and this text disagree, this text wins. (Known gap: the binding capture is drawn inline in the mockup, but it is a dialog per ADR-0003.) **The picker half of the settings mockup, and the "+" slots, insert cursor and caret in the edit mockup, are obsolete** (user decision 2026-10-19: no picker, no Add, no insert cursor; see S5).
 - Sections that do not apply say "N/A because …".
 
 **Look in one sentence:** a translucent black disc with a thin cyan rim, round dark slots that hold the game's designator icons, and vanilla RimWorld window chrome for everything else. It is close to the Mint wheel, but every texture is made by our own code (NFR-7).
@@ -11,7 +11,7 @@
 
 **Host and drawing constraints (from ADR-0007):**
 - The menu is a full-screen, transparent, non-pausing `Verse.Window`, drawn with vanilla IMGUI.
-- **No rotated drawing** (`GUI.matrix` / `GUIUtility.RotateAroundPivot`). Every orientation (badges, caret, hub icons) is baked into a texture.
+- **No rotated drawing** (`GUI.matrix` / `GUIUtility.RotateAroundPivot`). Every orientation (badges, hub icons) is baked into a texture.
 - Designator icons are drawn with `Command.DrawIcon`.
 - Vanilla sounds only.
 
@@ -31,11 +31,10 @@ flowchart TD
     Mat -- click material --> Placing
     Sub & Mat -- Esc / right-click / click satellite hub / click outside --> Menu
     Menu -- click hub (pencil, Edit) --> Edit[Edit mode in the open menu]
-    Edit -- click a slot (add here) --> Picker[Picker window: searchable list]
-    Picker -- click row: pin/unpin --> Edit
+    Edit -- drag slot onto slot: swap --> Edit
     Edit -- modifier+click slot: unpin --> Edit
     Edit -- click hub (Done) / Esc --> Menu
-    Edit -- right-click / trigger again / leave map --> Map
+    Edit -- right-click / click outside / trigger again / leave map --> Map
     Menu -- Esc / click outside / right-click / trigger again / hold release over hub / leave map --> Map
     Arch[Any architect UI: vanilla, BAM, Mint] -- Ctrl/Alt+click designator --> Msg[Message: pinned / unpinned / full]
     Options[Options > Mod settings] --> Settings[Settings window]
@@ -66,7 +65,7 @@ These rules are written so Core can implement them exactly and test them against
 **Wheel (main)**
 - Ring k radius `R_k = k·P`, k = 1 … `rings`.
 - **Fixed**: capacity = Σ_{k=1..rings} cap(k). Slot index s maps to ring k and position i in fill order: ring 1 i = 0 … cap(1)−1, then ring 2, and so on. Angle `θ = −90° + i·360°/cap(k)`, measured clockwise from 12 o'clock in screen space (y down). Centre = `(cx + R_k·cos θ, cy + R_k·sin θ)`. Empty and reserved slots keep their positions.
-- **Auto**: `count` = number of visible pins. The menu uses the smallest `m ≥ 1` with Σ_{k≤m} cap(k) ≥ count. Inner rings are full. The outer ring holds `c = count − Σ_{k<m} cap(k)` items **spread evenly**: `θ = −90° + i·360°/c`. With count = 0 the menu draws ring-1 geometry (disc for m = 1) with no slots. In edit mode Auto adds one "append" empty slot, computed as count + 1.
+- **Auto**: `count` = number of visible pins. The menu uses the smallest `m ≥ 1` with Σ_{k≤m} cap(k) ≥ count. Inner rings are full. The outer ring holds `c = count − Σ_{k<m} cap(k)` items **spread evenly**: `θ = −90° + i·360°/c`. With count = 0 the menu draws ring-1 geometry (disc for m = 1) with no slots. Edit mode uses the same count (there is no "append" slot since the Add target was removed, user decision 2026-10-19).
 - **Auto full**: when count = Σ_{k≤m} cap(k) and the bounding box for m + 1 rings does not fit inside `screen − 2·margin` (either axis), or m = 8. Fixed full: every slot is occupied (reserved slots count as occupied).
 - **Rings setting** range 1–5 (6 / 18 / 36 / 61 / 92 slots). Default 2 (18).
 - **Disc radius** `D = m·P + B/2 + rimPad` (m = rings in use). Default D = 168.
@@ -80,7 +79,7 @@ These rules are written so Core can implement them exactly and test them against
 - `cols` ∈ {3, 5, 7, 9, 11}, default **5**. `rows` ∈ {1, 3, 5, 7}, default **3**. Odd numbers only, so the centre cell sits under the mouse.
 - Cell (r, c) centre = `(cx + (c − (cols−1)/2)·P, cy + (r − (rows−1)/2)·P)`. The centre cell `(rows−1)/2, (cols−1)/2` is the **hub**. It is drawn as in the wheel (circle `H` centred in the cell), and its hit area is the whole centre cell.
 - Slot order: reading order (r, then c), skipping the hub. Fixed capacity = `rows·cols − 1` (default 14).
-- **Auto**: columns from the setting. Rows = the smallest odd `rows ≥ 1` with `rows·cols − 1 ≥ count` (edit mode: count + 1). Items fill in reading order. Full when count = rows·cols − 1 and `rows + 2` does not fit, or rows = 9.
+- **Auto**: columns from the setting. Rows = the smallest odd `rows ≥ 1` with `rows·cols − 1 ≥ count` (the same in edit mode). Items fill in reading order. Full when count = rows·cols − 1 and `rows + 2` does not fit, or rows = 9.
 - **Panel rect**: `x = cx − (cols·P − G)/2 − rimPad`, width `cols·P − G + 2·rimPad`. The same rule applies vertically with rows. Corner radius 10.
 - Label plate centred on cx, top = panel bottom + plateGap.
 - Bounding box = panel ∪ plate.
@@ -128,7 +127,7 @@ The same as S1, with a rounded panel instead of the disc and the hub in the cent
 - **Satellites do not open in edit mode.**
 
 #### S4. Slot component: complete state list (one drawing routine for all layouts). See [mockup](design/mockup-wheel-states.png) (legend).
-The slot is a circle of diameter B. The icon is drawn with `Command.DrawIcon` in a square of 0.75 B centred on the slot, so the game applies icon proportions, angle and stuff colour. Badges are fixed-orientation textures, each on its own 45° diagonal at radius B/2 so they never collide: **1:30** sub-menu, **4:30** material, **7:30** lock, **10:30** insert caret.
+The slot is a circle of diameter B. The icon is drawn with `Command.DrawIcon` in a square of 0.75 B centred on the slot, so the game applies icon proportions, angle and stuff colour. Badges are fixed-orientation textures, each on its own 45° diagonal at radius B/2 so they never collide: **1:30** sub-menu, **4:30** material, **7:30** lock. (10:30 is free: it held the insert caret, which was removed on 2026-10-19.)
 
 | # | State | Visual | Behaviour |
 |---|---|---|---|
@@ -137,20 +136,20 @@ The slot is a circle of diameter B. The icon is drawn with `Command.DrawIcon` in
 | 3 | **Pressed** | `slotBgPressed` while the button is held | Activate on release inside the slot |
 | 4 | **Last-used material** | 3 px `accent` ring, no caret | Material ring/grid only |
 | 5 | **Greyed with reason** (FR-14) | Icon tinted `unavailableIcon`, lock badge at 7:30 (`textMuted`). Also used for "no materials". | Tooltip: designator tooltip + reason in `danger`. Click: `ClickReject` + `RejectInput` message with the reason. Reason = `disabledReason`, or our composed reason for hidden designators (research, tech level, required building, and so on), or the fallback **"Not available right now."** |
-| 6 | **Empty** (Fixed, use mode) | `slotBg` at 50% + 1 px `slotBorder` at 70% (T-34 revision: was 70% + `emptyBorder`, which made empties more outlined than filled slots) | No hover, no click |
-| 7 | **Empty / Add** (edit mode: Fixed empty slots, and the one Auto append slot) | Dashed `emptyBorder` ring + plus glyph (`IconAdd`, 0.3 B, `textMuted`; hover: `text` + 2 px `accent` ring + `slotBgHover`). This is the **Add** target (S5). | Click → this slot becomes the insert cursor (10) and the picker opens (if it is not open). Label plate on hover: "Add". |
-| 8 | **Reserved-missing** (pin from a mod that is not loaded) | Use mode: **invisible but reserved** (Fixed: drawn exactly as Empty (6); Auto: not in the layout). Edit mode, Fixed: dashed ring + "?" glyph. | Edit-mode tooltip: "{label}\nFrom {mod}, which is not loaded. It comes back when the mod is added back.\n{modifier}+click to remove." Pins and the picker skip it. Modifier+click removes it. Auto: managed from settings (S7 "Forget missing pins") |
+| 6 | **Empty** (Fixed; use **and** edit mode) | `slotBg` at 50% + 1 px `slotBorder` at 70% (T-34 revision: was 70% + `emptyBorder`, which made empties more outlined than filled slots). The same in edit mode: no "+", no dashed ring. | No hover, no click, no tooltip, no plate. In edit mode it is a **drop target** while a drag is in progress (11): dropping moves the dragged pin into it. |
+| 7 | ~~Empty / Add~~ **Removed** (user decision 2026-10-19) | — | Empty slots stay empty in edit mode (6). There is no "+" slot, no Add target and no Auto append slot. |
+| 8 | **Reserved-missing** (pin from a mod that is not loaded) | Use mode: **invisible but reserved** (Fixed: drawn exactly as Empty (6); Auto: not in the layout). Edit mode, Fixed: dashed `emptyBorder` ring + "?" glyph. | Edit-mode tooltip: "{label}\nFrom {mod}, which is not loaded. It comes back when the mod is added back.\n{modifier}+click to remove." New pins skip it. Modifier+click removes it. Auto: managed from settings (S7 "Forget missing pins") |
 | 9 | **Drag source** (edit) | Dashed empty ghost in place. The dragged icon follows the mouse at 0.9 B and 80% opacity, offset (+16, +16). | Drag starts after 6 px of movement (less movement is a click) |
-| 10 | **Insert cursor** (edit, FR-9) | 3 px `accent` ring + 22% `accent` tint + caret at 10:30 | Set by a plain click in edit mode (S5 "Add"). Fixed: the next pin goes **into** this slot (only empty slots take the cursor). Auto: the next pins go **in front of** it. Click it again to clear it (the picker stays open). |
+| 10 | ~~Insert cursor~~ **Removed** (user decision 2026-10-19) | — | New pins (from the architect menu) go into the first free slot (Fixed) or at the end (Auto). To place a pin elsewhere, drag it in edit mode. |
 | 11 | **Drop target** (edit) | `slotBgHover` + 2 px `accent` ring + 22% `accent` tint | Release → swap |
 | 12 | **Sub-menu** (FR-10/11) | Dropdown corner badge at 1:30 | Click → satellite or sub-grid |
 | 13 | **Material** (FR-12) | Dot of 0.18 B in the last-used stuff colour (or `textMuted` if there is none), dark outline, at 4:30 | Click → material ring (1 option: activate directly) |
 | 14 | **Open parent** | 2 px `accent` ring, drawn in full opacity above the dimmed menu | Hub of the satellite |
 
-States 12 and 13 combine with 1–5, and 10 and 11 combine with 12 and 13.
+States 12 and 13 combine with 1–5, and 11 combines with 12 and 13. Numbers 7 and 10 are kept free so references stay stable.
 
 #### S4a. Hub: the Edit button (user decision 2026-10-19, after UC-2)
-The centre of the wheel or grid is **one button: Edit** (pencil). In edit mode the same button is **Done** (check mark). It **never closes the menu**; the menu closes with Esc, a click outside, right-click or the trigger (close and cancel rules below). This supersedes the earlier close/edit hub (× main area plus a small pencil sub-button) and the hub's Add sub-button; Add now lives on the edit-mode empty slots (S5).
+The centre of the wheel or grid is **one button: Edit** (pencil). In edit mode the same button is **Done** (check mark). It **never closes the menu**; the menu closes with Esc, a click outside, right-click or the trigger (close and cancel rules below). This supersedes the earlier close/edit hub (× main area plus a small pencil sub-button) and the hub's Add sub-button. There is no Add anywhere in the menu (user decision 2026-10-19): pins are added only by modifier+click in the architect menu (FR-8).
 The mockups ([wheel states](design/mockup-wheel-states.png), [edit](design/mockup-subring-grid-edit.png)) predate this decision and still show the old hub; where they differ, this section wins.
 
 Geometry is in §1.1: drawn circle `H` = round(0.64 B) (default 36), glyph `Hg` = round(0.5 H) (default 18), both centred at `(cx, cy)`; hit area P/2 (wheel) or the centre cell (grid). It is smaller than a slot on purpose, so it reads as a control and not as an empty slot.
@@ -175,43 +174,28 @@ Rings are rasterized at `H` in screen px (like the slot rings at B); glyphs at `
 - **Label plate on hover**: "Edit" (use mode), "Done" (edit mode).
 - **Right-click on the hub**: the same as right-click anywhere (close in use and edit mode, back in a satellite).
 
-#### S5. Edit mode (FR-9) and menu-level states. See [mockup](design/mockup-subring-grid-edit.png).
-- **Enter**: click the hub (Edit, S4a). In hold mode the player clicks it while still holding the trigger. After that the menu stays open until Done, Esc, right-click or the trigger, and releasing the trigger no longer closes it. A hold-mode **release** over the hub never enters edit mode.
+#### S5. Edit mode (FR-9) and menu-level states. See [mockup](design/mockup-subring-grid-edit.png) (its "+" slots, insert cursor and caret are obsolete).
+**User decision 2026-10-19 (FR-7 Won't):** there is no in-menu picker, no Add, no "+" and no insert cursor. Pins are added **only** by modifier+click in the architect menu (FR-8). Edit mode is for **rearranging and unpinning** only. Empty slots stay empty (state 6) in use and edit mode.
+
+- **Enter**: click the hub (Edit, S4a). In hold mode the player clicks it while still holding the trigger. After that the menu stays open until Done, Esc, a click outside, right-click or the trigger, and releasing the trigger no longer closes it. A hold-mode **release** over the hub never enters edit mode.
 - **In edit mode**: the hub shows **Done** (check mark). The mouse gestures on slots are:
 
 | Gesture on a slot | Result |
 |---|---|
-| Plain click on an **empty** slot (Fixed) or the **append** slot (Auto), both drawn as "+" (state 7) | **Add**: the **picker opens**. Fixed: the clicked slot becomes the insert cursor, so pins go into it. Auto append slot: any cursor is cleared, so pins go at the end. If the picker is already open, only the cursor changes. |
-| Plain click on an **occupied** slot, Auto | Insert cursor in front of it (state 10) and the picker opens. |
-| Plain click on an **occupied** slot, Fixed | Nothing (there is no room in it; drag to move it, modifier+click to remove it). |
-| Plain click on the slot that holds the cursor | Clears the cursor; the picker stays open. |
-| **Pin modifier + click** (Ctrl by default, Alt with Mint, or the user's choice; the same gesture as on architect buttons) on an occupied or reserved slot | **Unpin**: `Tick_Low` and the message "Removed {0} from the quick menu." Fixed: the slot becomes empty "+". Auto: the slots after it move up. On an empty slot: nothing. The menu window reads the modifier from its own click `Event` (a direct click, so `Event.control`/`alt`/`shift` are reliable) against the effective modifier (`ModifierPolicy`). |
-| Drag (≥ 6 px) from an occupied slot onto another slot | Swap (state 9 → 11), `Tick_Tiny`. |
-| Right-click | **Does not unpin.** Cancels a drag in progress; otherwise closes the menu (pins are already saved; settings are written on close if dirty). |
+| Plain click on any slot (occupied, empty or reserved) | Nothing. It does not activate, open a sub-menu or add anything. (A press that moves ≥ 6 px on an occupied slot starts a drag.) |
+| **Pin modifier + click** (Ctrl by default, Alt with Mint, or the user's choice; the same gesture as on architect buttons) on an occupied or reserved slot | **Unpin**: `Tick_Low` and the message "Removed {0} from the quick menu." Fixed: the slot becomes empty (state 6). Auto: the slots after it move up. On an empty slot: nothing. The menu window reads the modifier from its own click `Event` (a direct click, so `Event.control`/`alt`/`shift` are reliable) against the effective modifier (`ModifierPolicy`). |
+| Drag (≥ 6 px) from an occupied slot onto another slot | Swap (state 9 → 11), `Tick_Tiny`. In Fixed, dropping onto an **empty** slot moves the pin there (its old slot becomes empty). Dropping outside any slot cancels the drag. |
+| Right-click | **Does not unpin.** Cancels a drag in progress; otherwise closes the menu (settings are written on close if dirty). |
 
-- **Add placement (decision)**: there is no separate Add button. The "+" slots are the Add buttons, so Add is offered exactly where a new pin will go, and only while there is room. When the menu is full (Fixed: no empty slot; Auto: full, so no append slot) there is no "+"; Auto can still open the picker by clicking an occupied slot (the picker can unpin), and in both sizes modifier+click on a slot frees room.
+- **Where new pins go**: a pin made in the architect menu while the quick menu is closed goes into the **first free slot** (Fixed, reading order; reserved slots are not free) or **at the end** (Auto). To put it somewhere else, the player drags it in edit mode.
 - **Help panel**: shown at the **top centre of the screen** (60 px from the top, max width 520, `plate` background). It lives outside the menu so entering edit mode never changes the menu's position or dodging. It contains the Fixed or Auto help text (§1.4) and a **capacity line**: "12 of 18 slots used" (Fixed) or "12 pinned" (Auto).
-- **Menu full** (FR-5): the capacity line turns `danger` with "The menu is full." Pinning (picker, modifier+click on an architect button) then plays `ClickReject` and shows the full message (S9). In Fixed with an insert cursor on an occupied slot, a pin replaces nothing; it still reports full.
-- **Exit**: Done or Esc. The first Esc leaves edit mode; a second Esc closes the menu. Right-click and the trigger close the menu directly. A left-click outside does nothing in edit mode, so a missed click while editing does not throw away the insert cursor.
-- **Use mode and the modifier**: in use mode a modifier+click on a slot is treated as a plain click (it activates). Unpinning from inside the menu is an edit-mode gesture only.
-- **Empty hint** (FR-16): when there are no visible pins and the menu is not in edit mode, the label plate is replaced by a hint plate (max width 360, wraps): "Nothing pinned yet. Click the pencil in the centre to add items, or {modifier}+click any build or order button." Fixed draws its empty slots. Auto draws a ring-1 disc with no slots. The hub is always shown.
+- **Menu full** (FR-5): the capacity line turns `danger` with "The menu is full." Pinning by modifier+click on an architect button then plays `ClickReject` and shows the full message (S9). Modifier+click on a slot frees room.
+- **Exit**: Done or Esc. The first Esc leaves edit mode; a second Esc closes the menu. Right-click, a left-click outside and the trigger close the menu directly (user decision 2026-10-19; with no insert cursor, a missed click outside loses nothing, because every edit is already applied).
+- **Use mode and the modifier** (user decision 2026-10-19): in use mode, pin modifier + click on an **occupied or reserved slot of the main level** unpins it, exactly as in edit mode (`Tick_Low`, "Removed {0} from the quick menu."). It does not activate the slot. The menu stays open and its layout updates (Auto: the slots after it move up). On an empty slot it does nothing. Inside a satellite or material ring a modifier+click is treated as a plain click, because options there are not pins. *(Assumption, to confirm with the user: the menu stays open after a use-mode unpin.)*
+- **Empty hint** (FR-16): when there are no visible pins and the menu is not in edit mode, the label plate is replaced by a hint plate (max width 360, wraps): "Nothing pinned yet. {modifier}+click any build or order button to pin it here." Fixed draws its empty slots. Auto draws a ring-1 disc with no slots. The hub is always shown.
 
-#### S6. Picker window (FR-7, FR-10). See [mockup](design/mockup-settings-picker.png) (right side).
-- A vanilla dialog `Window`: 540 × 680, clamped to the UI screen minus 40 (min 400 × 420). Draggable, close X, does not pause, sits above the menu window. The menu stays open behind it so the insert cursor stays visible.
-- **Title** (Medium): "Add to the quick menu".
-- **Search**: vanilla `QuickSearchWidget`, focused on open. Matches label, category and mod name. Enter pins when exactly one row matches.
-- **Status line** (Small, `textMuted`): "New pins go in front of: {0} · 7 of 18 slots used". The first part shows only when an insert cursor is set; "in front of" becomes "into" in Fixed. When full, the line is `danger`: "The menu is full."
-- **List**: grouped by architect category. Headers use Tiny bold uppercase in `textMuted`.
-  - Rows are 40 px: a 32 px `Command.DrawIcon` on a `slotBg` tile (with the sub-menu badge if it is a dropdown), the label (Small), and a sub-line (Tiny, `textMuted`): "{category} · {mod}".
-  - Pinned rows show a "Pinned" pill (accent outline and text).
-  - Sub-menu rows have a disclosure triangle that shows their children, indented 24 px. Each child can be pinned on its own; the parent row pins the whole sub-menu.
-  - Greyed rows: icon tint `unavailableIcon`, with the reason in the sub-line in `danger`. They can still be pinned, because availability changes during play.
-  - Dev-only items are listed under "DEV MODE ONLY", and only in dev mode.
-  - Hover = 7% white highlight. Tooltip = the designator tooltip.
-  - Only visible rows are drawn (virtualised).
-- **Click a row**: pin or unpin (FR-15), with `Tick_High` or `Tick_Low`. The window stays open.
-- **States**: building the index on first open → "Building list…"; no results → "Nothing matches “{0}”."
-- **Footer**: "Click to pin or unpin. The list stays open." and [Close].
+#### S6. ~~Picker window~~ (removed; user decision 2026-10-19, FR-7 Won't)
+There is no picker window, no search field and no "Building list…" or "Nothing matches" state. The picker half of [mockup-settings-picker.png](design/mockup-settings-picker.png) is obsolete. The section number is kept so references stay stable.
 
 #### S7. Mod settings window (FR-1, FR-2, FR-5, FR-6, FR-8). See [mockup](design/mockup-settings-picker.png) (left side).
 Two columns inside `DoSettingsWindowContents` (about 860 × 580), using vanilla widgets only. Accent marks only the selected segment.
@@ -271,20 +255,21 @@ All use vanilla `Messages.Message`, with `historical: false`:
   - "Material: {0}. Click to choose." for a stuff-made build
   - the reason in `danger` when greyed
   - "Drag to move. {0}+click to remove." in edit mode ({0} = the effective pin modifier name)
-  - "Click to add here." on an edit-mode "+" slot (state 7)
+  - "{0}+click to remove." in use mode, main level only (user decision 2026-10-19: modifier+click unpins in use mode too)
+  - Empty slots have no tooltip in either mode.
 - Tooltips use the vanilla delay and position. The instant label plate gives the name without waiting.
-- **Hub** (from T-44; none before): Edit "Edit the quick menu: add, move and remove pins."; Done "Finish editing (Esc)". There is no Close or Add tooltip any more.
-- **Label plate** texts for non-slot targets: hub "Edit" / "Done"; "+" slot "Add".
+- **Hub** (from T-44; none before): Edit "Edit the quick menu: move and remove pins."; Done "Finish editing (Esc)". There is no Close or Add tooltip any more.
+- **Label plate** texts for non-slot targets: hub "Edit" / "Done". There is no "Add" plate.
 
 #### Close and cancel rules
 | Input | Main level | Satellite/sub-grid open | Edit mode |
 |---|---|---|---|
 | Esc | close | back | leave edit mode (a second Esc closes) |
 | Right-click (anywhere, the hub included) | close | back | close (cancels a drag in progress first); **never unpins** |
-| Left-click outside | close | back | nothing |
+| Left-click outside | close | back | close (user decision 2026-10-19) |
 | Left-click hub (`HubEdit`) | enter edit mode (no-op until T-44) | back (the satellite's hub is the parent slot) | Done (leave edit mode) |
-| Left-click "+" slot / occupied slot | activate or open sub-menu (occupied); nothing (empty, use mode) | pick option | Add: insert cursor + picker (S5 table) |
-| Modifier+left-click slot | same as a plain click | same as a plain click | unpin (occupied or reserved); nothing on empty |
+| Left-click slot | activate or open sub-menu (occupied); nothing (empty) | pick option | nothing (drag to move; S5 table) |
+| Modifier+left-click slot | unpin (occupied or reserved; menu stays open); nothing on empty | same as a plain click | unpin (occupied or reserved); nothing on empty |
 | Trigger released (hold) over the hub | close (cancel, no action) | close everything (S3) | stay open |
 | Trigger released (hold) elsewhere | pick hovered slot or close | pick hovered option or close everything | stay open |
 | Trigger pressed again (toggle) | close | close | close |
@@ -295,15 +280,15 @@ RimWorld has no breakpoints. What changes is the **UI screen size** = resolution
 - All geometry is in UI pixels, so it follows the UI scale.
 - At UI scale 2.0 on 1920 × 1080 (UI screen 960 × 540), the default wheel (bounding box 336 × 374) fits. A 4-ring Fixed wheel (D = 296) does not, so it is centred. Auto counts as full sooner. The settings preview warns.
 - Textures are drawn at UI size. Our mask textures are authored at a resolution that stays sharp up to B = 96 at UI scale 2 (see §6).
-- The picker and dialogs clamp to the UI screen.
+- Dialogs clamp to the UI screen.
 - Verification: in-game screenshots at UI scale 1.0 and 2.0, wheel and grid, every S4 state (architecture.md §9, visual review).
 
 ### 1.4 Copy
 All strings go in `mod/Languages/English/Keyed/QuickMenu.xml`, with keys prefixed `QuickMenu.` (NFR-4). The strings are given in S5–S9. Additional strings:
 - Size tooltip: "Fixed: a set number of slots that stay in place, with empty slots shown.\nAuto: the menu grows as you pin more."
 - Shape tooltip: "Wheel: rings around the mouse.\nGrid: rows and columns around the mouse."
-- Edit help, Fixed: "Click an empty slot (+) to add pins there from the list.\n{0}+click a slot to remove it. Drag a slot onto another to swap them.\nYou can also {0}+click any build or order button.\nDone or Esc to finish."
-- Edit help, Auto: "Click + to add pins at the end, or click a slot to add pins in front of it.\n{0}+click a slot to remove it. Drag a slot onto another to swap them.\nYou can also {0}+click any build or order button.\nDone or Esc to finish."
+- Edit help, Fixed: "Drag a slot onto another to swap them, or onto an empty slot to move it.\n{0}+click a slot to remove it.\nTo add pins, {0}+click any build or order button. New pins go into the first empty slot.\nDone or Esc to finish."
+- Edit help, Auto: "Drag a slot onto another to swap them.\n{0}+click a slot to remove it.\nTo add pins, {0}+click any build or order button. New pins go at the end.\nDone or Esc to finish."
 - Unavailable fallback: "Not available right now."
 
 ## 2. Design system
@@ -312,10 +297,10 @@ The game's UI is dark only, so there is one theme. Tokens live in one adapter cl
 ### Color tokens
 | Token | Light | Dark | Use | Contrast (vs bg) |
 |---|---|---|---|---|
-| `accent` | N/A (no light theme) | `#38BDF8` | Rim, hover/insert/target rings, Pinned pill, selected segment | 7.4:1 vs `slotBg`; 8.3:1 vs `windowBg` |
+| `accent` | N/A (no light theme) | `#38BDF8` | Rim, hover/target rings, last-used material ring, selected segment | 7.4:1 vs `slotBg`; 8.3:1 vs `windowBg` |
 | `discCentre` → `discEdge` | — | black α 0.85 → α 0.55 (radial) | Disc and panel fill | slot vs edge over snow 3.3:1 |
 | `rimOutline` | — | black α 0.60, 1 px on each side of the 2 px rim | Keeps the rim visible over bright ground | Required: accent vs bare edge over snow is 2.2:1; with the outline, ≥ 9.8:1 against the adjacent colour |
-| `slotBg` | — | `#1E2328` α 0.92 | Slot fill, picker icon tile | — |
+| `slotBg` | — | `#1E2328` α 0.92 | Slot fill | — |
 | `slotBgHover` | — | `#2A3540` | Hover, drop target | accent ring on it 5.8:1 |
 | `slotBgPressed` | — | `#15191D` | Pressed | — |
 | `slotBorder` | — | `#56626E` | Normal slot ring (decorative) | 2.5:1 (decorative; the fill carries the shape) |
@@ -326,22 +311,22 @@ The game's UI is dark only, so there is one theme. Tokens live in one adapter cl
 | `unavailableIcon` | — | `#808080` α 0.75 (multiplied into the icon) | Greyed icons | 4.0:1 vs slotBg, always paired with the lock badge |
 | `plate` | — | black α 0.80 | Label, hint and help plates | — |
 | `dimmedMenu` | — | menu α 0.45 | Main menu behind a satellite | — |
-| windows, buttons | — | the game's own (`Widgets.WindowBGFillColor`, vanilla button atlas) | Settings, picker, dialogs | vanilla |
+| windows, buttons | — | the game's own (`Widgets.WindowBGFillColor`, vanilla button atlas) | Settings, dialogs | vanilla |
 
 Target: **WCAG 2.2 AA** (text ≥ 4.5:1, UI parts ≥ 3:1). Every text pair passes.
 
 ### Typography
 - Game fonts only, through `Text.Font`. We ship no font files.
-- **Tiny**: picker sub-lines, headers, notes.
-- **Small** (the default): label/hint/help plates, settings, picker rows.
+- **Tiny**: notes.
+- **Small** (the default): label/hint/help plates, settings.
 - **Medium**: dialog titles.
 - One-line text is truncated with the game's `Truncate`. Plates wrap at their max width.
 
 ### Spacing, radius, elevation
 - **Spacing (UI px)**: 2, 4, 6, 8, 12, 16, 24. The layout constants are in §1.1.
-- **Badges**, relative to B: sub-menu 0.22 B, material dot 0.18 B, lock 0.25 B, caret 0.2 B.
-- **Radius**: slots are circles. Grid panel 10. Plates 3. Picker icon tile 3. Pill 10.
-- **Ring widths**: disc rim 2 + outlines 1 + 1. Hover, target and open parent 2. Insert and last-used 3. Normal and empty 1.
+- **Badges**, relative to B: sub-menu 0.22 B, material dot 0.18 B, lock 0.25 B. (The caret, 0.2 B, is unused since the insert cursor was removed.)
+- **Radius**: slots are circles. Grid panel 10. Plates 3.
+- **Ring widths**: disc rim 2 + outlines 1 + 1. Hover, target and open parent 2. Last-used 3. Normal and empty 1.
 - **Elevation**: none on slots. The hub draws above the slots. Satellites draw above the dimmed menu. Windows use vanilla shadows.
 
 ### Motion
@@ -358,15 +343,14 @@ Target: **WCAG 2.2 AA** (text ≥ 4.5:1, UI parts ≥ 3:1). Every text pair pass
 | Plate (label, hint, help) | — | 9-slice `Plate` mask |
 | Binding row + capture dialog | bound, unbound, capturing, rejected, conflict warning | vanilla buttons and a dialog |
 | Segmented control, stepper, slider | selected / unselected; disabled at the limits | vanilla buttons with an `accent` outline for the selected segment |
-| Picker row | normal, hover, pinned, greyed, dev-only, expanded/collapsed | `Command.DrawIcon` + vanilla text |
 | Preview | normal, "does not fit" | Core layout at 50% |
 | Notices and messages | — | vanilla `Window` / `Messages` |
 
 ## 3. Art direction
 - **Style**: functional HUD. A dark translucent disc so the colony stays visible, one cyan accent, and round slots that put the game's icons first. It is "Mint-like" in feel (the user likes the reference), drawn entirely by our code with our own values: a stronger edge alpha, a dark outline on the rim, and our own accent hex. No Mint file is used, traced or converted.
 - **Palette**: §2. Icons bring their own colour.
-- **Resolution/scale**: all our shapes are **white or grayscale alpha masks**, tinted with `GUI.color` at draw time, so one mask serves every state. The one exception is the disc rim, whose `accent` and `rimOutline` colours are baked into one RGBA texture (drawn untinted; α still dims it). Circles and rings are made by an anti-aliased distance-field rasterizer at mask size **256 px** (rings: stroke widths authored for 256 px, per ring width; see §6). The icons are authored on a 64 px grid with a 4 px margin and 6 px strokes, and rasterized at their drawn size in screen px (badges 0.18–0.25 B, hub glyphs `Hg` = 0.5 H ≈ 0.32 B, edit-mode plus 0.3 B). Glyph shapes (`Core.Render.Glyphs`, T-23): `SubMenuBadge` is a right triangle filling the top-right corner (hypotenuse top-left to bottom-right); `Caret` is a triangle pointing right; `Lock` is a rounded body with a 6 px shackle; `IconDone` ✓ (short arm left, vertex low) and `IconAdd` + are round-capped 6 px strokes; `IconEdit` is a filled pencil with its tip at the bottom left. The material dot (4:30) uses the `Circle` mask, and the edit-mode "+" slot (state 7) uses `IconAdd`. `IconClose` (×) is no longer drawn anywhere since the hub became the Edit button (T-81 removes it from the mask set). Badge outlines (`rimOutline`) are drawn as the same mask tinted dark, 1 px larger, under the tinted mask.
-- **No rotation at draw time**: every badge, the caret and the hub icons are rasterized in their final orientation.
+- **Resolution/scale**: all our shapes are **white or grayscale alpha masks**, tinted with `GUI.color` at draw time, so one mask serves every state. The one exception is the disc rim, whose `accent` and `rimOutline` colours are baked into one RGBA texture (drawn untinted; α still dims it). Circles and rings are made by an anti-aliased distance-field rasterizer at mask size **256 px** (rings: stroke widths authored for 256 px, per ring width; see §6). The icons are authored on a 64 px grid with a 4 px margin and 6 px strokes, and rasterized at their drawn size in screen px (badges 0.18–0.25 B, hub glyphs `Hg` = 0.5 H ≈ 0.32 B). Glyph shapes (`Core.Render.Glyphs`, T-23): `SubMenuBadge` is a right triangle filling the top-right corner (hypotenuse top-left to bottom-right); `Caret` is a triangle pointing right; `Lock` is a rounded body with a 6 px shackle; `IconDone` ✓ (short arm left, vertex low) and `IconAdd` + are round-capped 6 px strokes; `IconEdit` is a filled pencil with its tip at the bottom left. The material dot (4:30) uses the `Circle` mask. **Unused masks** (user decision 2026-10-19): `IconAdd` (+) and `Caret` are no longer drawn anywhere, because the "+" slots and the insert cursor were removed. They stay in the code-generated mask set (they cost a few hundred bytes at startup) and are marked unused; a later cleanup task may remove them. `IconClose` (×) is no longer drawn anywhere since the hub became the Edit button (T-81 removes it from the mask set). Badge outlines (`rimOutline`) are drawn as the same mask tinted dark, 1 px larger, under the tinted mask.
+- **No rotation at draw time**: every badge and the hub icons are rasterized in their final orientation.
 - **Animation**: none.
 
 ## 4. Audio direction
@@ -376,7 +360,7 @@ Mostly N/A, because spec §8 allows only vanilla UI sounds. No audio files are a
 | ID | Sound | Trigger | Duration | Loop | Variations | Priority |
 |---|---|---|---|---|---|---|
 | SND-1 | none (user decision) | Menu opens | — | — | — | — |
-| SND-2 | `Mouseover_Command` | Pointer enters a slot or picker row | game | no | game | Low |
+| SND-2 | `Mouseover_Command` | Pointer enters a slot or the hub | game | no | game | Low |
 | SND-3 | Designator's own activate sound (through the game path, ADR-0006) | Slot or option picked | game | no | game | High |
 | SND-4 | `Tick_High` / `Tick_Low` | Pin / unpin | game | no | game | Med |
 | SND-5 | `ClickReject` | Unavailable slot, menu full, binding rejected | game | no | game | Med |
@@ -391,8 +375,8 @@ N/A, because the game's UI volume applies.
 ## 5. Accessibility
 - **Target**: WCAG 2.2 AA where it applies. Contrast results are in §2.
 - **Size (NFR-5)**: B is 36–96 UI px, multiplied by the game's UI scale. The smallest targets (36 px slots, 28 px buttons) are above the 24 px minimum of WCAG 2.5.8.
-- **Not colour alone**: the insert cursor has a caret; greyed slots have a lock badge and a reason; pinned rows have a text pill; sub-menus have a corner badge; reserved slots have a "?" glyph; full has text.
-- **Keyboard**: the trigger can be a key. Esc works at every level. The picker search field gets focus on open, and Enter pins a single match. Slot selection by keyboard is future scope.
+- **Not colour alone**: greyed slots have a lock badge and a reason; sub-menus have a corner badge; reserved slots have a "?" glyph; full has text.
+- **Keyboard**: the trigger can be a key. Esc works at every level. Slot selection by keyboard is future scope.
 - **Reading**: the instant label plate in Small font; short, plain hint and help text.
 - **Reduced motion**: there is no motion.
 - **Screen readers**: N/A, because IMGUI exposes no accessibility tree.
@@ -402,9 +386,9 @@ N/A, because the game's UI volume applies.
 ## 6. Asset strategy and pipeline
 | Asset type | Strategy (code / SVG / library / generated / user-supplied) | Tool or source | Cost |
 |---|---|---|---|
-| Shape masks: `Circle`, `Disc` (radial gradient), `Ring1`, `Ring2`, `Ring3`, `RingDashed`, `Panel`, `PanelRim`, `Plate` (9-slice), badges `SubMenuBadge`, `Caret`, `Lock`, icons `IconEdit`, `IconDone`, `IconAdd` | **Code**: one pure rasterizer in `QuickMenu.Core` (`Render.MaskRasterizer`: signed-distance shapes → `byte[]` alpha). **Primary**: uploaded at startup into `Texture2D` (`SetPixels32` + `Apply`). **Fallback**: the same rasterizer exports PNGs into `mod/Textures/QuickMenu/UI/`, loaded with `ContentFinder`. | C# (Core, unit-testable: pixel checks such as "centre alpha = 255, corner = 0") + `scripts/export-masks` (a small console entry or test) | Free. About 15 masks of ≤ 256², generated once at startup in a few ms |
+| Shape masks: `Circle`, `Disc` (radial gradient), `Ring1`, `Ring2`, `Ring3`, `RingDashed`, `Panel`, `PanelRim`, `Plate` (9-slice), badges `SubMenuBadge`, `Lock`, icons `IconEdit`, `IconDone`. Still generated but **unused** since 2026-10-19: `Caret`, `IconAdd` (§3) | **Code**: one pure rasterizer in `QuickMenu.Core` (`Render.MaskRasterizer`: signed-distance shapes → `byte[]` alpha). **Primary**: uploaded at startup into `Texture2D` (`SetPixels32` + `Apply`). **Fallback**: the same rasterizer exports PNGs into `mod/Textures/QuickMenu/UI/`, loaded with `ContentFinder`. | C# (Core, unit-testable: pixel checks such as "centre alpha = 255, corner = 0") + `scripts/export-masks` (a small console entry or test) | Free. About 15 masks of ≤ 256², generated once at startup in a few ms |
 | Designator icons | **Game**: `Command.DrawIcon` | RimWorld and mods | Free |
-| Window chrome, buttons, search widget, close X | **Game** widgets (vanilla `Widgets`, `QuickSearchWidget`, `TexButton`) | RimWorld 1.7 | Free; not redistributed |
+| Window chrome, buttons, close X | **Game** widgets (vanilla `Widgets`, `TexButton`) | RimWorld 1.7 | Free; not redistributed |
 | Workshop preview `mod/About/Preview.png` | **Made by us**: an in-game screenshot of our menu + title text, 2.468:1 (for example 1234 × 500) | Screenshot + `magick` script | Free (MIT) |
 | Mockups (docs only) | Scripted SVG → PNG | `docs/project/design/mockups/make_mockups.py` | Free |
 
@@ -435,14 +419,14 @@ N/A, because the game's UI volume applies.
 - The asset baker is not needed. The spike PNG and probe window were deleted in T-14; no PNG is shipped for now.
 
 ### Technical needs (summary for the architecture; all satisfied by ADR-0002/0003/0006/0007 except S-7)
-1. Per-frame drawing only while a menu, picker or notice window is open (ADR-0007).
+1. Per-frame drawing only while a menu or notice window is open (ADR-0007).
 2. Startup-time texture creation on the main thread (S-7).
-3. The window absorbs map clicks and draws above the map; the picker and dialogs draw above it (S-6).
+3. The window absorbs map clicks and draws above the map; dialogs draw above it (S-6).
 4. Raw polling of the trigger press and release, mouse indices 2–4 (ADR-0003).
 5. `Command.DrawIcon` for all designator icons (ADR-0007).
 6. Pure layout, hit testing, edge dodging and the mask rasterizer in Core (ADR-0002).
 7. The renderer takes an origin and a scale (for the settings preview).
-8. A virtualised picker list over a prebuilt index.
+8. ~~A virtualised picker list over a prebuilt index.~~ Dropped with the picker (2026-10-19).
 9. Game fonts only.
 10. No rotated drawing.
 
@@ -455,6 +439,7 @@ N/A, because the game's UI volume applies.
 | Q-D4 | The centre is a hub (S4a), not a dead zone. Revised after UC-2 (2026-10-19): the hub is **only the Edit button** (pencil; Done in edit mode) and never closes the menu. In edit mode, pin modifier+click unpins a slot; right-click does not unpin. |
 | Q-D5 | Missing-mod pins in Auto are hidden in both modes and cleared with "Forget missing pins" in settings. In Fixed they keep a reserved slot that shows "?" in edit mode. |
 | U-3 | Modifier+click on an entry inside an open dropdown list pins that single entry. On the dropdown button it pins the whole dropdown. |
+| Q-D6 | (2026-10-19, after UC-2; FR-7 Won't) No in-menu picker, no Add, no "+" slots and no insert cursor. Pins are added only by modifier+click in the architect menu; new pins go into the first free slot (Fixed) or at the end (Auto), and the player drags them in edit mode. Modifier+click on a slot unpins it in use and edit mode. In edit mode, right-click and a left-click outside close the menu. |
 
 No design questions are open.
 
