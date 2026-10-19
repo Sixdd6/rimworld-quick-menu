@@ -269,16 +269,19 @@ internal static class DesignatorCatalog
             {
                 FactionIdeosTracker? ideos = Faction.OfPlayerSilentFail?.ideos;
                 ideo = ideos?.PrimaryIdeo;
-                precepts = ideo?.PreceptsListForReading.Count ?? 0;
+                precepts = ideo?.PreceptsListForReading?.Count ?? 0;
                 if (ideo != null && ideos != null)
                 {
                     // Vanilla AllIdeoDesignators walks every ideo of the player faction (primary and minor): fold in the
                     // minor ideos' identity and size and every reform generation, all O(ideo count), no allocation.
                     fingerprint = Fingerprint(ideo);
-                    List<Ideo> minor = ideos.IdeosMinorListForReading;
-                    for (int i = 0; i < minor.Count; i++)
+                    List<Ideo>? minor = ideos.IdeosMinorListForReading;
+                    if (minor != null)
                     {
-                        fingerprint = (fingerprint * 31) + Fingerprint(minor[i]);
+                        for (int i = 0; i < minor.Count; i++)
+                        {
+                            fingerprint = IdeoFingerprint.Combine(fingerprint, Fingerprint(minor[i]));
+                        }
                     }
                 }
             }
@@ -294,10 +297,27 @@ internal static class DesignatorCatalog
         }
     }
 
-    private static long Fingerprint(Ideo ideo) =>
-        ((long)System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(ideo) * 1_000_003L)
-        + ((long)ideo.PreceptsListForReading.Count * 1009L)
-        + ideo.development.reformCount;
+    /// <summary>
+    /// Never throws: any member may be null (non-fluid ideoligions have no <c>development</c>), and a fault degrades to the
+    /// identity hash alone, so a fingerprint problem can never disable the Ideology site.
+    /// </summary>
+    private static long Fingerprint(Ideo? ideo)
+    {
+        if (ideo == null)
+        {
+            return 0;
+        }
+
+        int hash = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(ideo);
+        try
+        {
+            return IdeoFingerprint.Of(hash, ideo.PreceptsListForReading?.Count, ideo.development?.reformCount);
+        }
+        catch (Exception)
+        {
+            return IdeoFingerprint.Of(hash, null, null);
+        }
+    }
 
     private static void RebuildIdeology(bool build)
     {

@@ -169,6 +169,16 @@ internal sealed class WheelModel
     }
 
     /// <summary>
+    /// Shows <paramref name="material"/>'s icon in its colour in slot <paramref name="index"/> instead of the designator's own
+    /// icon (FR-11a: material-variant dropdowns). The slot keeps its designator, label and state.
+    /// </summary>
+    internal void SetMaterialIcon(int index, ThingDef material)
+    {
+        _icons[index] = null;
+        _stuffIcons[index] = material;
+    }
+
+    /// <summary>
     /// Fills slot <paramref name="index"/> of a material ring with <paramref name="stuff"/> (S3): its icon in its own
     /// colour, <paramref name="lastUsed"/> adds the 3 px <c>accent</c> ring (state 4). <paramref name="label"/> defaults
     /// to the stuff's <c>LabelCap</c>.

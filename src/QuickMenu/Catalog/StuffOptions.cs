@@ -37,8 +37,9 @@ internal readonly struct StuffOptionSet
 {
     internal static readonly StuffOptionSet NotStuffBuild = new(StuffRingOutcome.None, Array.Empty<StuffOption>(), isStuffBuild: false);
 
-    internal StuffOptionSet(StuffRingOutcome outcome, IReadOnlyList<StuffOption> options, bool isStuffBuild = true)
+    internal StuffOptionSet(StuffRingOutcome outcome, IReadOnlyList<StuffOption> options, bool isStuffBuild = true, int lastUsedIndex = -1)
     {
+        LastUsedIndex = lastUsedIndex;
         Outcome = outcome;
         Options = options;
         IsStuffBuild = isStuffBuild;
@@ -50,15 +51,18 @@ internal readonly struct StuffOptionSet
     /// <summary>None: grey the slot ("no materials"). Skip: use the only option. Ring: open the material ring.</summary>
     internal StuffRingOutcome Outcome { get; }
 
-    /// <summary>Ordered, last used first.</summary>
+    /// <summary>Index in <see cref="Options"/> of the material the build used last (highlighted only; -1 if none).</summary>
+    internal int LastUsedIndex { get; }
+
+    /// <summary>In the architect's fixed order.</summary>
     internal IReadOnlyList<StuffOption> Options { get; }
 }
 
 /// <summary>
 /// The materials the architect would offer for a stuff build (behaviour of <c>Designator_Build.ProcessInput</c>, 1.7): the
 /// counted stuffs on the current map that <c>IsStuff</c> and <c>CanMake</c> the def, or every such stuff present in the
-/// counted list in god mode; vanilla order is commonality descending then market value ascending. The designator's current
-/// stuff (<c>StuffDefRaw</c>) goes first, so the order is shared with the architect.
+/// counted list in god mode; vanilla order is commonality descending then market value ascending. The order is fixed (shared with the architect);
+/// the designator's current stuff (<c>StuffDefRaw</c>) is only marked by <see cref="StuffOptionSet.LastUsedIndex"/>.
 /// </summary>
 internal static class StuffOptions
 {
@@ -138,7 +142,7 @@ internal static class StuffOptions
             options[i] = new StuffOption(stuff, stuff.LabelCap.ToString(), stuff.uiIcon, stuff.stuffProps.color);
         }
 
-        return new StuffOptionSet(order.Outcome, options);
+        return new StuffOptionSet(order.Outcome, options, true, order.LastUsedIndex);
     }
 
     /// <summary>Insertion sort: stable (<c>List.Sort</c> is not), and the list is a few dozen stuffs at most.</summary>

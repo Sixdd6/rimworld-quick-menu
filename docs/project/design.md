@@ -97,7 +97,7 @@ These rules are written so Core can implement them exactly and test them against
   - Right: the sub-panel's left edge = main panel right edge + G. Left: the sub-panel's right edge = main panel left edge − G.
   - Vertical: the first row's cell centre y = py.
   - If the chosen side overflows the screen horizontally, try the other side. Then apply EdgeDodge.
-- **Material ring/grid** uses the same rules with n = number of materials, ordered by `StuffOrdering` (last-used first = index 0 = 12 o'clock or top-left). If the material ring opens from a sub-menu option, it **replaces** the sub-ring or sub-grid at the same anchor (the original parent position), and the hub shows the chosen option.
+- **Material ring/grid** uses the same rules with n = number of materials, in the architect's **fixed order** (`StuffOrdering` keeps it; the last-used material is highlighted, never moved to the front). If the material ring opens from a sub-menu option, it **replaces** the sub-ring or sub-grid at the same anchor (the original parent position), and the hub shows the chosen option.
 - n = 1 → no ring (FR-12). n = 0 → the parent is greyed.
 
 **Edge dodging (`EdgeDodger.Fit`)**: allowed area = `[margin, screen − margin]` on each axis. If the bounding box is wider or taller than the allowed area on an axis, it is centred on that axis. Otherwise it is shifted by the minimum amount on that axis. The shift applies to the whole menu, so the mouse may no longer be over the hub. That is acceptable (FR-3).
@@ -121,7 +121,8 @@ The same as S1, with a rounded panel instead of the disc and the hub in the cent
 
 #### S3. Sub-menu (FR-11) and material choice (FR-12). See [mockup](design/mockup-subring-grid-edit.png) (left side).
 - Clicking a sub-menu slot opens the satellite (wheel) or sub-grid (grid). The parent keeps a 2 px accent rim ("open parent").
-- Material options show the material's icon in its stuff colour. The last-used material is first, with a 3 px accent rim.
+- Material-variant dropdowns (FR-11a: every element has the same texture path and exactly one cost ingredient, all ingredients distinct, e.g. stone tiles and flagstones) show each sub-ring option with the icon of the material it costs, like the material ring; other dropdowns keep their own icons.
+- Material options show the material's icon in its stuff colour. The order is fixed; the last-used material is only highlighted with a 3 px accent rim.
 - **Back** (one level): Esc, right-click anywhere, a click on the satellite hub, or a click outside the satellite or sub-grid. On the main level, the same inputs close the menu.
 - **Hold mode**: hovering a sub-menu or material slot for **150 ms** opens its ring (the dwell stops rings from opening while the mouse passes over). Releasing over an option picks it. Releasing anywhere else closes everything.
 - **Satellites do not open in edit mode.**

@@ -216,12 +216,8 @@ internal sealed class SatelliteController
     /// <summary>The stuff colour shown as the material dot: the last-used stuff when the build remembers one among its options, else null.</summary>
     internal static Color? LastUsedColor(Designator target, in StuffOptionSet set)
     {
-        if (set.Options.Count > 0 && target is Designator_Build build && build.StuffDefRaw is { } last && last == set.Options[0].Def)
-        {
-            return set.Options[0].Color;
-        }
-
-        return null;
+        int last = set.LastUsedIndex;
+        return last >= 0 && last < set.Options.Count ? set.Options[last].Color : null;
     }
 
     private static Vec2 Screen => new(UI.screenWidth, UI.screenHeight);
@@ -239,6 +235,7 @@ internal sealed class SatelliteController
         var model = new WheelModel(placed.Hub, main.ButtonSize, placed.Rings, placed.Slots, placed.Slots.Length, WheelModel.DefaultPlateHeight);
         var ring = new RingContent(model, main, slot, slot, elements.Count) { Dropdown = dropdown };
         List<ThingDef> present = StuffOptions.Present();
+        ThingDef?[]? materials = MaterialVariantIcons.For(elements);
         for (int i = 0; i < elements.Count; i++)
         {
             Designator d = elements[i];
@@ -249,6 +246,11 @@ internal sealed class SatelliteController
             if (!set.IsStuffBuild)
             {
                 model.SetSlot(i, d, usable ? SlotKind.Normal : SlotKind.Disabled);
+                if (materials?[i] is { } material)
+                {
+                    model.SetMaterialIcon(i, material);
+                }
+
                 continue;
             }
 
@@ -287,12 +289,11 @@ internal sealed class SatelliteController
         PlacedSatellite placed = SubMenuLayout.PlaceSatellite(n, main.ButtonSize, main.Slots[parentSlot].Center, Screen, WheelModel.DefaultPlateHeight);
         var model = new WheelModel(placed.Hub, main.ButtonSize, placed.Rings, placed.Slots, placed.Slots.Length, WheelModel.DefaultPlateHeight);
         var ring = new RingContent(model, hubSource, hubIndex, parentSlot, n) { IsMaterial = true, Target = target, Dropdown = dropdown };
-        bool lastUsed = LastUsedColor(target, set) != null;
         for (int i = 0; i < n; i++)
         {
             StuffOption option = set.Options[i];
             ring.Stuffs[i] = option.Def;
-            model.SetStuffOption(i, option.Def, SlotKind.Normal, lastUsed && i == 0, option.Label);
+            model.SetStuffOption(i, option.Def, SlotKind.Normal, i == set.LastUsedIndex, option.Label);
         }
 
         string parentLabel = hubSource.Label(hubIndex);

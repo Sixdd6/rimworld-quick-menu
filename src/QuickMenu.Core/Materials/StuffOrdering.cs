@@ -16,10 +16,13 @@ public enum StuffRingOutcome
     Ring,
 }
 
-/// <summary>The ordered material ids and the decision taken.</summary>
-public readonly record struct StuffOrder(StuffRingOutcome Outcome, IReadOnlyList<string> Ids);
+/// <summary>The material ids in their fixed order, the decision taken, and the index of the last-used one (-1 if none).</summary>
+public readonly record struct StuffOrder(StuffRingOutcome Outcome, IReadOnlyList<string> Ids, int LastUsedIndex = -1);
 
-/// <summary>Orders material ids for the material ring: last used first, the rest in input order.</summary>
+/// <summary>
+/// Decides the material ring outcome. The order is fixed: the input order (the architect's) is kept and never re-sorted to put
+/// the last-used material first; the last-used one is only reported by index so the ring can highlight it (FR-12).
+/// </summary>
 public static class StuffOrdering
 {
     public static StuffOrder Order(IReadOnlyList<string> optionIds, string? lastUsedId)
@@ -28,11 +31,6 @@ public static class StuffOrdering
         if (optionIds.Count == 0)
         {
             return new StuffOrder(StuffRingOutcome.None, Array.Empty<string>());
-        }
-
-        if (optionIds.Count == 1)
-        {
-            return new StuffOrder(StuffRingOutcome.Skip, new[] { optionIds[0] });
         }
 
         int last = -1;
@@ -48,21 +46,12 @@ public static class StuffOrdering
             }
         }
 
-        var result = new string[optionIds.Count];
-        int w = 0;
-        if (last >= 0)
+        var ids = new string[optionIds.Count];
+        for (int i = 0; i < ids.Length; i++)
         {
-            result[w++] = optionIds[last];
+            ids[i] = optionIds[i];
         }
 
-        for (int i = 0; i < optionIds.Count; i++)
-        {
-            if (i != last)
-            {
-                result[w++] = optionIds[i];
-            }
-        }
-
-        return new StuffOrder(StuffRingOutcome.Ring, result);
+        return new StuffOrder(optionIds.Count == 1 ? StuffRingOutcome.Skip : StuffRingOutcome.Ring, ids, last);
     }
 }

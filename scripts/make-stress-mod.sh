@@ -2,7 +2,7 @@
 # Generate the TEST-ONLY stress mod (sixdd.QuickMenuStress) used for P-11c / W-1 / W-2 in-game measurements.
 # Usage: scripts/make-stress-mod.sh [N=2000] [OUT_DIR=dist/stress/QuickMenuStress]   (N: 1..50000; use 2000 and 8000)
 # Output is outside mod/ and gitignored (dist/). scripts/package.sh zips only git-tracked mod/ files, so it never ships.
-# Uses only vanilla textures by path. Streams through awk, so memory stays flat for any N.
+# RimWorld 1.7 rejects defNames ending in a digit, so every generated defName ends in "_X". Uses only vanilla textures by path. Streams through awk, so memory stays flat for any N.
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo="$(cd "$here/.." && pwd)"
@@ -64,7 +64,7 @@ BEGIN {
   print "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<Defs>" > groups
   for (i = 0; i < n; i++) {
     c = i % nc; q = int(i / nc)
-    printf "  <ThingDef ParentName=\"BuildingBase\">\n    <defName>Stress_%d</defName>\n    <label>stress build %d</label>\n", i, i > things
+    printf "  <ThingDef ParentName=\"BuildingBase\">\n    <defName>Stress_%04d_X</defName>\n    <label>stress build %d</label>\n", i, i > things
     printf "    <description>Test only fake buildable %d.</description>\n", i > things
     print "    <graphicData>\n      <texPath>Things/Building/Furniture/Stool</texPath>\n      <graphicClass>Graphic_Multi</graphicClass>\n    </graphicData>" > things
     print "    <altitudeLayer>Building</altitudeLayer>\n    <passability>PassThroughOnly</passability>\n    <fillPercent>0.2</fillPercent>" > things
@@ -76,7 +76,7 @@ BEGIN {
     }
     printf "    <designationCategory>%s</designationCategory>\n", cat[c + 1] > things
     if (q % 2 == 0) {
-      g = "Stress_G" cat[c + 1] "_" int(q / 16)
+      g = "Stress_G" cat[c + 1] "_" int(q / 16) "_X"
       printf "    <designatorDropdown>%s</designatorDropdown>\n", g > things
       if (!(g in seen)) { seen[g] = 1; printf "  <DesignatorDropdownGroupDef>\n    <defName>%s</defName>\n    <label>stress group %s</label>\n  </DesignatorDropdownGroupDef>\n", g, g > groups }
     }

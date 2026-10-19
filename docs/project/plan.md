@@ -651,7 +651,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Depends on**: T-32, T-37
   - **Files**: `src/QuickMenu/Catalog/StuffOptions.cs`, `src/QuickMenu/Activation/DesignatorActivator.cs`
   - **Acceptance criteria**:
-    - [ ] Given a stuff build, then the options are the counted stuffs on the map that `IsStuff` and `CanMake` the def (all in god mode), ordered by `StuffOrdering` with the designator's current stuff first.
+    - [ ] Given a stuff build, then the options are the counted stuffs on the map that `IsStuff` and `CanMake` the def (all in god mode), in the architect's fixed order (`StuffOrdering` never re-sorts); the designator's current stuff is only reported as the last-used index (highlight).
     - [ ] Given `Activate(entry, stuff)`, then `SetStuffDef(stuff)`, the interaction check, `CurActivateSound`, `DesignatorManager.Select`; Ideology style variants keep the game's default style.
     - [ ] Known gap from T-7: the architect fires on mouse-up over the same slot and never activates `Disabled` designators; the T-7 skeleton fires on mouse-down. Align here.
     - [ ] Given a dropdown element, then it is activated the same way and `SetActiveDesignator` is called on the dropdown so the architect shows it as last used.
