@@ -1168,19 +1168,19 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: unit `PinnedSetTests` (rules table above); perf `PinnedSetPerfTests`; benchmark `PinBenchmarks.PinnedSetContains`.
   - **Size**: M
 
-- [ ] **T-91**: Pin marker on architect buttons (hook site 4: vanilla, BAM, Mint's architect)
+- [x] **T-91**: Pin marker on architect buttons (hook site 4: vanilla, BAM, Mint's architect)
   - **Owner**: developer
   - **Requirements**: FR-19, NFR-1, NFR-2, NFR-5, NFR-6 (ADR 0009, architecture §6)
   - **Depends on**: T-72 (fault-injection list), T-88, T-89, T-90
   - **Files**: `src/QuickMenu/Pinning/{PinMarkerPatch,PinnedDesignators}.cs` (new), `src/QuickMenu/Pinning/PinService.cs` (rebuild on change), `src/QuickMenu/Catalog/DesignatorCatalog.cs` (rebuild after build and Ideology refresh), `src/QuickMenu/QuickMenuMod.cs` (patch registration), `src/QuickMenu/Diagnostics/{FaultInjection,PerfCounters,SelfTest}.cs` (new site, counter, report)
   - **Acceptance criteria**:
-    - [ ] ADR-0009: hook = postfix on `Command.GizmoOnGUIInt(Rect, GizmoRenderParms)`; marker only while an architect menu is drawing (vanilla tab / BAM / Mint build window grid view); the lookup is never rebuilt on the per-gizmo path. Known limits (user, 2026-10-19): Mint's list view is not marked; Mint's wheel gets no markers (pinning there still works).
-    - [ ] Given the site chosen in ADR 0009, then a Harmony postfix with exact parameter types bound by index follows the patch-guard convention (`if (Site.Disabled) return; try {…} catch (Exception ex) { Site.Fail(ex); }`), returns on anything but `EventType.Repaint`, and for a gizmo that is not a `Designator` or not in the set returns after one type check and one `Contains` (no LINQ, closures, string building or allocation).
-    - [ ] Given `PinnedDesignators` (adapter wrapper over Core `PinnedSet<Designator>`), then it is rebuilt by `PinService` after every toggle, by settings load and by the catalog after its build and after the Ideology refresh, never by the hook; the hook only reads it.
-    - [ ] Given a pinned designator drawn by vanilla `GizmoGridDrawer` or by BAM, then `Textures.PinMarker` is drawn in the corner from ADR 0009 with `QMStyle` tokens via `GUI.DrawTexture` (no rotation, no new texture per frame), scaled with the gizmo rect so it is correct at UI scale 1–2; a whole-dropdown pin marks the dropdown button.
-    - [ ] Given a pin or unpin by modifier+click while the architect menu is open, then the marker appears or disappears on the next frame.
-    - [ ] Given "Quick Menu: inject fault" for the marker site, then one error is logged, the site is disabled, and architect buttons keep drawing and working without markers.
-    - [ ] Given dev mode, then a counter and `MeasureScope` around the hook body feed "Quick Menu: perf report" (calls per frame, median/p99 ns per call, allocated bytes), and the self-test lists the marker patch as patched or failed; with dev mode off the measurement costs one cached bool check.
+    - [x] ADR-0009: hook = postfix on `Command.GizmoOnGUIInt(Rect, GizmoRenderParms)`; marker only while an architect menu is drawing (vanilla tab / BAM / Mint build window grid view); the lookup is never rebuilt on the per-gizmo path. Known limits (user, 2026-10-19): Mint's list view is not marked; Mint's wheel gets no markers (pinning there still works).
+    - [x] Given the site chosen in ADR 0009, then a Harmony postfix with exact parameter types bound by index follows the patch-guard convention (`if (Site.Disabled) return; try {…} catch (Exception ex) { Site.Fail(ex); }`), returns on anything but `EventType.Repaint`, and for a gizmo that is not a `Designator` or not in the set returns after one type check and one `Contains` (no LINQ, closures, string building or allocation).
+    - [x] Given `PinnedDesignators` (adapter wrapper over Core `PinnedSet<Designator>`), then it is rebuilt by `PinService` after every toggle, by settings load and by the catalog after its build and after the Ideology refresh, never by the hook; the hook only reads it.
+    - [x] Given a pinned designator drawn by vanilla `GizmoGridDrawer` or by BAM, then `Textures.PinMarker` is drawn in the corner from ADR 0009 with `QMStyle` tokens via `GUI.DrawTexture` (no rotation, no new texture per frame), scaled with the gizmo rect so it is correct at UI scale 1–2; a whole-dropdown pin marks the dropdown button.
+    - [x] Given a pin or unpin by modifier+click while the architect menu is open, then the marker appears or disappears on the next frame.
+    - [x] Given "Quick Menu: inject fault" for the marker site, then one error is logged, the site is disabled, and architect buttons keep drawing and working without markers.
+    - [x] Given dev mode, then a counter and `MeasureScope` around the hook body feed "Quick Menu: perf report" (calls per frame, median/p99 ns per call, allocated bytes), and the self-test lists the marker patch as patched or failed; with dev mode off the measurement costs one cached bool check.
     - [ ] *(UC-6)* Markers show on pinned buttons in setups (a), (b) and (c)/(d) (Mint's architect, where pinning works), not on unpinned ones, at UI scale 1.0 and 2.0; P-19 is within budget with the architect open and with a pawn's command bar shown.
   - **Tests**: Core rules in T-90; build; `scripts/test.sh`, `scripts/perf.sh`; in-game UC-6.
   - **In-game check**: UC-6 (user)
