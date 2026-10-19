@@ -568,6 +568,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Depends on**: T-14, T-37, T-38
   - **Files**: `src/QuickMenu/Catalog/{DesignatorCatalog,CatalogEntry,IdeoSignature}.cs`, `src/QuickMenu/Diagnostics/SelfTest.cs`
   - **Acceptance criteria**:
+    - [ ] Given the Ideology part of the catalog is refreshed (or the catalog is rebuilt), then `PinService` re-resolves stored pins, so an Ideology pin resolved as missing at startup becomes available once the game with that ideoligion loads (T-25 review M1).
     - [ ] Given the startup build, then each entry gets label, category label, mod name, `ParentId`, and `DevOnly` by the rule from T-14 (S-5), and `SearchIndex.Build` runs once in the same pass; the self-test reports total ms.
     - [ ] Given a menu or picker open, then the signature (game, primary ideo, precept count) is compared in O(1) and the Ideology entries are rebuilt only when it changed.
     - [ ] Given a `moddrop:` key with no exact match, then `ModDropdownMatcher` resolves it; the stored key is not rewritten.
@@ -707,6 +708,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Depends on**: T-16, T-50
   - **Files**: `src/QuickMenu.Core/Layout/Capacity.cs`, `src/QuickMenu.Core/Layout/WheelLayout.cs` (Auto mode), `tests/QuickMenu.Core.Tests/Layout/CapacityTests.cs`
   - **Acceptance criteria**:
+    - [ ] Given `PinService.IsReady` is false (catalog not built, empty or failed), then the missing-pin count and the "Forget missing pins" button are disabled, so a transient fault can never wipe valid pins (T-25 review M2).
     - [ ] Given Auto wheel with count c, then the smallest m with Σ cap ≥ c is used, inner rings full, outer ring spread evenly; c = 0 draws ring-1 geometry; edit mode adds one append slot.
     - [ ] Given Auto wheel, then full when count = Σ cap(m) and m + 1 rings do not fit the screen minus margins, or m = 8. Given Auto grid, rows = smallest odd with rows·cols − 1 ≥ count; full when rows + 2 do not fit or rows = 9.
     - [ ] Given Fixed, then capacity = rings or rows·cols − 1.
