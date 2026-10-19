@@ -73,7 +73,7 @@ internal static class Textures
     /// <summary>The RGBA buffer is kept between rebuilds up to this size (a rim of about 1000 px); larger is released.</summary>
     private const int RetainedRgbaBytes = 4 << 20;
 
-    private const int GlyphCount = MaskId.IconAdd - MaskId.SubMenuBadge + 1;
+    private const int GlyphCount = Glyphs.Count;
 
     // Slot rings 1/2/3/dashed, hub rings 1/2/3, glyphs, material dot, main rim.
     private const int SizedCount = 4 + 3 + GlyphCount + 1 + 1;
@@ -244,7 +244,7 @@ internal static class Textures
 
             if ((groups & SizedGroups.Glyphs) != 0)
             {
-                for (MaskId id = MaskId.SubMenuBadge; id <= MaskId.IconAdd; id++)
+                for (MaskId id = Glyphs.First; id <= Glyphs.Last; id++)
                 {
                     int n = next.GlyphTexels(id);
                     Glyphs.Render(id, n, Scratch(n * n));

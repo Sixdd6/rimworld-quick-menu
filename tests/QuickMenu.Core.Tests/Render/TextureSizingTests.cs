@@ -233,9 +233,7 @@ public class TextureSizingTests
 
     [Theory]
     [InlineData(MaskId.SubMenuBadge, 0.22f)]
-    [InlineData(MaskId.Caret, 0.2f)]
     [InlineData(MaskId.Lock, 0.25f)]
-    [InlineData(MaskId.IconAdd, 0.3f)]
     public void GlyphDrawSize_BadgesAreFractionsOfB(MaskId id, float fraction)
     {
         Assert.Equal(fraction * 56f, TextureSizing.Create(56f, 1, 1f).GlyphDrawSize(id), 4);
@@ -265,8 +263,9 @@ public class TextureSizingTests
     {
         Assert.Equal(14, TextureSizing.Create(56f, 1, 1f).GlyphTexels(MaskId.Lock));
         Assert.Equal(21, TextureSizing.Create(56f, 1, 1.5f).GlyphTexels(MaskId.Lock));
-        Assert.Equal(Glyphs.MinSize, TextureSizing.Create(36f, 1, 1f).GlyphTexels(MaskId.Caret)); // 7.2 px → 8
-        for (MaskId id = MaskId.SubMenuBadge; id <= MaskId.IconAdd; id++)
+        Assert.Equal(8, TextureSizing.Create(36f, 1, 1f).GlyphTexels(MaskId.SubMenuBadge)); // 7.92 px → 8
+        Assert.Equal(Glyphs.MinSize, TextureSizing.Create(36f, 1, 0.75f).GlyphTexels(MaskId.SubMenuBadge)); // 5.94 px → MinSize
+        for (MaskId id = Glyphs.First; id <= Glyphs.Last; id++)
         {
             Assert.InRange(TextureSizing.Create(36f, 1, 1f).GlyphTexels(id), Glyphs.MinSize, 64);
         }
@@ -275,6 +274,7 @@ public class TextureSizingTests
     [Theory]
     [InlineData(MaskId.Circle)]
     [InlineData(MaskId.Plate)]
+    [InlineData(Glyphs.Last + 1)]
     public void GlyphDrawSize_RejectsNonGlyphs(MaskId id)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => TextureSizing.Create(56f, 1, 1f).GlyphDrawSize(id));

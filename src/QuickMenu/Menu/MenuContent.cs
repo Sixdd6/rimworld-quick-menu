@@ -187,14 +187,8 @@ internal sealed class MenuContent
         string? tip = _tips[slot];
         if (tip == null)
         {
-            string modifierKey = QuickMenuMod.EffectiveModifier switch
-            {
-                PinModifier.Alt => "QuickMenu.Settings.Modifier.Alt",
-                PinModifier.Shift => "QuickMenu.Settings.Modifier.Shift",
-                _ => "QuickMenu.Settings.Modifier.Ctrl",
-            };
             string mod = string.IsNullOrEmpty(pin.PackageId) ? "QuickMenu.Menu.UnknownMod".Translate().Resolve() : pin.PackageId!;
-            tip = "QuickMenu.Menu.ReservedTip".Translate(pin.Label, mod, modifierKey.Translate()).Resolve();
+            tip = "QuickMenu.Menu.MissingTip".Translate(pin.Label, mod, EditTexts.ModifierName(QuickMenuMod.EffectiveModifier)).Resolve();
             _tips[slot] = tip;
         }
 

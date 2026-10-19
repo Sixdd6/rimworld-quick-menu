@@ -20,6 +20,9 @@ internal static class QMStyle
     /// <summary>The edit-mode hub tint (S4a): <c>accent</c> at <see cref="HubStyle.EditTintAlpha"/>, drawn over the hub fill.</summary>
     internal static readonly Color EditTint = new(Accent.r, Accent.g, Accent.b, HubStyle.EditTintAlpha);
 
+    /// <summary>The drop-target tint (S4 state 11): <c>accent</c> at <see cref="EditVisuals.DropTargetTintAlpha"/>, over <c>slotBgHover</c>.</summary>
+    internal static readonly Color DropTargetTint = new(Accent.r, Accent.g, Accent.b, EditVisuals.DropTargetTintAlpha);
+
     internal static readonly Color RimOutline = ToColor(StyleTokens.RimOutline);
     internal static readonly Color SlotBg = ToColor(StyleTokens.SlotBg);
     internal static readonly Color SlotBgHover = ToColor(StyleTokens.SlotBgHover);

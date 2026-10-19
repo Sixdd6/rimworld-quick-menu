@@ -27,6 +27,10 @@ internal static class GridRenderer
     internal static void Draw(WheelModel model, Hit hover, Hit pressed) =>
         Draw(model, RenderTransform.Identity(model.Center), hover, pressed);
 
+    /// <summary>Draws the main grid in edit mode with a drag in progress (T-55, S4 states 9 and 11); see <see cref="MenuRenderer.DrawBody"/>.</summary>
+    internal static void Draw(WheelModel model, Hit hover, Hit pressed, in DragVisual drag) =>
+        Draw(model, RenderTransform.Identity(model.Center), hover, pressed, -1, drag);
+
     /// <summary>Draws the main grid dimmed behind an open sub-grid whose parent is slot <paramref name="openParent"/>.</summary>
     internal static void DrawDimmed(WheelModel model, int openParent) =>
         Draw(model, RenderTransform.Identity(model.Center), Hit.Outside, Hit.Outside, openParent);
@@ -36,7 +40,10 @@ internal static class GridRenderer
     /// preview, T-59). With <paramref name="openParent"/> ≥ 0 a sub-grid is open over that slot: the grid is dimmed and
     /// ignores <paramref name="hover"/> and <paramref name="pressed"/>.
     /// </summary>
-    internal static void Draw(WheelModel model, in RenderTransform transform, Hit hover, Hit pressed, int openParent = -1)
+    internal static void Draw(WheelModel model, in RenderTransform transform, Hit hover, Hit pressed, int openParent = -1) =>
+        Draw(model, transform, hover, pressed, openParent, DragVisual.None);
+
+    private static void Draw(WheelModel model, in RenderTransform transform, Hit hover, Hit pressed, int openParent, in DragVisual drag)
     {
         if (Event.current.type != EventType.Repaint)
         {
@@ -55,7 +62,7 @@ internal static class GridRenderer
                 PanelRenderer.Draw(panel, transform);
             }
 
-            MenuRenderer.DrawBody(model, transform, hover, pressed, openParent);
+            MenuRenderer.DrawBody(model, transform, hover, pressed, openParent, drag);
         }
         finally
         {

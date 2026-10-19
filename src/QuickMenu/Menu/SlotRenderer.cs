@@ -9,8 +9,11 @@ namespace QuickMenu.Menu;
 /// <summary>
 /// One slot (design.md S4), one routine for every layout. Base states Normal (1), Hover (2), Pressed (3), Empty (6),
 /// combined with the decorations of T-42: last-used material (4, 3 px <c>accent</c>), greyed with lock (5), sub-menu
-/// badge (12, 1:30), material dot (13, 4:30), open parent (14, 2 px <c>accent</c>), and in edit mode the
-/// reserved-missing pin (8: dashed <c>emptyBorder</c> ring and "?"; in use mode it looks empty).
+/// badge (12, 1:30), material dot (13, 4:30), open parent (14, 2 px <c>accent</c>), and in edit mode (T-55) the
+/// reserved-missing pin (8: dashed <c>emptyBorder</c> ring and "?"; in use mode it looks empty), the drag source
+/// (9: dashed empty ghost, no icon or badge) and the drop target (11: <c>slotBgHover</c> + 22 % <c>accent</c> tint +
+/// 2 px <c>accent</c>, with the slot's content; an empty Fixed slot too). The dragged pin itself is drawn by
+/// <see cref="EditStateRenderer.DrawDragged"/>. There is no state 7 ("+") and no state 10 (insert cursor).
 /// </summary>
 /// <remarks>
 /// Order: fill <c>Circle</c> at B (+ hover overlay), the icon (<c>Command.DrawIcon</c> in a 0.75 B square, or a
@@ -21,8 +24,8 @@ namespace QuickMenu.Menu;
 /// </remarks>
 internal static class SlotRenderer
 {
-    // The reserved-missing marker (S4 state 8): a symbol, not a word, so it is not Keyed.
-    private const string ReservedMark = "?";
+    // The game's faded gizmo icon, used for the dragged pin (a struct: no allocation).
+    private static readonly GizmoRenderParms _fadedIcon = new() { lowLight = true };
 
     /// <summary>Draws slot <paramref name="index"/> of <paramref name="model"/> at its layout position.</summary>
     internal static void Draw(WheelModel model, int index, SlotVisualState state, in RenderTransform transform) =>
@@ -48,9 +51,14 @@ internal static class SlotRenderer
                 MenuRenderer.Tint(QMStyle.HoverOverlay);
                 MenuRenderer.DrawMask(MaskId.Circle, c, circle);
             }
+            else if (EditVisuals.ShowsDropTint(state))
+            {
+                MenuRenderer.Tint(QMStyle.DropTargetTint);
+                MenuRenderer.DrawMask(MaskId.Circle, c, circle);
+            }
         }
 
-        if (state != SlotVisualState.Empty)
+        if (EditVisuals.ShowsIcon(state))
         {
             DrawIcon(model, index, layoutCentre, transform);
             float veil = WheelVisuals.IconVeilAlpha(kind, MenuRenderer.Dimmed);
@@ -63,9 +71,14 @@ internal static class SlotRenderer
         }
 
         DrawRing(WheelVisuals.Ring(state, decor, kind, model.Editing), c, scale);
-        if (WheelVisuals.ShowsReservedMarker(kind, model.Editing))
+        if (WheelVisuals.ShowsReservedMarker(state, kind, model.Editing))
         {
-            DrawReservedMark(model, layoutCentre, transform);
+            EditStateRenderer.DrawReservedMark(transform.Rect(WheelVisuals.IconRect(layoutCentre, model.ButtonSize)), QMStyle.TextMuted);
+        }
+
+        if (!EditVisuals.ShowsBadges(state))
+        {
+            return;
         }
 
         if (WheelVisuals.ShowsBadge(SlotBadge.SubMenu, kind, decor))
@@ -84,7 +97,16 @@ internal static class SlotRenderer
         }
     }
 
-    private static void DrawIcon(WheelModel model, int index, Vec2 layoutCentre, in RenderTransform transform)
+    private static void DrawIcon(WheelModel model, int index, Vec2 layoutCentre, in RenderTransform transform) =>
+        DrawIcon(model, index, MenuRenderer.ToRect(transform.Rect(WheelVisuals.IconRect(layoutCentre, model.ButtonSize))), faded: false);
+
+    /// <summary>
+    /// Draws the icon of slot <paramref name="index"/> in <paramref name="rect"/>: the designator's own
+    /// <c>Command.DrawIcon</c>, or a material option's stuff icon. <paramref name="faded"/> draws it as the dragged pin
+    /// (S4 state 9): <c>Command.DrawIcon</c> sets its own colour, so the fade is the game's own low-light icon
+    /// (<c>GizmoRenderParms.lowLight</c>, 60 % on 1.7.4982); a stuff icon gets <see cref="EditVisuals.DragIconAlpha"/>.
+    /// </summary>
+    internal static void DrawIcon(WheelModel model, int index, Rect rect, bool faded)
     {
         Command? icon = model.Icon(index);
         ThingDef? stuff = model.StuffIcon(index);
@@ -93,18 +115,17 @@ internal static class SlotRenderer
             return;
         }
 
-        Rect rect = MenuRenderer.ToRect(transform.Rect(WheelVisuals.IconRect(layoutCentre, model.ButtonSize)));
         GUI.color = QMStyle.White;
         try
         {
             if (icon != null)
             {
-                icon.DrawIcon(rect, null, default);
+                icon.DrawIcon(rect, null, faded ? _fadedIcon : default);
             }
             else
             {
                 // The stuff's own icon and colour, as the game's resource readout and stuff menus draw it.
-                Widgets.DefIcon(rect, stuff);
+                Widgets.DefIcon(rect, stuff, alpha: faded ? EditVisuals.DragIconAlpha : 1f);
             }
         }
         catch (System.Exception ex)
@@ -144,26 +165,6 @@ internal static class SlotRenderer
         }
     }
 
-    // State 8 (edit mode): "?" in the icon square, game font (no glyph mask exists for it yet), textMuted.
-    private static void DrawReservedMark(WheelModel model, Vec2 layoutCentre, in RenderTransform transform)
-    {
-        Rect rect = MenuRenderer.ToRect(transform.Rect(WheelVisuals.IconRect(layoutCentre, model.ButtonSize)));
-        GameFont oldFont = Text.Font;
-        TextAnchor oldAnchor = Text.Anchor;
-        try
-        {
-            Text.Font = GameFont.Medium;
-            Text.Anchor = TextAnchor.MiddleCenter;
-            MenuRenderer.Tint(QMStyle.TextMuted);
-            Widgets.Label(rect, ReservedMark);
-        }
-        finally
-        {
-            Text.Anchor = oldAnchor;
-            Text.Font = oldFont;
-        }
-    }
-
     // A badge: the same mask tinted rimOutline, 1 px larger on each side, under the tinted mask (design.md §3).
     private static void DrawBadge(in SizedTexture texture, Color color, Vec2 layoutCentre, in RenderTransform transform)
     {
@@ -177,9 +178,9 @@ internal static class SlotRenderer
 
     private static Color Fill(SlotVisualState state) => state switch
     {
-        SlotVisualState.Hover => QMStyle.SlotBgHover,
+        SlotVisualState.Hover or SlotVisualState.DropTarget => QMStyle.SlotBgHover,
         SlotVisualState.Pressed => QMStyle.SlotBgPressed,
-        SlotVisualState.Empty => QMStyle.SlotBgEmpty,
+        SlotVisualState.Empty or SlotVisualState.DragSource => QMStyle.SlotBgEmpty,
         _ => QMStyle.SlotBg,
     };
 }

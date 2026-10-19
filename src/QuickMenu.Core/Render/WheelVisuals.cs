@@ -4,7 +4,7 @@ using QuickMenu.Core.Layout;
 
 namespace QuickMenu.Core.Render;
 
-/// <summary>The base visual state of a slot (design.md S4 states 1, 2, 3 and 6).</summary>
+/// <summary>The base visual state of a slot (design.md S4 states 1, 2, 3, 6, and in edit mode 9 and 11).</summary>
 public enum SlotVisualState
 {
     /// <summary>State 1: <c>slotBg</c> + 1 px <c>slotBorder</c> ring.</summary>
@@ -18,6 +18,18 @@ public enum SlotVisualState
 
     /// <summary>State 6 (Fixed, use mode; also reserved-missing): <c>slotBg</c> at 50 % + 1 px <c>slotBorder</c> at 70 %.</summary>
     Empty,
+
+    /// <summary>
+    /// State 9, the drag source (edit mode): a dashed empty ghost in place (<c>slotBg</c> at 50 % + dashed
+    /// <c>emptyBorder</c> ring), no icon, no badge, no "?". The pin itself follows the pointer (<see cref="EditVisuals"/>).
+    /// </summary>
+    DragSource,
+
+    /// <summary>
+    /// State 11, the drop target (edit mode): <c>slotBgHover</c> + 22 % <c>accent</c> tint + 2 px <c>accent</c> ring.
+    /// Combines with the slot's content (icon, badges 12 and 13, lock, "?"); an empty Fixed slot is a target too.
+    /// </summary>
+    DropTarget,
 }
 
 /// <summary>State of the hub, the Edit button (design.md S4a).</summary>
@@ -146,9 +158,14 @@ public static class WheelVisuals
     /// </summary>
     public static SlotRing Ring(SlotVisualState state, SlotDecor decor)
     {
-        if (state == SlotVisualState.Empty)
+        switch (state)
         {
-            return SlotRing.EmptyBorder1;
+            case SlotVisualState.Empty:
+                return SlotRing.EmptyBorder1;
+            case SlotVisualState.DragSource:
+                return SlotRing.EmptyDashed;
+            case SlotVisualState.DropTarget:
+                return SlotRing.Accent2;
         }
 
         if ((decor & SlotDecor.LastUsed) != 0)
@@ -166,13 +183,21 @@ public static class WheelVisuals
 
     /// <summary>
     /// The ring with the slot kind and mode: a reserved-missing pin (state 8) shows a dashed <c>emptyBorder</c> ring in
-    /// edit mode and looks empty in use mode; otherwise as <see cref="Ring(SlotVisualState, SlotDecor)"/>.
+    /// edit mode and looks empty in use mode; a drop target (11) always shows its 2 px <c>accent</c> ring, also over a
+    /// reserved slot; otherwise as <see cref="Ring(SlotVisualState, SlotDecor)"/>.
     /// </summary>
     public static SlotRing Ring(SlotVisualState state, SlotDecor decor, SlotKind kind, bool editing) =>
-        ShowsReservedMarker(kind, editing) ? SlotRing.EmptyDashed : Ring(state, decor);
+        state != SlotVisualState.DropTarget && ShowsReservedMarker(kind, editing) ? SlotRing.EmptyDashed : Ring(state, decor);
 
     /// <summary>Whether a slot shows the reserved-missing marker (S4 state 8: dashed ring and "?"): edit mode only.</summary>
     public static bool ShowsReservedMarker(SlotKind kind, bool editing) => editing && kind == SlotKind.Reserved;
+
+    /// <summary>
+    /// <see cref="ShowsReservedMarker(SlotKind, bool)"/> for a slot in <paramref name="state"/>: a reserved slot that is
+    /// being dragged leaves only the dashed ghost (state 9), so its "?" moves with the pointer.
+    /// </summary>
+    public static bool ShowsReservedMarker(SlotVisualState state, SlotKind kind, bool editing) =>
+        state != SlotVisualState.DragSource && ShowsReservedMarker(kind, editing);
 
     /// <summary>
     /// Whether <paramref name="badge"/> is drawn. Badges 12 and 13 combine with states 1–5 (also greyed); the lock

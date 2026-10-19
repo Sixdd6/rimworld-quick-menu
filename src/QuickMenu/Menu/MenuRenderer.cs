@@ -28,6 +28,14 @@ internal static class MenuRenderer
         Draw(model, RenderTransform.Identity(model.Center), hover, pressed);
 
     /// <summary>
+    /// Draws the model in edit mode with a drag in progress (T-55, S4 states 9 and 11): the source as a dashed ghost,
+    /// the target highlighted, no hover elsewhere, and the dragged pin following the mouse on top. With
+    /// <see cref="DragVisual.None"/> it is <see cref="Draw(WheelModel, Hit, Hit)"/>.
+    /// </summary>
+    internal static void Draw(WheelModel model, Hit hover, Hit pressed, in DragVisual drag) =>
+        Draw(model, RenderTransform.Identity(model.Center), hover, pressed, -1, drag);
+
+    /// <summary>
     /// Draws the main menu dimmed behind an open satellite whose parent is slot <paramref name="openParent"/>
     /// (no hover, no plate), with the parent on top at full opacity in the open-parent state.
     /// </summary>
@@ -39,7 +47,10 @@ internal static class MenuRenderer
     /// <paramref name="openParent"/> ≥ 0 a satellite is open over slot <paramref name="openParent"/>: the menu is
     /// dimmed and ignores <paramref name="hover"/> and <paramref name="pressed"/>.
     /// </summary>
-    internal static void Draw(WheelModel model, in RenderTransform transform, Hit hover, Hit pressed, int openParent = -1)
+    internal static void Draw(WheelModel model, in RenderTransform transform, Hit hover, Hit pressed, int openParent = -1) =>
+        Draw(model, transform, hover, pressed, openParent, DragVisual.None);
+
+    private static void Draw(WheelModel model, in RenderTransform transform, Hit hover, Hit pressed, int openParent, in DragVisual drag)
     {
         if (Event.current.type != EventType.Repaint)
         {
@@ -54,7 +65,7 @@ internal static class MenuRenderer
         {
             SetDimmed(dimmed);
             DrawDisc(model, transform);
-            DrawBody(model, transform, hover, pressed, openParent);
+            DrawBody(model, transform, hover, pressed, openParent, drag);
         }
         finally
         {
@@ -66,19 +77,25 @@ internal static class MenuRenderer
     /// <summary>
     /// Slots, hub, and the plate or the open parent: everything of a menu above its background (disc or panel), the
     /// same for the wheel and the grid. Call inside <see cref="SetDimmed"/> with the hits already passed through
-    /// <see cref="WheelVisuals.Interactive"/>.
+    /// <see cref="WheelVisuals.Interactive"/>. With an active <paramref name="drag"/> (edit mode, never with a
+    /// satellite open) the slot, hub and plate states come from <see cref="EditVisuals"/> and the dragged pin is drawn
+    /// last, above everything.
     /// </summary>
-    internal static void DrawBody(WheelModel model, in RenderTransform transform, Hit hover, Hit pressed, int openParent)
+    internal static void DrawBody(WheelModel model, in RenderTransform transform, Hit hover, Hit pressed, int openParent, in DragVisual drag)
     {
         for (int i = 0; i < model.SlotCount; i++)
         {
-            SlotRenderer.Draw(model, i, WheelVisuals.Slot(i, model.Kinds[i], hover, pressed), transform);
+            SlotRenderer.Draw(model, i, EditVisuals.Slot(i, model.Kinds[i], hover, pressed, drag), transform);
         }
 
-        HubRenderer.Draw(model, transform, WheelVisuals.Hub(hover, pressed));
+        HubRenderer.Draw(model, transform, EditVisuals.Hub(hover, pressed, drag));
         if (openParent < 0)
         {
-            PlateRenderer.Draw(model, transform, WheelVisuals.Plate(hover, model.Kinds, model.SlotCount), hover.Index);
+            PlateRenderer.Draw(model, transform, EditVisuals.Plate(hover, model.Kinds, model.SlotCount, drag), hover.Index);
+            if (drag.Active)
+            {
+                EditStateRenderer.DrawDragged(model, drag, transform);
+            }
         }
         else if (openParent < model.SlotCount)
         {

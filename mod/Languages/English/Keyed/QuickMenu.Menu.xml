@@ -8,7 +8,19 @@
   <QuickMenu.Menu.EditTip>Edit the quick menu: move and remove pins.</QuickMenu.Menu.EditTip>
   <QuickMenu.Menu.DoneTip>Finish editing (Esc)</QuickMenu.Menu.DoneTip>
   <!-- Edit-mode tooltip of a pin whose mod is not loaded (design.md S4 state 8). {0} label, {1} mod, {2} pin modifier. -->
-  <QuickMenu.Menu.ReservedTip>{0}\nFrom {1}, which is not loaded. It comes back when the mod is added back.\n{2}+click to remove.</QuickMenu.Menu.ReservedTip>
+  <QuickMenu.Menu.MissingTip>{0}\nFrom {1}, which is not loaded. It comes back when the mod is added back.\n{2}+click to remove.</QuickMenu.Menu.MissingTip>
+  <!-- Edit-mode line of a slot tooltip (design.md Tooltips). {0} pin modifier. -->
+  <QuickMenu.Menu.EditSlotTip>Drag to move. {0}+click to remove.</QuickMenu.Menu.EditSlotTip>
+  <!-- Edit-mode help panel, top centre (design.md S5, §1.4). {0} pin modifier. -->
+  <QuickMenu.Menu.EditHelpFixed>Drag a slot onto another to swap them, or onto an empty slot to move it.\n{0}+click a slot to remove it.\nNew pins come from the architect menu: {0}+click any build or order button. They go into the first empty slot.\nDone or Esc to finish.</QuickMenu.Menu.EditHelpFixed>
+  <QuickMenu.Menu.EditHelpAuto>Drag a slot onto another to swap them.\n{0}+click a slot to remove it.\nNew pins come from the architect menu: {0}+click any build or order button. They go at the end.\nDone or Esc to finish.</QuickMenu.Menu.EditHelpAuto>
+  <!-- Capacity line of the help panel (design.md S5). Fixed: {0} used, {1} slots. Auto: {0} pins. -->
+  <QuickMenu.Menu.CapacityFixed>{0} of {1} slots used</QuickMenu.Menu.CapacityFixed>
+  <QuickMenu.Menu.CapacityAuto>{0} pinned</QuickMenu.Menu.CapacityAuto>
+  <!-- Added after the capacity line, in the danger colour, when no pin fits (FR-5). -->
+  <QuickMenu.Menu.Full>The menu is full.</QuickMenu.Menu.Full>
+  <!-- Empty-menu hint in place of the label plate (design.md S5, FR-16). {0} pin modifier. -->
+  <QuickMenu.Menu.EmptyHint>Nothing pinned yet. {0}+click any build or order button to pin it here.</QuickMenu.Menu.EmptyHint>
   <!-- Used for {1} above when the pin does not record its mod. -->
   <QuickMenu.Menu.UnknownMod>a mod</QuickMenu.Menu.UnknownMod>
   <!-- Reason shown when a slot is clicked that cannot be used and the designator gives none (U-4). -->

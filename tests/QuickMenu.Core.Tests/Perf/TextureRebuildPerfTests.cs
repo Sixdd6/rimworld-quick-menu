@@ -42,7 +42,7 @@ public class TextureRebuildPerfTests
             MaskRasterizer.DashedRing(slot.TextureSize, slot.Texels(TextureSizing.Ring1Width), MaskSet.DashCount, MaskSet.DashDuty, mask);
             MaskRasterizer.Ring(hub.TextureSize, hub.Texels(TextureSizing.Ring1Width), mask);
             MaskRasterizer.Ring(hub.TextureSize, hub.Texels(TextureSizing.Ring2Width), mask);
-            for (MaskId id = MaskId.SubMenuBadge; id <= MaskId.IconAdd; id++)
+            for (MaskId id = Glyphs.First; id <= Glyphs.Last; id++)
             {
                 Glyphs.Render(id, sizing.GlyphTexels(id), mask);
             }

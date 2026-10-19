@@ -17,7 +17,7 @@ public enum MaskId
     /// <summary>Ring, 128 px, 4.6 px stroke (≈ 2 px at B = 56): hover, target, open parent. Not the disc rim, which <see cref="DiscRim"/> rasterizes at the disc diameter.</summary>
     Ring2,
 
-    /// <summary>Ring, 128 px, 6.9 px stroke (≈ 3 px at B = 56): insert cursor, last used.</summary>
+    /// <summary>Ring, 128 px, 6.9 px stroke (≈ 3 px at B = 56): last-used material.</summary>
     Ring3,
 
     /// <summary>Ring1 cut into 16 dashes at 50 % duty, first dash at 12 o'clock: empty and reserved slots.</summary>
@@ -35,9 +35,6 @@ public enum MaskId
     /// <summary>Glyph, 64 px: right triangle filling the top-right corner; sub-menu badge at 1:30 (design.md S4 state 12).</summary>
     SubMenuBadge,
 
-    /// <summary>Glyph, 64 px: triangle pointing right; insert-cursor caret at 10:30 (S4 state 10).</summary>
-    Caret,
-
     /// <summary>Glyph, 64 px: padlock (body + shackle); greyed-slot badge at 7:30 (S4 state 5).</summary>
     Lock,
 
@@ -46,9 +43,6 @@ public enum MaskId
 
     /// <summary>Glyph, 64 px: check mark, the hub's Done button in edit mode (S4a).</summary>
     IconDone,
-
-    /// <summary>Glyph, 64 px: plus, the edit-mode empty slot (S4 state 7).</summary>
-    IconAdd,
 }
 
 /// <summary>
@@ -136,7 +130,7 @@ public static class MaskSet
     public const int GlyphSize = Glyphs.GridSize;
 
     /// <summary>Number of masks in the set.</summary>
-    public const int Count = 15;
+    public const int Count = 13;
 
     /// <summary>Largest <see cref="MaskSpec.ByteCount"/> in the set: one buffer of this size fits every mask.</summary>
     public const int MaxByteCount = RoundSize * RoundSize;
@@ -153,11 +147,9 @@ public static class MaskSet
         new(MaskId.PanelRim, "PanelRim", PanelAtlas, PanelAtlas, PanelAtlas / 4, PanelRadius, PanelRimStroke, 0, 0f),
         new(MaskId.Plate, "Plate", PlateAtlas, PlateAtlas, PlateAtlas / 4, PlateRadius, 0f, 0, 0f),
         new(MaskId.SubMenuBadge, "SubMenuBadge", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
-        new(MaskId.Caret, "Caret", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
         new(MaskId.Lock, "Lock", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
         new(MaskId.IconEdit, "IconEdit", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
         new(MaskId.IconDone, "IconDone", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
-        new(MaskId.IconAdd, "IconAdd", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
     ];
 
     /// <summary>Size and parameters of <paramref name="id"/>. Does not allocate.</summary>
@@ -209,7 +201,7 @@ public static class MaskSet
             case MaskId.Plate:
                 MaskRasterizer.RoundedRect(s.Width, s.Height, s.CornerRadius, destination);
                 break;
-            default: // SubMenuBadge … IconAdd
+            default: // Glyphs.First … Glyphs.Last
                 Glyphs.Render(id, s.Width, destination);
                 break;
         }

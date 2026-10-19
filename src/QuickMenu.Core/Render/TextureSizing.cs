@@ -145,16 +145,14 @@ public readonly record struct TextureSizing(float ButtonSize, int RingsInUse, fl
     }
 
     /// <summary>
-    /// Drawn size in UI px of glyph <paramref name="id"/> (design.md §2 badges, S4a): sub-menu 0.22 B, caret 0.2 B,
-    /// lock 0.25 B, hub pencil and ✓ Hg = round(0.5 H), edit-mode + 0.3 B.
+    /// Drawn size in UI px of glyph <paramref name="id"/> (design.md §2 badges, S4a): sub-menu 0.22 B, lock 0.25 B,
+    /// hub pencil and ✓ Hg = round(0.5 H).
     /// </summary>
     public float GlyphDrawSize(MaskId id) => id switch
     {
         MaskId.SubMenuBadge => 0.22f * ButtonSize,
-        MaskId.Caret => 0.2f * ButtonSize,
         MaskId.Lock => 0.25f * ButtonSize,
         MaskId.IconEdit or MaskId.IconDone => LayoutConstants.HubGlyphSize(ButtonSize),
-        MaskId.IconAdd => 0.3f * ButtonSize,
         _ => throw new ArgumentOutOfRangeException(nameof(id), id, "Not a glyph mask."),
     };
 

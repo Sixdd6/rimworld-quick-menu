@@ -139,7 +139,7 @@ The in-menu picker is removed. Pins are added **only** by modifier+click in the 
 | Catalog's `SearchEntry[]` and index build | Part of the startup catalog pass | The catalog itself stays (designator table, key map, pin resolution, availability, self-test round trip; ADR-0006) |
 | **PinBoard insert cursor** (`SetCursor`, `Cursor`) | Edit-mode click set where the next pins go | Exists in code from M2; no caller will set it, so `Toggle` always uses the first free slot. Removing it is a plan task (the planner owns it) |
 | Auto edit-mode "append" slot (count + 1) | The Add target in Auto | Edit mode uses the same layout count as use mode |
-| Masks `IconAdd`, `Caret` | "+" glyph and insert caret | Still generated, **unused** (design.md §3, §6) |
+| Masks `IconAdd`, `Caret` | "+" glyph and insert caret | Removed from the mask set, `Glyphs`, `TextureSizing` and `Textures` (T-55) |
 | Dev-only filter for the picker (S-5 rule) | Hid debug designators from the list | Not needed; no list |
 
 The ADRs keep their decisions; each one that named the picker, search entries, the insert cursor or the old hub carries a dated note (2026-10-19): [0002](decisions/0002-core-library-split-and-xunit.md) (`SearchEntry` dropped), [0004](decisions/0004-pin-identity-and-storage.md) (picker and right-click clear), [0005](decisions/0005-pin-by-click-processinput-prefix.md) (no picker fallback), [0006](decisions/0006-designator-catalog-and-activation.md) (picker part superseded; fixed material order) and [0007](decisions/0007-menu-host-fullscreen-imgui-window.md) (no `PickerWindow`; hub is the Edit button; no hover delay). Budgets P-11a/b and P-13 to P-15 are dropped in performance.md.

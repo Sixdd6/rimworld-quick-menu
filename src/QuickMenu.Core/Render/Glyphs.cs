@@ -9,16 +9,16 @@ namespace QuickMenu.Core.Render;
 /// <remarks>
 /// <para>Every glyph is authored on a <see cref="GridSize"/> px grid with a <see cref="Margin"/> px empty border and
 /// <see cref="Stroke"/> px strokes, and is rasterized <b>in its final orientation</b>: the game draws no rotated GUI
-/// (design.md §1), so the 45° shapes (×, pencil, badge triangle) are baked as they appear on screen.</para>
+/// (design.md §1), so the 45° shapes (pencil, badge triangle, check mark) are baked as they appear on screen.</para>
 /// <para>Rows are written <b>top row first</b> (PNG order). These glyphs are not vertically symmetric, so the
 /// adapter must flip rows for <c>SetPixels32</c>, which expects the bottom row first.</para>
 /// <para>Coverage is the same signed-distance rule as <see cref="MaskRasterizer"/>: <c>clamp(0.5 − d, 0, 1)</c>
 /// with <c>d</c> in output pixels, so edges stay one pixel soft at any <c>size</c>. Corners of the filled
 /// triangles stay sharp (the distance is the maximum of the edge half-planes).</para>
 /// <para>Placement (design.md S4, at radius B/2 on the 45° diagonals): <see cref="MaskId.SubMenuBadge"/> at 1:30
-/// (0.22 B), <see cref="MaskId.Lock"/> at 7:30 (0.25 B), <see cref="MaskId.Caret"/> at 10:30 (0.2 B). The material
-/// dot at 4:30 is the <see cref="MaskId.Circle"/> mask. The empty-slot plus in edit mode reuses
-/// <see cref="MaskId.IconAdd"/>.</para>
+/// (0.22 B) and <see cref="MaskId.Lock"/> at 7:30 (0.25 B). The material dot at 4:30 is its own size-dependent circle.
+/// 10:30 is free: the insert caret and the edit-mode "+" were removed with the insert cursor and the Add slot
+/// (user decision 2026-10-19, T-55).</para>
 /// </remarks>
 public static class Glyphs
 {
@@ -28,7 +28,7 @@ public static class Glyphs
     /// <summary>Empty border on every side, in grid pixels.</summary>
     public const int Margin = 4;
 
-    /// <summary>Stroke width of the line glyphs (×, ✓, +, lock shackle), in grid pixels.</summary>
+    /// <summary>Stroke width of the line glyphs (✓, lock shackle), in grid pixels.</summary>
     public const float Stroke = 6f;
 
     /// <summary>
@@ -41,15 +41,9 @@ public static class Glyphs
     private const double HalfStroke = Stroke / 2.0;
     private const double InvSqrt2 = 0.70710678118654752;
 
-    // Caret (insert point, 10:30): isosceles triangle pointing right, base on the left.
-    private const double CaretLeft = 10, CaretTip = 54, CaretTop = 6, CaretBottom = 58;
-
     // Lock (7:30): rounded body below, shackle (half-ring + legs) above.
     private const double LockBodyCx = 32, LockBodyCy = 43, LockBodyHalfW = 24, LockBodyHalfH = 15, LockBodyRadius = 5;
     private const double ShackleCy = 24, ShackleR = 13, ShackleLegEnd = 31;
-
-    // × and + span 10…54 on the stroke centre line, so the round caps end at 7…57.
-    private const double IconLo = 10, IconHi = 54;
 
     // ✓: short arm down-right to the vertex, long arm up-right.
     private const double CheckAx = 10, CheckAy = 34, CheckVx = 25, CheckVy = 49, CheckBx = 54, CheckBy = 18;
@@ -57,8 +51,17 @@ public static class Glyphs
     // Pencil: axis from the tip (bottom-left) up-right at 45°; total length along the axis, half-width, tip length.
     private const double PencilTipX = 8, PencilTipY = 56, PencilLength = 62, PencilHalfW = 9, PencilTipLength = 17;
 
-    /// <summary>True for the glyph masks (<see cref="MaskId.SubMenuBadge"/> … <see cref="MaskId.IconAdd"/>).</summary>
-    public static bool IsGlyph(MaskId id) => id >= MaskId.SubMenuBadge && id <= MaskId.IconAdd;
+    /// <summary>The first glyph mask; the glyphs are the contiguous range <see cref="First"/> … <see cref="Last"/>.</summary>
+    public const MaskId First = MaskId.SubMenuBadge;
+
+    /// <summary>The last glyph mask.</summary>
+    public const MaskId Last = MaskId.IconDone;
+
+    /// <summary>Number of glyph masks.</summary>
+    public const int Count = Last - First + 1;
+
+    /// <summary>True for the glyph masks (<see cref="First"/> … <see cref="Last"/>).</summary>
+    public static bool IsGlyph(MaskId id) => id >= First && id <= Last;
 
     /// <summary>Renders glyph <paramref name="id"/> at <paramref name="size"/> × <paramref name="size"/> into a new array, top row first.</summary>
     public static byte[] Render(MaskId id, int size)
@@ -117,17 +120,12 @@ public static class Glyphs
             case MaskId.SubMenuBadge:
                 // Right triangle in the top-right corner of the margin box: (4,4) → (60,4) → (60,60).
                 return Triangle(x, y, Margin, Margin, GridSize - Margin, Margin, GridSize - Margin, GridSize - Margin);
-            case MaskId.Caret:
-                return Triangle(x, y, CaretLeft, CaretTop, CaretTip, (CaretTop + CaretBottom) / 2.0, CaretLeft, CaretBottom);
             case MaskId.Lock:
                 return Math.Min(LockBody(x, y), Shackle(x, y) - HalfStroke);
-            case MaskId.IconDone:
-                return Math.Min(Segment(x, y, CheckAx, CheckAy, CheckVx, CheckVy), Segment(x, y, CheckVx, CheckVy, CheckBx, CheckBy)) - HalfStroke;
             case MaskId.IconEdit:
                 return Pencil(x, y);
-            default: // IconAdd
-                const double Mid = GridSize / 2.0;
-                return Math.Min(Segment(x, y, IconLo, Mid, IconHi, Mid), Segment(x, y, Mid, IconLo, Mid, IconHi)) - HalfStroke;
+            default: // IconDone
+                return Math.Min(Segment(x, y, CheckAx, CheckAy, CheckVx, CheckVy), Segment(x, y, CheckVx, CheckVy, CheckBx, CheckBy)) - HalfStroke;
         }
     }
 

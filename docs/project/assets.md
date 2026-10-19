@@ -22,12 +22,12 @@ Every non-code asset in the repository gets a row: images, icons, fonts, audio, 
 | Planned path | Type | Source | License | Notes |
 |---|---|---|---|---|
 | `mod/About/Preview.png` | Workshop preview, 2.468:1 | In-game screenshot of our menu + title text, made by the project | MIT for our part. It shows RimWorld game imagery, as normal for Workshop previews. | Spec A-3: must be original |
-| `mod/Textures/QuickMenu/UI/{Circle,Disc,Ring1,Ring2,Ring3,RingDashed,Panel,PanelRim,Plate,SubMenuBadge,Caret,Lock,IconClose,IconEdit,IconDone,IconAdd}.png` | Grayscale alpha masks (256 px; rings 128 px; icons 64 px) | Exported by our own `Core.Render.MaskSet` (shapes: `MaskRasterizer`; badges and icons: `Glyphs`) (design.md §6) | MIT | **Fallback only.** Committed only if spike S-7 shows that runtime `Texture2D` generation fails on 1.7. Otherwise these files do not exist. |
+| `mod/Textures/QuickMenu/UI/{Circle,Disc,Ring1,Ring2,Ring3,RingDashed,Panel,PanelRim,Plate,SubMenuBadge,Lock,IconEdit,IconDone}.png` | Grayscale alpha masks (256 px; rings 128 px; icons 64 px) | Exported by our own `Core.Render.MaskSet` (shapes: `MaskRasterizer`; badges and icons: `Glyphs`) (design.md §6) | MIT | **Fallback only.** Committed only if spike S-7 shows that runtime `Texture2D` generation fails on 1.7. Otherwise these files do not exist. |
 
 ### Runtime-only assets (not in the repository)
 | What | Source | Notes |
 |---|---|---|
-| Shape masks, our 3 badges and 4 hub icons (disc, panel, circles, rings, dashed ring, plate; `SubMenuBadge`, `Caret`, `Lock`; `IconClose`, `IconEdit`, `IconDone`, `IconAdd`) | Rasterized by our code (`Core.Render.MaskSet`: shapes by `MaskRasterizer`, badges and icons by `Glyphs` on a 64 px grid, 4 px margin, 6 px strokes, baked in final orientation, rows top-first) at startup and uploaded to `Texture2D`; tinted with `GUI.color` | **Primary path** (design.md §6). No file. Covered by the MIT code licence. |
+| Shape masks, our 2 badges and 2 hub icons (disc, panel, circles, rings, dashed ring, plate; `SubMenuBadge`, `Lock`; `IconEdit`, `IconDone`; `Caret`, `IconAdd` and `IconClose` were removed) | Rasterized by our code (`Core.Render.MaskSet`: shapes by `MaskRasterizer`, badges and icons by `Glyphs` on a 64 px grid, 4 px margin, 6 px strokes, baked in final orientation, rows top-first) at startup and uploaded to `Texture2D`; tinted with `GUI.color` | **Primary path** (design.md §6). No file. Covered by the MIT code licence. |
 | Designator icons | RimWorld and installed mods, through the designator | Not redistributed |
 | Window and button chrome, `QuickSearchWidget`, close X | RimWorld 1.7 game widgets | Not redistributed. The player's copy of the game is used. (Sub-menu and lock badges are our own masks, so no orientation or packing depends on game texture paths.) |
 | Sounds (`Mouseover_Command`, `Tick_High`, `Tick_Low`, `Tick_Tiny`, `ClickReject`, designator sounds) | RimWorld `SoundDefOf` | Not redistributed |

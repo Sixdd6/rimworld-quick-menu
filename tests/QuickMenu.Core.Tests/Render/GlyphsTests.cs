@@ -14,7 +14,7 @@ public class GlyphsTests
 
     public static readonly TheoryData<MaskId> AllGlyphs =
     [
-        MaskId.SubMenuBadge, MaskId.Caret, MaskId.Lock, MaskId.IconEdit, MaskId.IconDone, MaskId.IconAdd,
+        MaskId.SubMenuBadge, MaskId.Lock, MaskId.IconEdit, MaskId.IconDone,
     ];
 
     private static int At(byte[] m, int x, int y) => m[(y * S) + x];
@@ -37,6 +37,23 @@ public class GlyphsTests
     }
 
     // ---- Common rules -----------------------------------------------------------------------------
+
+    [Fact]
+    public void GlyphRange_IsExactlyTheFourRemainingGlyphs_WithoutCaretOrPlus()
+    {
+        // The insert caret and the edit-mode "+" were removed with the insert cursor and the Add slot (T-55).
+        Assert.Equal(MaskId.SubMenuBadge, Glyphs.First);
+        Assert.Equal(MaskId.IconDone, Glyphs.Last);
+        Assert.Equal(4, Glyphs.Count);
+        Assert.Equal(Glyphs.Count, AllGlyphs.Count);
+        Assert.Equal(MaskSet.Count - 1, (int)Glyphs.Last);
+        Assert.False(Enum.IsDefined(typeof(MaskId), "Caret"));
+        Assert.False(Enum.IsDefined(typeof(MaskId), "IconAdd"));
+        for (MaskId id = Glyphs.First; id <= Glyphs.Last; id++)
+        {
+            Assert.True(Glyphs.IsGlyph(id));
+        }
+    }
 
     [Theory]
     [MemberData(nameof(AllGlyphs))]
@@ -116,20 +133,20 @@ public class GlyphsTests
     public void Glyph_ScalesWithSize_KeepingTheMarginProportional()
     {
         const int Big = 128;
-        byte[] m = Glyphs.Render(MaskId.IconAdd, Big);
+        byte[] m = Glyphs.Render(MaskId.Lock, Big);
 
         Assert.Equal(Big * Big, m.Length);
         Assert.Equal(0.0, Mass(m, 0, 0, Big, 8, Big));
-        Assert.Equal(255, m[(64 * Big) + 64]);
+        Assert.Equal(255, m[(64 * Big) + 64]); // inside the body
 
-        // Strokes scale too: the bar of the plus is ≈ 12 px tall at 128.
-        double bar = 0;
-        for (int y = 0; y < Big; y++)
+        // Strokes scale too: the shackle crown on the centre column is ≈ 12 px tall at 128 (6 px at 64).
+        double crown = 0;
+        for (int y = 0; y < 40; y++)
         {
-            bar += m[(y * Big) + 32] / 255.0;
+            crown += m[(y * Big) + 64] / 255.0;
         }
 
-        Assert.InRange(bar, 11.5, 12.5);
+        Assert.InRange(crown, 11.5, 12.5);
     }
 
     [Fact]
@@ -138,7 +155,7 @@ public class GlyphsTests
         // Badges are drawn at 0.18–0.25 B (≈ 7–14 px at B = 36–56) and rasterized at that size (T-28).
         for (int size = Glyphs.MinSize; size <= 14; size++)
         {
-            for (MaskId id = MaskId.SubMenuBadge; id <= MaskId.IconAdd; id++)
+            for (MaskId id = Glyphs.First; id <= Glyphs.Last; id++)
             {
                 byte[] m = Glyphs.Render(id, size);
                 double ink = 0;
@@ -166,12 +183,13 @@ public class GlyphsTests
     [InlineData(-64)]
     public void Glyph_RejectsTooSmallSize(int size)
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => Glyphs.Render(MaskId.IconAdd, size));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Glyphs.Render(MaskId.IconDone, size));
     }
 
     [Theory]
     [InlineData(MaskId.Circle)]
-    [InlineData(MaskId.Plate)]
+    [InlineData(MaskId.Plate)] // Glyphs.First - 1
+    [InlineData(Glyphs.Last + 1)]
     [InlineData((MaskId)99)]
     public void Glyph_RejectsNonGlyphIds(MaskId id)
     {
@@ -190,13 +208,13 @@ public class GlyphsTests
     public void Glyph_SpanOverload_AllocatesNothing()
     {
         byte[] buffer = new byte[S * S];
-        for (MaskId id = MaskId.SubMenuBadge; id <= MaskId.IconAdd; id++)
+        for (MaskId id = Glyphs.First; id <= Glyphs.Last; id++)
         {
             Glyphs.Render(id, S, buffer);
         }
 
         long before = GC.GetAllocatedBytesForCurrentThread();
-        for (MaskId id = MaskId.SubMenuBadge; id <= MaskId.IconAdd; id++)
+        for (MaskId id = Glyphs.First; id <= Glyphs.Last; id++)
         {
             Glyphs.Render(id, S, buffer);
         }
@@ -204,7 +222,7 @@ public class GlyphsTests
         Assert.Equal(0L, GC.GetAllocatedBytesForCurrentThread() - before);
     }
 
-    // ---- Badges (S4: 1:30 sub-menu, 7:30 lock, 10:30 caret) ---------------------------------------
+    // ---- Badges (S4: 1:30 sub-menu, 7:30 lock) ------------------------------------------------------
 
     [Fact]
     public void SubMenuBadge_FillsTheTopRightCornerTriangle()
@@ -219,30 +237,6 @@ public class GlyphsTests
 
         // Mirror-symmetric about the anti-diagonal through the outer corner (the hypotenuse runs top-left to bottom-right).
         AssertSymmetric(m, (x, y) => (S - 1 - y, S - 1 - x), "anti-diagonal fold");
-    }
-
-    [Fact]
-    public void Caret_PointsRight_AndIsVerticallySymmetric()
-    {
-        byte[] m = R(MaskId.Caret);
-
-        Assert.Equal(255, At(m, 20, 32));
-        Assert.Equal(255, At(m, 48, 32));  // near the tip on the axis
-        Assert.Equal(0, At(m, 48, 12));    // right side is narrow
-        double leftHalf = Mass(m, 0, 0, 32, S);
-        double rightHalf = Mass(m, 32, 0, S, S);
-        Assert.True(leftHalf > 2.0 * rightHalf, $"{leftHalf:F0} vs {rightHalf:F0}");
-
-        // Column height falls from the base to the tip.
-        double prev = double.MaxValue;
-        for (int x = 14; x < 54; x += 4)
-        {
-            double col = Mass(m, x, 0, x + 1, S);
-            Assert.True(col < prev, $"column {x} not shorter");
-            prev = col;
-        }
-
-        AssertSymmetric(m, (x, y) => (x, S - 1 - y), "vertical flip");
     }
 
     [Fact]
@@ -263,25 +257,6 @@ public class GlyphsTests
     }
 
     // ---- Hub icons (S4a) --------------------------------------------------------------------------
-
-    [Fact]
-    public void IconAdd_IsAPlusOfTwoStrokes()
-    {
-        byte[] m = R(MaskId.IconAdd);
-
-        Assert.Equal(255, At(m, 32, 32));
-        Assert.Equal(255, At(m, 32, 9));
-        Assert.Equal(255, At(m, 9, 32));
-        Assert.Equal(255, At(m, 54, 32));
-        Assert.Equal(255, At(m, 32, 54));
-        Assert.Equal(0, At(m, 14, 14));
-        Assert.Equal(0, At(m, 50, 50));
-        Assert.InRange(Mass(m, 16, 0, 17, S), 5.5, 6.5); // vertical cut through the horizontal bar
-
-        AssertSymmetric(m, (x, y) => (S - 1 - x, y), "horizontal flip");
-        AssertSymmetric(m, (x, y) => (x, S - 1 - y), "vertical flip");
-        AssertSymmetric(m, (x, y) => (y, x), "diagonal fold");
-    }
 
     [Fact]
     public void IconDone_IsACheckWithTheShortArmLeftAndTheVertexLow()
