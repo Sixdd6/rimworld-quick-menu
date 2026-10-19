@@ -139,10 +139,11 @@ Templates are in `.claude/templates/`. Copy a template, then fill it in. Never l
 
 ### Conventions
 - Namespaces `QuickMenu.Core.*` and `QuickMenu.*`. Keyed string keys are prefixed `QuickMenu.`, and every player-facing string is Keyed.
-- Harmony patches exist only at the sites listed in architecture.md §6 (three, including the `Designator_Dropdown.GetDesignatorSelectAction` postfix). No transpilers. Every patch body has try/catch → `LogOnce` → disable that patch and run the original.
+- Harmony patches exist only at the sites listed in architecture.md §6 (five: the trigger poller, the `ProcessInput` prefixes, the `GetDesignatorSelectAction` postfix, the `Command.GizmoOnGUIInt` marker postfix, and the dropdown-entry marker postfixes on `Designator_Dropdown.ProcessInput`, `FloatMenuOption.DoGUI` and `FloatMenuGridOption.OnGUI`). No transpilers. Every patch body has try/catch → `LogOnce` → disable that patch and run the original.
 - Patch parameters use exact types (`Designator __instance`, `Event __0`), because Harmony 3 type-checks injections. Bind by index (`__0`), not by name: overrides name the parameter differently (`ev`, `e`), and a named parameter that does not match fails to bind.
 - In the `Designator.ProcessInput` prefix the `Event` is already `used` (UC-1 S-3): read click-vs-hotkey and modifiers from `UnityEngine.Input` (mouse button state, `GetKey`), not from the `Event`. `ev.control`/`ev.alt` are reliable only for direct clicks.
 - No GameComponent, WorldComponent or MapComponent, and nothing written into save files. All state lives in `QuickMenuSettings : ModSettings`.
 - No per-frame allocations in the trigger poller or in OnGUI drawing: no LINQ, no string building, no closures in hot paths. Cache labels and layout per open.
 - IMGUI only (no native Waylith UI, no custom shaders, no rotated GUI drawing). Use designator icons through `Command.DrawIcon`.
 - Logic that can be pure goes in Core, test-first. Adapter code stays thin.
+- Pinning and the pin marker apply only in architect menus: the vanilla Architect tab, Better Architect Menu (drawn inside that tab) and Dubs Mint Menus' build menu (`MainTabWindow_MintArchitect`; pin gestures also in its wheel `MainTabWindow_MayaMenu`). Never on selected things' command bars.

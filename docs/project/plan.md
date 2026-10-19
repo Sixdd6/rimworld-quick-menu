@@ -1113,7 +1113,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
 
 #### FR-19 pin marker (last feature; before UC-6 and release prep)
 
-- [ ] **T-87**: Spike S-8 (offline): pin-marker hook sites and pinned lookup; ADR 0009 · `parallel-ok`
+- [x] **T-87**: Spike S-8 (offline): pin-marker hook sites and pinned lookup; ADR 0009 · `parallel-ok`
   - **Owner**: architect (visual-designer advises on the free corner of the gizmo)
   - **Requirements**: FR-19, NFR-1, NFR-2, NFR-6 (architecture §6, ADR 0005 and its spike result, performance.md per-frame budgets)
   - **Depends on**: T-69 (M5 gate; the spike itself needs no M5 code)
@@ -1159,6 +1159,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Depends on**: T-87
   - **Files**: `src/QuickMenu.Core/Pins/{PinnedSet,PinnedSetBuilder}.cs`, `tests/QuickMenu.Core.Tests/Pins/PinnedSetTests.cs`, `tests/QuickMenu.Core.Tests/Perf/PinnedSetPerfTests.cs`, `tests/QuickMenu.Core.Benchmarks/PinBenchmarks.cs` (new benchmark method)
   - **Acceptance criteria**:
+    - [ ] ADR-0009 alignment (overrides older wording in this task): a single-entry pin gives its dropdown a `Partial` mark (decision 11); pins hidden beyond the current capacity are NOT marked (decision 13); add the def-keyed map (BuildableDef → mark) so BAM edit-mode designator copies are marked.
     - [ ] Given Core cannot reference game types, then `PinnedSet<T> where T : class` uses reference identity (`ReferenceEqualityComparer`), and the builder takes the board's pins plus a resolver delegate/interface (key → instance or none) supplied by the adapter.
     - [ ] Given a board with a whole-dropdown pin (`dropdown:` / `moddrop:`), then the dropdown instance is in the set and its elements are not; given a single-entry pin, then that element instance is in the set and its dropdown is not; given unresolved, opaque or missing-mod pins, then nothing is added for them; given pins hidden beyond capacity, then they are still members (they are pinned; toggling them unpins).
     - [ ] Given a pin, unpin, settings load, catalog build or Ideology refresh, when `Rebuild` runs, then membership matches the board exactly; given an edit-mode swap, then membership is unchanged; a `Version` counter increments on each rebuild so the adapter can detect staleness cheaply.
@@ -1173,6 +1174,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Depends on**: T-72 (fault-injection list), T-88, T-89, T-90
   - **Files**: `src/QuickMenu/Pinning/{PinMarkerPatch,PinnedDesignators}.cs` (new), `src/QuickMenu/Pinning/PinService.cs` (rebuild on change), `src/QuickMenu/Catalog/DesignatorCatalog.cs` (rebuild after build and Ideology refresh), `src/QuickMenu/QuickMenuMod.cs` (patch registration), `src/QuickMenu/Diagnostics/{FaultInjection,PerfCounters,SelfTest}.cs` (new site, counter, report)
   - **Acceptance criteria**:
+    - [ ] ADR-0009: hook = postfix on `Command.GizmoOnGUIInt(Rect, GizmoRenderParms)`; marker only while an architect menu is drawing (vanilla tab / BAM / Mint build window grid view); the lookup is never rebuilt on the per-gizmo path. Known limits (user, 2026-10-19): Mint's list view is not marked; Mint's wheel gets no markers (pinning there still works).
     - [ ] Given the site chosen in ADR 0009, then a Harmony postfix with exact parameter types bound by index follows the patch-guard convention (`if (Site.Disabled) return; try {…} catch (Exception ex) { Site.Fail(ex); }`), returns on anything but `EventType.Repaint`, and for a gizmo that is not a `Designator` or not in the set returns after one type check and one `Contains` (no LINQ, closures, string building or allocation).
     - [ ] Given `PinnedDesignators` (adapter wrapper over Core `PinnedSet<Designator>`), then it is rebuilt by `PinService` after every toggle, by settings load and by the catalog after its build and after the Ideology refresh, never by the hook; the hook only reads it.
     - [ ] Given a pinned designator drawn by vanilla `GizmoGridDrawer` or by BAM, then `Textures.PinMarker` is drawn in the corner from ADR 0009 with `QMStyle` tokens via `GUI.DrawTexture` (no rotation, no new texture per frame), scaled with the gizmo rect so it is correct at UI scale 1–2; a whole-dropdown pin marks the dropdown button.
@@ -1190,6 +1192,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Depends on**: T-91
   - **Files**: `src/QuickMenu/Pinning/{DropdownMarkerPatch,PinnedDesignators}.cs`, `src/QuickMenu/QuickMenuMod.cs` (patch registration), `src/QuickMenu/Diagnostics/{FaultInjection,SelfTest}.cs`
   - **Acceptance criteria**:
+    - [ ] ADR-0009 site 5: postfixes on `Designator_Dropdown.ProcessInput` (map options → entries via DropdownEntryPatch's EntryAction — expose it), `FloatMenuOption.DoGUI` and `FloatMenuGridOption.OnGUI`; files include `src/QuickMenu/Pinning/DropdownEntryPatch.cs`.
     - [ ] Given the site chosen in ADR 0009 for dropdown entries, then the option → element mapping is built once when the list opens (allocation allowed there), and the per-frame draw path does only an identity lookup and a `Contains` (0 bytes), under the same patch-guard convention; if ADR 0009 found a UI (e.g. BAM's dropdown list) with no usable site, that UI is listed as a known limit for T-79 and the user is told.
     - [ ] Given a single entry of an open dropdown list is pinned, then that entry shows the marker in the same corner logic as T-91 (adapted to the list row); given only the whole dropdown is pinned, then no entry shows it.
     - [ ] Given a modifier+click on an entry in the open list (T-27 path), then its marker appears or disappears on the next frame if the list stays open.
