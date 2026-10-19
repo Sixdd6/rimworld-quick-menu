@@ -881,7 +881,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-4 (user)
   - **Size**: M
 
-- [ ] **T-60**: UC-4 checklist, session guide and run
+- [x] **T-60**: UC-4 checklist, session guide and run
   - **Owner**: test-engineer
   - **Requirements**: FR-4, FR-5, FR-6, FR-9, FR-16, NFR-5
   - **Depends on**: T-56, T-57, T-58, T-59
