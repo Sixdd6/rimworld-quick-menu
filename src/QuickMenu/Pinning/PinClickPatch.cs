@@ -169,6 +169,7 @@ internal static class PinClickPatch
     /// </summary>
     internal static void Toggle(Designator designator)
     {
+        DesignatorCatalog.RefreshIdeology(); // O(1) when unchanged; an Ideology designator is findable right after a reform
         if (DesignatorCatalog.Find(designator) is { } entry)
         {
             PinService.Toggle(entry);

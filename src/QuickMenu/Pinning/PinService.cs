@@ -151,16 +151,58 @@ internal static class PinService
 
     internal static PinBoard Board => QuickMenuMod.Settings.Board;
 
-    /// <summary>Toggles the pin of <paramref name="entry"/>, shows the S9 message with its sound and writes the settings once.</summary>
-    internal static PinResult Toggle(CatalogEntry entry) => Toggle(entry.Key, entry.Label, entry.PackageId, entry);
+    /// <summary>
+    /// Toggles the pin of <paramref name="entry"/>, shows the S9 message with its sound and writes the settings once.
+    /// A mod dropdown whose stored pin was matched fuzzily (<see cref="ModDropdownMatcher"/>, after the mod added or removed a
+    /// child) has a different key than the entry; with no exact pin on the board, the stored pin that resolves to this entry
+    /// is toggled instead, and its stored key is never rewritten. If several stored pins resolve to the same entry, each
+    /// toggle removes one of them, in board order, until none is left; only then does a toggle pin the entry's own key.
+    /// </summary>
+    internal static PinResult Toggle(CatalogEntry entry) => Toggle(StoredKeyFor(entry) ?? entry.Key, entry.Label, entry.PackageId, entry, persist: true);
+
+    /// <summary>
+    /// As <see cref="Toggle(CatalogEntry)"/> for a stored pin identified by its own key, optionally without writing the
+    /// settings. The caller (edit mode) then owns the one write at the end of the edit session.
+    /// </summary>
+    internal static PinResult Toggle(PinKey key, string label, string? packageId, bool persist) => Toggle(key, label, packageId, null, persist);
 
     /// <summary>
     /// Toggles a pin for a designator that is not in the catalog (T-26). The resolved cache gains an entry only when the
     /// catalog knows the key.
     /// </summary>
-    internal static PinResult Toggle(PinKey key, string label, string? packageId) => Toggle(key, label, packageId, null);
+    internal static PinResult Toggle(PinKey key, string label, string? packageId) => Toggle(key, label, packageId, null, persist: true);
 
-    private static PinResult Toggle(PinKey key, string label, string? packageId, CatalogEntry? known)
+    private static PinKey? StoredKeyFor(CatalogEntry entry)
+    {
+        if (entry.Key.Kind != PinKeyKind.ModDropdown)
+        {
+            return null;
+        }
+
+        EnsureCurrent();
+        PinKey? fuzzy = null;
+        foreach (PinEntry? stored in Board.Entries)
+        {
+            if (stored == null)
+            {
+                continue;
+            }
+
+            if (stored.Key.Equals(entry.Key))
+            {
+                return null; // an exact pin exists: the normal toggle finds it
+            }
+
+            if (fuzzy == null && stored.Key.Kind == PinKeyKind.ModDropdown && _resolved.TryGetValue(stored.Key, out CatalogEntry? resolved) && ReferenceEquals(resolved, entry))
+            {
+                fuzzy = stored.Key;
+            }
+        }
+
+        return fuzzy;
+    }
+
+    private static PinResult Toggle(PinKey key, string label, string? packageId, CatalogEntry? known, bool persist)
     {
         EnsureCurrent();
         PinResult result = Board.Toggle(key, label, packageId);
@@ -175,7 +217,7 @@ internal static class PinService
 
         PinFeedback feedback = PinFeedback.For(result);
         Announce(feedback, label);
-        if (feedback.Persist)
+        if (persist && feedback.Persist)
         {
             QuickMenuMod.SaveSettings();
         }

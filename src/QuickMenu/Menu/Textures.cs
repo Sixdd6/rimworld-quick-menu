@@ -75,8 +75,8 @@ internal static class Textures
 
     private const int GlyphCount = MaskId.IconAdd - MaskId.SubMenuBadge + 1;
 
-    // Slot rings 1/2/3/dashed, hub rings 1/2, glyphs, material dot, main rim.
-    private const int SizedCount = 4 + 2 + GlyphCount + 1 + 1;
+    // Slot rings 1/2/3/dashed, hub rings 1/2/3, glyphs, material dot, main rim.
+    private const int SizedCount = 4 + 3 + GlyphCount + 1 + 1;
 
     private static readonly Texture2D?[] _masks = new Texture2D?[MaskSet.Count];
     private static readonly SizedTexture[] _glyphs = new SizedTexture[MaskSet.Count];

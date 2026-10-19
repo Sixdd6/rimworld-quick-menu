@@ -691,12 +691,12 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Owner**: developer
   - **Requirements**: FR-9 (enter/exit, unpin in edit mode) (design.md S4a; S5 as revised by T-83)
   - **Depends on**: T-32, T-81, T-83
-  - **Files**: `src/QuickMenu/Menu/{EditModeController,QuickMenuWindow,HubRenderer,SlotRenderer}.cs`, `src/QuickMenu.Core/Input/TriggerStateMachine.cs` (only if a row is missing), `mod/Languages/English/Keyed/QuickMenu.Menu.xml`
+  - **Files**: `src/QuickMenu/Menu/{MenuController,QuickMenuWindow,HubRenderer,SlotRenderer}.cs`, `src/QuickMenu.Core/Input/TriggerStateMachine.cs` (the edit logic lives in the state machine and `MenuController`; there is no `EditModeController.cs`), `mod/Languages/English/Keyed/QuickMenu.Menu.xml`
   - **Acceptance criteria**:
     - [ ] `EditEnabled` is set to true. Given use mode, when the hub gets a deliberate click (down and up on it), then edit mode starts and the hub shows Done per S4a (`slotBg` + 22 % `accent` tint, 2 px `accent` ring, `IconDone` at `Hg`; hover/pressed 3 px ring), plate "Done"; a hold-mode release over the hub never enters edit mode; satellites do not open in edit mode.
     - [ ] Given edit mode, then Done or the first Esc leaves it (settings written once if dirty), a second Esc closes, right-click, a left-click outside or the trigger closes the menu (user decision 2026-10-19).
-    - [ ] Given edit mode, then a plain click on any slot does nothing (no activation, no sub-menu, no cursor); empty slots draw with `emptyBorder` and no glyph; there is no "+" and no Add target anywhere.
-    - [ ] Given edit mode, when the user modifier+clicks an occupied or reserved slot, then it is unpinned by the same path as T-81 (Fixed: the slot is empty in place; Auto, where later pins move up, is wired in T-56/T-57); on an empty slot or the hub nothing extra happens; right-click never unpins.
+    - [ ] Given edit mode, then a plain click on any slot does nothing (no activation, no sub-menu, no cursor); empty slots look the same in edit mode as in use mode (no extra border or glyph); there is no "+" and no Add target anywhere.
+    - [ ] Given edit mode, when the user modifier+clicks an occupied or reserved slot, then it is unpinned by the same path as T-81 but without a settings write per pin (`PinService.Toggle(..., persist: false)` plus a dirty flag; one write when the session ends, only if dirty) (Fixed: the slot is empty in place; Auto, where later pins move up, is wired in T-56/T-57); on an empty slot or the hub nothing extra happens; right-click never unpins.
     - [ ] Keyed strings added: `QuickMenu.Menu.Done` "Done"; `QuickMenu.Menu.EditTip` "Edit the quick menu: move and remove pins."; `QuickMenu.Menu.DoneTip` "Finish editing (Esc)". Hub tooltips use the vanilla delay. No `QuickMenu.Menu.Add`/`AddTip` keys exist.
   - **Tests**: `TriggerStateMachineToggleTests` (edit rows with `EditEnabled`, modifier-click rows); in-game UC-3.
   - **In-game check**: UC-3 (user)

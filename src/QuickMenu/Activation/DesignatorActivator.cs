@@ -19,9 +19,17 @@ internal static class DesignatorActivator
 {
     private static readonly MethodInfo? _checkCanInteract = AccessTools.Method(typeof(Designator), "CheckCanInteract");
 
-    /// <summary>The tutor gate of <c>Designator.ProcessInput</c> (protected in the game). True when it cannot be reached.</summary>
-    private static bool CanInteract(Designator designator) =>
-        _checkCanInteract == null || (bool)_checkCanInteract.Invoke(designator, null)!;
+    /// <summary>The tutor gate of <c>Designator.ProcessInput</c> (protected in the game). True when it cannot be reached (logged once).</summary>
+    private static bool CanInteract(Designator designator)
+    {
+        if (_checkCanInteract == null)
+        {
+            Log.LogOnce("Activation.CheckCanInteract", "Designator.CheckCanInteract was not found; the tutor gate is skipped when choosing a material.");
+            return true;
+        }
+
+        return (bool)_checkCanInteract.Invoke(designator, null)!;
+    }
 
     /// <summary>Calls <c>ProcessInput</c>. Returns false when the designator threw.</summary>
     internal static bool Activate(Designator designator, Event ev)
@@ -56,7 +64,6 @@ internal static class DesignatorActivator
         MenuActivation.Enter();
         try
         {
-            dropdown?.SetActiveDesignator(designator, true);
             if (stuff != null && designator is Designator_Build build && build.PlacingDef is ThingDef def && def.MadeFromStuff)
             {
                 build.SetStuffDef(stuff);
@@ -64,11 +71,13 @@ internal static class DesignatorActivator
                 {
                     build.CurActivateSound?.PlayOneShotOnCamera(null);
                     Find.DesignatorManager.Select(build);
+                    dropdown?.SetActiveDesignator(designator, true);
                 }
             }
             else
             {
                 designator.ProcessInput(Event.current);
+                dropdown?.SetActiveDesignator(designator, true);
             }
 
             return true;

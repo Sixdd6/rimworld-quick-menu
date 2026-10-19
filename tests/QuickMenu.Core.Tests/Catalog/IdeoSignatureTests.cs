@@ -60,4 +60,21 @@ public class IdeoSignatureTests
         s.Update(_game, null, 3);
         Assert.False(s.Update(_game, null, 9));
     }
+
+    [Fact]
+    public void Same_ideo_same_count_different_reform_generation_is_a_change()
+    {
+        var s = new IdeoSignature();
+        s.Update(_game, _ideo, 5, fingerprint: 1);
+        Assert.False(s.Update(_game, _ideo, 5, fingerprint: 1));
+        Assert.True(s.Update(_game, _ideo, 5, fingerprint: 2));
+    }
+
+    [Fact]
+    public void Fingerprint_is_ignored_without_an_ideo()
+    {
+        var s = new IdeoSignature();
+        s.Update(_game, null, 0, fingerprint: 1);
+        Assert.False(s.Update(_game, null, 0, fingerprint: 2));
+    }
 }

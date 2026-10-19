@@ -264,13 +264,26 @@ internal static class DesignatorCatalog
             Game? game = Current.Game;
             Ideo? ideo = null;
             int precepts = 0;
+            long fingerprint = 0;
             if (game != null && ModsConfig.IdeologyActive)
             {
-                ideo = Faction.OfPlayerSilentFail?.ideos?.PrimaryIdeo;
+                FactionIdeosTracker? ideos = Faction.OfPlayerSilentFail?.ideos;
+                ideo = ideos?.PrimaryIdeo;
                 precepts = ideo?.PreceptsListForReading.Count ?? 0;
+                if (ideo != null && ideos != null)
+                {
+                    // Vanilla AllIdeoDesignators walks every ideo of the player faction (primary and minor): fold in the
+                    // minor ideos' identity and size and every reform generation, all O(ideo count), no allocation.
+                    fingerprint = Fingerprint(ideo);
+                    List<Ideo> minor = ideos.IdeosMinorListForReading;
+                    for (int i = 0; i < minor.Count; i++)
+                    {
+                        fingerprint = (fingerprint * 31) + Fingerprint(minor[i]);
+                    }
+                }
             }
 
-            if (_ideoSignature.Update(game, ideo, precepts))
+            if (_ideoSignature.Update(game, ideo, precepts, fingerprint))
             {
                 RebuildIdeology(_ideoSignature.HasIdeo);
             }
@@ -280,6 +293,11 @@ internal static class DesignatorCatalog
             IdeoSite.Fail(ex);
         }
     }
+
+    private static long Fingerprint(Ideo ideo) =>
+        ((long)System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(ideo) * 1_000_003L)
+        + ((long)ideo.PreceptsListForReading.Count * 1009L)
+        + ideo.development.reformCount;
 
     private static void RebuildIdeology(bool build)
     {

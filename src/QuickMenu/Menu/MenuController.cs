@@ -31,6 +31,9 @@ internal static class MenuController
     private static MenuContent? _content;
     private static SatelliteController? _satellite;
 
+    /// <summary>True when edit mode removed pins that are not yet written; the one write happens when the edit session ends.</summary>
+    private static bool _editDirty;
+
     /// <summary>Slot count of the most recently built window; the P-9 control window draws the same number.</summary>
     internal static int LastSlotCount { get; private set; }
 
@@ -142,7 +145,7 @@ internal static class MenuController
         return content;
     }
 
-    /// <summary>Closes the window without consulting the state machine (a window fault). Settings are not written.</summary>
+    /// <summary>Closes the window without consulting the state machine (a window fault). Pins removed in edit mode are written once.</summary>
     internal static void Close()
     {
         QuickMenuWindow? window = _window;
@@ -188,11 +191,7 @@ internal static class MenuController
         switch (command.Kind)
         {
             case MenuCommandKind.Close:
-                Close();
-                if (command.WasEditing)
-                {
-                    QuickMenuMod.SaveSettings();
-                }
+                Close(); // Reset writes the edit session's pins if they changed
 
                 break;
             case MenuCommandKind.Activate:
@@ -219,8 +218,8 @@ internal static class MenuController
                 Unpin(command.Index);
                 break;
             case MenuCommandKind.ExitEdit:
-                // Done or the first Esc: the pins are already applied; one write ends the edit session (a later close is a plain Close).
-                QuickMenuMod.SaveSettings();
+                // Done or the first Esc: the pins are already applied; one write ends the edit session, and only if something changed.
+                FlushEdit();
                 break;
             default:
                 // EnterEdit changes only the state, which the window reads when it paints.
@@ -331,8 +330,25 @@ internal static class MenuController
         }
 
         // The saved pin's own key, so a reserved (missing-mod) pin and a pin whose catalog entry has another key both unpin.
-        PinService.Toggle(pin.Key, pin.Label, pin.PackageId);
+        // In edit mode the write is deferred to the end of the session; in use mode it is immediate.
+        bool editing = IsEditing;
+        PinResult result = PinService.Toggle(pin.Key, pin.Label, pin.PackageId, persist: !editing);
+        if (editing && result == PinResult.Unpinned)
+        {
+            _editDirty = true;
+        }
+
         window.Refresh();
+    }
+
+    /// <summary>Writes the settings once if edit mode changed them, then clears the flag.</summary>
+    private static void FlushEdit()
+    {
+        if (_editDirty)
+        {
+            _editDirty = false;
+            QuickMenuMod.SaveSettings();
+        }
     }
 
     private static MenuContent BuildContent(Vec2 mouse)
@@ -347,6 +363,7 @@ internal static class MenuController
 
     private static void Reset()
     {
+        FlushEdit(); // every way out of the menu (Done, Esc, outside click, a fault, an external close) ends the edit session
         _window = null;
         _machine = null;
         _content = null;

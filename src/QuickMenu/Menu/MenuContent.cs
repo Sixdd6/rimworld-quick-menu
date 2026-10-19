@@ -100,9 +100,10 @@ internal sealed class MenuContent
         model.SetHubLabels("QuickMenu.Menu.Edit".Translate(), "QuickMenu.Menu.Done".Translate());
         model.Prepare();
         var content = new MenuContent(model, designators, pinsBySlot);
+        System.Collections.Generic.List<ThingDef>? present = materialPending.Count > 0 ? StuffOptions.Present() : null; // once per open
         foreach ((int slot, Designator d) in materialPending)
         {
-            content.Classify(slot, d);
+            content.Classify(slot, d, present);
         }
 
         return content;
@@ -113,7 +114,7 @@ internal sealed class MenuContent
     /// the sub-ring (badge); a one-element dropdown acts as its element; a stuff build opens the material ring (dot in the
     /// last-used stuff colour), activates directly with its only material, or is greyed when no material exists.
     /// </summary>
-    private void Classify(int slot, Designator d)
+    private void Classify(int slot, Designator d, System.Collections.Generic.List<ThingDef>? present)
     {
         if (Model.Kinds[slot] == SlotKind.Disabled)
         {
@@ -149,7 +150,7 @@ internal sealed class MenuContent
             }
         }
 
-        StuffOptionSet set = StuffOptions.For(target);
+        StuffOptionSet set = StuffOptions.For(target, present);
         StuffSets[slot] = set;
         if (!set.IsStuffBuild)
         {

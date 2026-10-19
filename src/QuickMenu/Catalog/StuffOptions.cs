@@ -62,8 +62,38 @@ internal readonly struct StuffOptionSet
 /// </summary>
 internal static class StuffOptions
 {
+    /// <summary>
+    /// The stuffs present on the current map, in vanilla order (commonality descending, then market value ascending, ties
+    /// keeping their counted order). Collected once per menu open and shared by every stuff build in it, so the per-slot
+    /// cost is only the <c>CanMake</c> filter.
+    /// </summary>
+    internal static List<ThingDef> Present()
+    {
+        var present = new List<ThingDef>();
+        Map? map = Find.CurrentMap;
+        if (map == null)
+        {
+            return present;
+        }
+
+        bool god = DebugSettings.godMode;
+        foreach (ThingDef stuff in map.resourceCounter.AllCountedAmounts.Keys)
+        {
+            if (stuff.IsStuff && (god || map.listerThings.ThingsOfDef(stuff).Count > 0))
+            {
+                present.Add(stuff);
+            }
+        }
+
+        StableSort(present);
+        return present;
+    }
+
     /// <summary>Builds the option set. Never throws: a fault is logged once per designator type and reads as "no materials".</summary>
-    internal static StuffOptionSet For(Designator designator)
+    internal static StuffOptionSet For(Designator designator) => For(designator, null);
+
+    /// <summary>As <see cref="For(Designator)"/> with the map's stuffs collected once by <see cref="Present"/>; null collects them here.</summary>
+    internal static StuffOptionSet For(Designator designator, List<ThingDef>? present)
     {
         if (designator is not Designator_Build build || build.PlacingDef is not ThingDef def || !def.MadeFromStuff)
         {
@@ -72,7 +102,7 @@ internal static class StuffOptions
 
         try
         {
-            return Build(build, def);
+            return Build(build, def, present ?? Present());
         }
         catch (Exception ex)
         {
@@ -82,25 +112,16 @@ internal static class StuffOptions
         }
     }
 
-    private static StuffOptionSet Build(Designator_Build build, ThingDef def)
+    private static StuffOptionSet Build(Designator_Build build, ThingDef def, List<ThingDef> present)
     {
-        Map? map = Find.CurrentMap;
-        if (map == null)
+        var stuffs = new List<ThingDef>(present.Count);
+        foreach (ThingDef stuff in present)
         {
-            return new StuffOptionSet(StuffRingOutcome.None, Array.Empty<StuffOption>());
-        }
-
-        var stuffs = new List<ThingDef>();
-        bool god = DebugSettings.godMode;
-        foreach (ThingDef stuff in map.resourceCounter.AllCountedAmounts.Keys)
-        {
-            if (stuff.IsStuff && stuff.stuffProps.CanMake(def) && (god || map.listerThings.ThingsOfDef(stuff).Count > 0))
+            if (stuff.stuffProps.CanMake(def))
             {
                 stuffs.Add(stuff);
             }
         }
-
-        stuffs.Sort(VanillaOrder);
 
         var ids = new string[stuffs.Count];
         for (int i = 0; i < ids.Length; i++)
@@ -118,6 +139,23 @@ internal static class StuffOptions
         }
 
         return new StuffOptionSet(order.Outcome, options);
+    }
+
+    /// <summary>Insertion sort: stable (<c>List.Sort</c> is not), and the list is a few dozen stuffs at most.</summary>
+    private static void StableSort(List<ThingDef> list)
+    {
+        for (int i = 1; i < list.Count; i++)
+        {
+            ThingDef item = list[i];
+            int j = i - 1;
+            while (j >= 0 && VanillaOrder(list[j], item) > 0)
+            {
+                list[j + 1] = list[j];
+                j--;
+            }
+
+            list[j + 1] = item;
+        }
     }
 
     private static ThingDef FindById(List<ThingDef> stuffs, string id)
