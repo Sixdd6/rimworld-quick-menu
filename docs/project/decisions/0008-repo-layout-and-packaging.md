@@ -16,10 +16,10 @@ The mod ships to Steam Workshop (the in-game uploader sends the whole mod folder
 - `tests/QuickMenu.Core.Benchmarks`: a BenchmarkDotNet console app (net10.0, `MemoryDiagnoser`) that references Core only. Its output (`BenchmarkDotNet.Artifacts/`) is gitignored.
 - `tests/Shared/SyntheticCatalog.cs`: one seeded generator of plain Core `SearchEntry` data (performance.md §2), linked into both test projects with `<Compile Include="..\Shared\SyntheticCatalog.cs" Link="Shared\SyntheticCatalog.cs" />`. It is not a separate assembly, so no extra project needs to be shipped or versioned.
 - `mod/LoadFolders.xml`: `<v1.7><li>/</li><li>1.7</li></v1.7>`. `mod/1.7/Assemblies/` is gitignored build output.
-- `scripts/link-dev.sh` symlinks `mod/` → `$RIMWORLD_DIR/Mods/QuickMenu`. `scripts/package.sh` zips `mod/` into `dist/` (gitignored).
+- `scripts/link-mod.sh` symlinks `mod/` → `$RIMWORLD_DIR/Mods/QuickMenu`. `scripts/package.sh` zips `mod/` into `dist/` (gitignored).
 - CI (GitHub Actions, ubuntu): .NET 10 setup → restore → format check → build all projects, including the benchmarks (compiled, not run) → **step 1**: functional tests with the coverage gate, excluding trait `Category=Perf` → **step 2**: Perf-trait tests (time and zero-allocation gates) in Release **without coverage instrumentation**, because instrumentation distorts both → zip artifact. Benchmarks run manually or from a manually triggered workflow. No game files are needed (ADR 0001).
 
 ## Consequences
 - The Workshop upload and the GitHub zip contain only mod content.
-- Developers must run `link-dev.sh` once per machine.
+- Developers must run `link-mod.sh` once per machine.
 - Adding a future game version means adding a `1.8/` assembly folder and a LoadFolders entry.

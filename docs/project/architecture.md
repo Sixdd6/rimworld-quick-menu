@@ -255,7 +255,7 @@ sequenceDiagram
 
 ## 7. Cross-cutting concerns
 
-- **Configuration & secrets**: No secrets at runtime. Build-time setting `RIMWORLD_DIR` (environment variable or `Directory.Build.props` override) points at the game install. It is used for the local-DLL fallback and for `scripts/link-dev.sh`. The default is `~/.steam/steam/steamapps/common/RimWorld`. Steam Workshop upload uses the user's own Steam client. No credentials are stored in the repo.
+- **Configuration & secrets**: No secrets at runtime. Build-time setting `RIMWORLD_DIR` (environment variable or `Directory.Build.props` override) points at the game install. It is used for the local-DLL fallback and for `scripts/link-mod.sh`. The default is `~/.steam/steam/steamapps/common/RimWorld`. Steam Workshop upload uses the user's own Steam client. No credentials are stored in the repo.
 - **Error handling**: Every Harmony patch body and every OnGUI entry point is wrapped in `try/catch`. On exception: `LogOnce` with the patch name, the patch disables itself for the session (a static flag), and the original method runs. A missing def or type is an unresolved pin, not an error (NFR-6). Patching a mod override that fails is logged once and skipped; the other overrides stay patched.
 - **Logging / observability**: `Verse.Log` with a `[QuickMenu]` prefix. Only warnings and errors, logged once each. A verbose flag (dev mode only) logs catalog build time and patch counts. Profiling uses Waylith's Frame Profiler with instrumentation filter `QuickMenu!*` and `QuickMenu.Core!*`.
 - **Security**: No network, no file access beyond Scribe settings, no reflection over user input. The settings file is parsed defensively: unknown lines are kept, bad lines are ignored with a single warning. Harmony patches are kept to the two sites listed in section 6.
@@ -285,7 +285,7 @@ rimworld-quick-menu/
 │   ├── QuickMenu.Core.Tests/         # xUnit v3: functional tests + Perf-trait gates
 │   ├── QuickMenu.Core.Benchmarks/    # BenchmarkDotNet console app (net10.0), references Core only
 │   └── Shared/SyntheticCatalog.cs    # seeded synthetic catalog generator, linked into both projects
-├── scripts/                          # environment-engineer: build, link-dev, package, run-game
+├── scripts/                          # environment-engineer: build, link-mod, package, run-game
 ├── docs/                             # project docs, ADRs, design screenshots (docs/project/design/)
 ├── Directory.Build.props             # shared props: net10.0, LangVersion, RIMWORLD_DIR, output paths
 ├── global.json                       # pins SDK 10.0.1xx (rollForward latestFeature)
@@ -315,7 +315,7 @@ rimworld-quick-menu/
 ## 10. Deployment and release
 
 - **Build**: `dotnet build -c Release` compiles Core and the mod. Output goes to `mod/1.7/Assemblies/` with `AppendTargetFrameworkToOutputPath=false` and `GenerateDependencyFile=false`, and without `0Harmony.dll` (Harmony comes from the Harmony mod).
-- **Development loop**: `scripts/link-dev.sh` symlinks `mod/` to `$RIMWORLD_DIR/Mods/QuickMenu`. Start the game with `-mod=brrainz.harmony,sixdd.QuickMenu -quicktest`. Debugging: attach a .NET debugger to the game process (no Doorstop needed on 1.7).
+- **Development loop**: `scripts/link-mod.sh` symlinks `mod/` to `$RIMWORLD_DIR/Mods/QuickMenu`. Start the game with `-mod=brrainz.harmony,sixdd.QuickMenu -quicktest`. Debugging: attach a .NET debugger to the game process (no Doorstop needed on 1.7).
 - **CI** (GitHub Actions, ubuntu): setup .NET 10 → restore (Krafs.Rimworld.Ref, Lib.Harmony) → `dotnet format --verify-no-changes` → build (including the benchmark project, not run) → functional tests with the coverage gate (`Category!=Perf`) → Perf-trait tests in Release without coverage, as a separate step → upload `mod/` zip as an artifact.
 - **Release**: SemVer in About.xml `<modVersion>` and the assembly version. `scripts/package.sh` produces `dist/QuickMenu-<version>.zip` from `mod/` (no `Source/` or docs). GitHub release with the zip and CHANGELOG. Steam Workshop upload by the user through the game's built-in uploader, with an original `Preview.png` (A-3). Publishing always needs explicit user confirmation.
 

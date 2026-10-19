@@ -30,7 +30,7 @@ All package versions are pinned centrally (`Directory.Packages.props`) and locke
 | Package | `scripts/package.sh` -> `dist/QuickMenu-<version>.zip` |
 | Local game DLLs instead of Krafs | `dotnet build -p:UseLocalGameRefs=true` (uses `RIMWORLD_DIR`; rewrites lock files, revert with `git checkout -- '**/packages.lock.json'`) |
 
-Notes: `scripts/link-mod.sh` is the ADR 0008 / architecture `link-dev.sh`. The coverage gate is vacuous while Core has no executable lines (script says so); it becomes real with the first Core code. `dotnet test --solution QuickMenu.slnx` also works (MTP runner set in `global.json`), but the scripts use `dotnet run` with absolute coverage paths.
+Notes: `scripts/link-mod.sh` is the ADR 0008 / architecture `link-mod.sh`. The coverage gate is vacuous while Core has no executable lines (script says so); it becomes real with the first Core code. `dotnet test --solution QuickMenu.slnx` also works (MTP runner set in `global.json`), but the scripts use `dotnet run` with absolute coverage paths.
 
 ## Setup
 - `scripts/setup.sh`: idempotent, non-interactive. Installs the SDK if no 10.x SDK is found, writes PATH to `CLAUDE_ENV_FILE` in cloud sessions, restores packages (locked when `CI` is set). The SessionStart hook runs it in Claude Code cloud sessions.

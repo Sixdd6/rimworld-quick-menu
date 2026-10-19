@@ -3,7 +3,7 @@
 - **Project**: rimworld-quick-menu
 - **Autonomy**: gated   <!-- gated | autonomous -->
 - **Specialists**: visual-designer (all-UI product), performance-engineer (NFR-1 per-frame budget)
-- **Current phase**: 3 Environment
+- **Current phase**: 4 Plan
 - **Current milestone / task**: —
 - **Last updated**: 2026-10-18
 
@@ -14,8 +14,8 @@
 | 0 | Intake | done | idea.md | — |
 | 1 | Design | done | spec.md | ☑ 2026-10-18 |
 | 2 | Architecture + Direction | done | architecture.md, decisions/, specialist docs | ☑ 2026-10-19 |
-| 3 | Environment | in progress | environment.md, .mcp.json, CI | ☐ |
-| 4 | Plan | not started | plan.md | ☐ |
+| 3 | Environment | done | environment.md, .mcp.json, CI | ☐ |
+| 4 | Plan | in progress | plan.md | ☐ |
 | 5 | Build | not started | source, tests | — |
 | 6 | Verify | not started | test/review/security reports | — |
 | 7 | Publish | not started | release | ☐ |
@@ -37,3 +37,4 @@ States: `not started` → `in progress` → `awaiting approval` → `done` (or `
 - 2026-10-18 — Spec approved (16 Must, 2 Should).
 - 2026-10-19 — Architecture drafted (8 ADRs, proposed): RimWorld 1.7 is Waylith/.NET 10, Harmony 3. Design + performance direction drafted; reconciling.
 - 2026-10-19 — Architecture, design and performance direction approved; ADRs 0001–0008 accepted. Name: Quick Menu (sixdd.QuickMenu).
+- 2026-10-19 — Environment set up: .NET SDK 10.0.402 in ~/.dotnet (no sudo), solution scaffolded, CI workflow written (not yet run on GitHub). Build, format and tests pass locally.

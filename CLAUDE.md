@@ -117,7 +117,7 @@ Templates are in `.claude/templates/`. Copy a template, then fill it in. Never l
 - `src/QuickMenu.Core/`: pure logic (layout, edge dodge, sizing, PinKey/PinBoard/serializer, trigger state machine, search). **Must not reference any game or Unity assembly.**
 - `src/QuickMenu/`: thin game adapter (Mod + settings, Harmony patches, catalog, activation, IMGUI windows, diagnostics).
 - `tests/QuickMenu.Core.Tests/`: unit tests and Perf-trait gates. `tests/QuickMenu.Core.Benchmarks/`: BenchmarkDotNet. `tests/Shared/SyntheticCatalog.cs`: shared seeded test data, linked into both projects.
-- `scripts/`: setup, test, perf, link-mod, package (the ADR/architecture name `link-dev.sh` is `link-mod.sh` in practice).
+- `scripts/`: setup, test, perf, link-mod, package (the ADR/architecture name `link-mod.sh` is `link-mod.sh` in practice).
 - `reference/`: Dubs Mint Menus, gitignored. **Clean-room: study behaviour only. Never copy its code, textures or strings.**
 
 ### Commands (verified; see docs/project/environment.md)
