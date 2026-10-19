@@ -1,5 +1,6 @@
 using System;
 using QuickMenu.Diagnostics;
+using QuickMenu.Pinning;
 using QuickMenu.Skeleton;
 using RimWorld;
 using RimWorld.Planet;
@@ -34,6 +35,11 @@ internal static class TriggerPoller
             }
 
             using var scope = new MeasureScope(StatId.Poller); // one cached bool check while measuring is off
+            if (UnityEngine.Input.GetMouseButtonDown(0))
+            {
+                PinClickPatch.LastLeftDownFrame = Time.frameCount; // for the pin click deduper (T-26)
+            }
+
             if (!UnityEngine.Input.GetMouseButtonDown(SkeletonTrigger.MouseIndex))
             {
                 return;

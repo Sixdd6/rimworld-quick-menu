@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using HarmonyLib;
+using QuickMenu.Core.Input;
 using QuickMenu.Diagnostics;
 using QuickMenu.Menu;
 using QuickMenu.Pinning;
@@ -22,6 +23,21 @@ public sealed class QuickMenuMod : Mod
 
     /// <summary>The loaded settings (defaults until the mod is constructed or when loading failed).</summary>
     internal static QuickMenuSettings Settings => _settings;
+
+    /// <summary>Package id of Dubs Mint Menus; with it active the pin modifier defaults to Alt (FR-8).</summary>
+    private const string MintPackageId = "Dubwise.DubsMintMenus";
+
+    private static bool _mintActive;
+
+    /// <summary>
+    /// The pin modifier in effect, cached at startup and by <see cref="RefreshEffectiveModifier"/>. The pin prefix reads
+    /// only this field, never <c>ModsConfig</c> or the settings.
+    /// </summary>
+    internal static PinModifier EffectiveModifier { get; private set; } = PinModifier.Ctrl;
+
+    /// <summary>Recomputes <see cref="EffectiveModifier"/> from the settings. Call after the settings load and whenever the pin modifier setting changes.</summary>
+    internal static void RefreshEffectiveModifier() =>
+        EffectiveModifier = ModifierPolicy.Effective(_settings.PinModifierUserSet, _settings.PinModifier, _mintActive);
 
     /// <summary>Writes the settings file. Call once per pin, at the end of an edit and when the menu closes, never per frame or per drag step.</summary>
     internal static void SaveSettings()
@@ -46,6 +62,16 @@ public sealed class QuickMenuMod : Mod
         _settings = GetSettings<QuickMenuSettings>();
 
         _settings.ApplyCapacity();
+        try
+        {
+            _mintActive = ModsConfig.IsActive(MintPackageId);
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Log.LogOnce("Pinning.MintDetect", $"Detecting Dubs Mint Menus failed, assuming it is not active: {ex}");
+        }
+
+        RefreshEffectiveModifier();
         long settingsTicks = Stopwatch.GetTimestamp() - settingsStart;
         long patchStart = Stopwatch.GetTimestamp();
         try

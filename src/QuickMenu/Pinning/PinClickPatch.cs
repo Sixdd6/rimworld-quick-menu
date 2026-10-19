@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using HarmonyLib;
+using QuickMenu.Catalog;
+using QuickMenu.Core.Input;
+using QuickMenu.Core.Pins;
 using QuickMenu.Diagnostics;
 using QuickMenu.Menu;
 using RimWorld;
@@ -59,13 +62,93 @@ internal static class PinClickPatch
         }
     }
 
-    // TODO(T-27): add a re-entrancy guard; an override calling base.ProcessInput fires this prefix twice for one click.
-    // S-3 (ADR 0005): the Event is already used when this runs, so click vs hotkey and modifiers must come from UnityEngine.Input.
+    /// <summary>Frame of the last raw left-button press, recorded by the per-frame poller for the deduper.</summary>
+    internal static int LastLeftDownFrame { get; set; } = PinClickDeduper.NoPress;
 
-    /// <summary>Observe-only prefix, invoked on clicks and hotkeys only. Always runs the original. T-26 adds the pin logic.</summary>
+    private static readonly PinClickDeduper _deduper = new();
+    private static bool _busy;
+
+    /// <summary>
+    /// Pins or unpins on modifier+left-click, otherwise observes. S-3 (ADR 0005): the Event is already used when this
+    /// runs, so click versus hotkey comes from <c>UnityEngine.Input</c> and the modifiers from the event and from <c>Input</c>.
+    /// The fast path (no mouse button change this frame) allocates nothing. <c>_busy</c> stops a nested call (an override that
+    /// calls <c>base.ProcessInput</c>) from toggling twice.
+    /// </summary>
     internal static bool Prefix(Designator __instance, Event __0)
     {
-        return true;
+        if (Site.Disabled || MenuActivation.Depth > 0 || _busy)
+        {
+            return true;
+        }
+
+        bool down = UnityEngine.Input.GetMouseButtonDown(0);
+        bool up = UnityEngine.Input.GetMouseButtonUp(0);
+        if (!down && !up)
+        {
+            return true;
+        }
+
+        _busy = true;
+        try
+        {
+            Event? ev = __0;
+            var input = new PinClickInput(
+                IsKeyEvent: false,
+                RawType: RawEventType.Other,
+                Button: 0,
+                EventCtrl: ev != null && (ev.control || ev.command),
+                EventAlt: ev != null && ev.alt,
+                EventShift: ev != null && ev.shift,
+                RawCtrl: UnityEngine.Input.GetKey(KeyCode.LeftControl) || UnityEngine.Input.GetKey(KeyCode.RightControl),
+                RawAlt: UnityEngine.Input.GetKey(KeyCode.LeftAlt) || UnityEngine.Input.GetKey(KeyCode.RightAlt),
+                RawShift: UnityEngine.Input.GetKey(KeyCode.LeftShift) || UnityEngine.Input.GetKey(KeyCode.RightShift),
+                LeftDownThisFrame: down,
+                LeftUpThisFrame: up);
+            if (PinClickClassifier.Classify(input, QuickMenuMod.EffectiveModifier) != PinClickAction.Pin)
+            {
+                return true;
+            }
+
+            // A pin gesture never activates the designator, including the duplicate (suppressed) frame of the same click.
+            if (_deduper.Accept(Time.frameCount, LastLeftDownFrame, input))
+            {
+                Toggle(__instance);
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Site.Fail(ex);
+            return true;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static void Toggle(Designator designator)
+    {
+        if (DesignatorCatalog.Find(designator) is { } entry)
+        {
+            PinService.Toggle(entry);
+            return;
+        }
+
+        // Not in the catalog (for example a designator a mod adds after startup): key it on its own.
+        Type type = designator.GetType();
+        BuildableDef? placing = (designator as Designator_Build)?.PlacingDef;
+        DescriptorKind kind = placing switch
+        {
+            TerrainDef => DescriptorKind.BuildTerrain,
+            ThingDef => DescriptorKind.BuildThing,
+            _ => DescriptorKind.Other,
+        };
+        var descriptor = new DesignatorDescriptor(kind, type.FullName ?? type.Name, placing?.defName, string.Empty);
+        PinKey key = PinKeyFactory.Assign(new[] { descriptor })[0];
+        string? packageId = placing?.modContentPack?.PackageId;
+        PinService.Toggle(key, designator.Label ?? string.Empty, string.IsNullOrEmpty(packageId) ? null : packageId);
     }
 
     /// <summary>
