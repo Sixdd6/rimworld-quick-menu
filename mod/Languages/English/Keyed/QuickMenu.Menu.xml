@@ -33,7 +33,6 @@
   <QuickMenu.Menu.ReasonGravEngine>Requires the grav engine to be inspected.</QuickMenu.Menu.ReasonGravEngine>
   <QuickMenu.Menu.ReasonMeme>Requires an ideoligion with the {0} meme.</QuickMenu.Menu.ReasonMeme>
   <QuickMenu.Menu.ReasonPrecept>Requires an ideoligion precept that allows it.</QuickMenu.Menu.ReasonPrecept>
-  <QuickMenu.Menu.ReasonMechanitor>Requires a mechanitor in the colony.</QuickMenu.Menu.ReasonMechanitor>
   <QuickMenu.Menu.ReasonDifficulty>Turned off by the difficulty settings.</QuickMenu.Menu.ReasonDifficulty>
   <QuickMenu.Menu.ReasonPlaceWorker>Its placement requirements are not met.</QuickMenu.Menu.ReasonPlaceWorker>
   <QuickMenu.Menu.ReasonDiscovery>Requires discovering {0} first.</QuickMenu.Menu.ReasonDiscovery>

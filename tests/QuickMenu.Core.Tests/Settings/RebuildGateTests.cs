@@ -112,4 +112,15 @@ public class RebuildGateTests
 
         Assert.Equal(2, rebuilds);
     }
+
+    [Fact]
+    public void Reset_makes_the_next_observe_rebuild_again()
+    {
+        var gate = new RebuildGate();
+        Assert.True(gate.Observe(5, false, 0));
+        Assert.False(gate.Observe(5, false, 10));
+        gate.Reset();
+        Assert.True(gate.Observe(5, false, 20));
+        Assert.False(gate.Pending);
+    }
 }

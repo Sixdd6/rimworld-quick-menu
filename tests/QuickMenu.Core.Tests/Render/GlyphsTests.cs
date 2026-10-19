@@ -205,6 +205,7 @@ public class GlyphsTests
     }
 
     [Fact]
+    [Trait("Category", "Perf")]
     public void Glyph_SpanOverload_AllocatesNothing()
     {
         byte[] buffer = new byte[S * S];

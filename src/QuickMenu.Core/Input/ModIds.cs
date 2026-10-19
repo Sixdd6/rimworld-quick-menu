@@ -9,6 +9,8 @@ public static class ModIds
     public const string BetterArchitect = "ferny.BetterArchitect";
     public const string Multiplayer = "rwmt.Multiplayer";
 
+    private static readonly string[] _suffixes = { "_steam", "_copy" };
+
     /// <summary>True when <paramref name="actual"/> is <paramref name="expected"/>, ignoring case and one <c>_steam</c> or <c>_copy</c> suffix.</summary>
     public static bool Matches(string? actual, string expected)
     {
@@ -22,7 +24,7 @@ public static class ModIds
             return true;
         }
 
-        foreach (string suffix in new[] { "_steam", "_copy" })
+        foreach (string suffix in _suffixes)
         {
             if (actual.Length == expected.Length + suffix.Length
                 && actual.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)

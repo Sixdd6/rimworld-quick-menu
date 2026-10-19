@@ -21,6 +21,9 @@ public sealed class RebuildGate
     /// <summary>True while the latest key differs from the one last built (the preview shows stretched textures).</summary>
     public bool Pending => _started && _seen != _built;
 
+    /// <summary>Forgets what was built, so the next <see cref="Observe"/> asks for a rebuild (the settings page was reopened).</summary>
+    public void Reset() => _started = false;
+
     /// <summary>Call once per frame. True when the textures must be rebuilt for <paramref name="key"/> now.</summary>
     /// <param name="key">Identity of the texture sizing the preview wants.</param>
     /// <param name="dragging">The mouse is held on a slider.</param>

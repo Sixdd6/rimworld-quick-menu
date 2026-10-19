@@ -62,15 +62,6 @@ internal static class AvailabilityResolver
                     }
 
                     break;
-                case Designator_MechControlGroup:
-                    Probe("Mechanitor", () =>
-                    {
-                        if (ModsConfig.BiotechActive && !AnyMechanitor())
-                        {
-                            parts.Add(new ReasonPart(ReasonCause.Mechanitor, "QuickMenu.Menu.ReasonMechanitor".Translate()));
-                        }
-                    });
-                    break;
             }
         }
         catch (Exception ex)
@@ -254,24 +245,5 @@ internal static class AvailabilityResolver
         {
             parts.Add(new ReasonPart(ReasonCause.Precept, "QuickMenu.Menu.ReasonPrecept".Translate()));
         }
-    }
-
-    private static bool AnyMechanitor()
-    {
-        Map? map = Find.CurrentMap;
-        if (map == null)
-        {
-            return true; // unknown: do not claim a cause
-        }
-
-        foreach (Pawn pawn in map.mapPawns.FreeColonistsSpawned)
-        {
-            if (MechanitorUtility.IsMechanitor(pawn))
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 }

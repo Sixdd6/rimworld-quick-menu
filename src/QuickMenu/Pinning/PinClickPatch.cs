@@ -116,7 +116,12 @@ internal static class PinClickPatch
     /// <summary>
     /// True when <paramref name="designator"/> is in the catalog (O(1) lookup) or, for one added after the catalog was built,
     /// is listed by a <see cref="DesignationCategoryDef"/> (directly or as a dropdown element). Runs only after the
-    /// modifier, click and classifier tests passed, so the allocation-free fast path is untouched.
+    /// modifier, click and classifier tests passed, so the allocation-free fast path is untouched. Two further fallbacks
+    /// accept designators another mod creates on its own (Better Architect Menu builds <c>Designator_Build</c> objects
+    /// under proxy categories that are not in the <c>DefDatabase</c>): a build designator whose def the catalog knows or
+    /// that has a <c>designationCategory</c>, and a designator whose exact type the catalog holds.
+    /// <c>Designator_MechControlGroup</c> is in neither, so it is rejected. The category loop below skips
+    /// <c>AllIdeoDesignators</c>; an Ideology designator is found by the catalog lookup, which relies on <c>RefreshIdeology</c>.
     /// </summary>
     internal static bool IsArchitectDesignator(Designator designator)
     {
@@ -140,6 +145,23 @@ internal static class PinClickPatch
                     return true;
                 }
             }
+        }
+
+        if (designator is Designator_Build { PlacingDef: { } placing }
+            && (DesignatorCatalog.KnowsPlacingDef(placing) || placing.designationCategory != null))
+        {
+            return true;
+        }
+
+        Type type = designator.GetType();
+        if (DesignatorCatalog.KnowsType(type))
+        {
+            return true;
+        }
+
+        if (Prefs.DevMode)
+        {
+            Diagnostics.Log.LogOnce("Pinning.NotArchitect." + type.FullName, $"{type.FullName} was not treated as an architect designator, so it is not pinnable.");
         }
 
         return false;

@@ -29,6 +29,7 @@ internal static class LayoutPreview
     private static readonly Color _frameFill = new(0.07f, 0.07f, 0.07f, 0.55f);
 
     private static readonly RebuildGate _gate = new();
+    private static int _lastDrawFrame = int.MinValue / 2;
     private static long _textureKey;
     private static ModelKey _key;
     private static bool _built;
@@ -54,6 +55,15 @@ internal static class LayoutPreview
 
         try
         {
+            // The page was closed since the last frame: forget what the gate believes is built, so the first
+            // frame of this opening checks the textures against the current settings (menus opened meanwhile may have resized them).
+            int frame = Time.frameCount;
+            if (frame - _lastDrawFrame > 1)
+            {
+                _gate.Reset();
+            }
+
+            _lastDrawFrame = frame;
             Refresh(settings);
             UpdateTextures();
             float frameHeight = Math.Max(0f, Math.Min(SettingsPreview.Height, rect.height - NotesHeight));
@@ -164,8 +174,15 @@ internal static class LayoutPreview
         // 1 px quiet border in slotBorder, not the white default (UC-4 review item 8): it must not compete with the preview's accent rim.
         Color color = GUI.color;
         GUI.color = QMStyle.SlotBorder;
-        Widgets.DrawBox(area);
-        GUI.color = color;
+        try
+        {
+            Widgets.DrawBox(area);
+        }
+        finally
+        {
+            GUI.color = color;
+        }
+
         if (_model == null)
         {
             return;
@@ -176,10 +193,10 @@ internal static class LayoutPreview
         var origin = new Vec2((area.width / 2f) + offset.X, (area.height / 2f) + offset.Y);
         var transform = new RenderTransform(default, origin, scale);
         float built = Textures.SizedButtonSize;
-        MenuRenderer.SizedStretch = _gate.Pending && built > 0f ? _key.ButtonSize / built : 1f;
         GUI.BeginGroup(area);
         try
         {
+            MenuRenderer.SizedStretch = _gate.Pending && built > 0f ? _key.ButtonSize / built : 1f;
             if (_key.Layout == MenuLayout.Grid)
             {
                 GridRenderer.Draw(_model, transform, Hit.Outside, Hit.Outside);

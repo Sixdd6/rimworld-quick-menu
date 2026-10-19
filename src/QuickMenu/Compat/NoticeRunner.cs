@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using QuickMenu.Core.Input;
 using QuickMenu.Menu;
 using QuickMenu.Settings;
@@ -17,22 +18,22 @@ internal static class NoticeRunner
 
     internal static void Tick()
     {
-        if (Current.ProgramState != ProgramState.Playing)
-        {
-            return;
-        }
-
-        Map? map = Find.CurrentMap;
-        if (map == null || !map.IsPlayerHome)
-        {
-            return;
-        }
-
-        Pending = false;
         try
         {
+            if (Current.ProgramState != ProgramState.Playing)
+            {
+                return;
+            }
+
+            Map? map = Find.CurrentMap;
+            if (map == null || !map.IsPlayerHome || BlockedByWindow())
+            {
+                return;
+            }
+
+            Pending = false;
             QuickMenuSettings s = QuickMenuMod.Settings;
-            NoticeDecision d = NoticePolicy.Decide(s.FirstRunNoticeShown, s.MintNoticeShown, QuickMenuMod.MintActive);
+            NoticeDecision d = NoticePolicy.Decide(s.FirstRunNoticeShown, s.MintNoticeShown, QuickMenuMod.MintActive, s.PinModifierUserSet);
             switch (d.Kind)
             {
                 case NoticeKind.FirstRun:
@@ -41,17 +42,35 @@ internal static class NoticeRunner
                 case NoticeKind.MintMessage:
                     Messages.Message("QuickMenu.Notice.Mint".Translate(), MessageTypeDefOf.NeutralEvent, historical: false);
                     break;
-                default:
-                    return;
             }
 
+            bool changed = (d.SetFirstRunShown && !s.FirstRunNoticeShown) || (d.SetMintShown && !s.MintNoticeShown);
             s.FirstRunNoticeShown |= d.SetFirstRunShown;
             s.MintNoticeShown |= d.SetMintShown;
-            QuickMenuMod.SaveSettings();
+            if (changed)
+            {
+                QuickMenuMod.SaveSettings();
+            }
         }
         catch (Exception ex)
         {
+            Pending = false;
             Diagnostics.Log.LogOnce("Compat.Notice", $"Showing the notice failed: {ex}");
         }
+    }
+
+    /// <summary>True while a pausing or input-absorbing window (a dialog, the options screen) is open; the notice waits for it. Plain loop, runs only until the notice is shown.</summary>
+    private static bool BlockedByWindow()
+    {
+        IList<Window> windows = Find.WindowStack.Windows;
+        for (int i = 0; i < windows.Count; i++)
+        {
+            if (windows[i].forcePause || windows[i].absorbInputAroundWindow)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

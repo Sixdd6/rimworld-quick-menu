@@ -27,6 +27,8 @@ internal static class DesignatorCatalog
     private static readonly Dictionary<PinKey, CatalogEntry> _byKey = new();
     private static readonly Dictionary<Designator, CatalogEntry> _byDesignator = new();
     private static readonly List<PinKey> _duplicateKeys = new();
+    private static readonly HashSet<Type> _designatorTypes = new();
+    private static readonly HashSet<BuildableDef> _placingDefs = new();
     private static readonly IdeoSignature _ideoSignature = new();
     private static readonly List<PinKey> _ideoKeys = new();
     private static readonly List<Designator> _ideoDesignators = new();
@@ -191,6 +193,12 @@ internal static class DesignatorCatalog
     internal static CatalogEntry? Find(Designator designator) =>
         designator != null && _byDesignator.TryGetValue(designator, out CatalogEntry? e) ? e : null;
 
+    /// <summary>True when the catalog holds a designator of exactly this type (read only on the pin-click fallback path).</summary>
+    internal static bool KnowsType(Type type) => _designatorTypes.Contains(type);
+
+    /// <summary>True when the catalog holds a build designator placing <paramref name="def"/> (read only on the pin-click fallback path).</summary>
+    internal static bool KnowsPlacingDef(BuildableDef def) => _placingDefs.Contains(def);
+
     internal static void Rebuild()
     {
         BuildCount++;
@@ -200,6 +208,8 @@ internal static class DesignatorCatalog
             _entries.Clear();
             _byKey.Clear();
             _byDesignator.Clear();
+            _designatorTypes.Clear();
+            _placingDefs.Clear();
             _duplicateKeys.Clear();
             _ideoKeys.Clear();
             _ideoDesignators.Clear();
@@ -441,6 +451,12 @@ internal static class DesignatorCatalog
         PinKey key = keys[index++];
         var entry = new CatalogEntry(id, parentId, node.Designator, key, node.Label, node.CategoryLabel, node.ModName, node.PackageId, node.Descriptor.Kind == DescriptorKind.Dropdown);
         _entries.Add(entry);
+        _designatorTypes.Add(node.Designator.GetType());
+        if (node.Designator is Designator_Build { PlacingDef: { } placingDef })
+        {
+            _placingDefs.Add(placingDef);
+        }
+
         if (_byKey.TryAdd(key, entry))
         {
             if (ideo)

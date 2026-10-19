@@ -962,7 +962,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
     - [ ] Known gap from T-7: Disabled designators must never be activated (the skeleton does not check), and activation fires on mouse-up over the same slot.
     - [ ] Given a greyed slot, then the tooltip adds the reason in `danger`; clicking it plays `ClickReject` and shows the reason as a `RejectInput` message; availability is evaluated on open and on hover only.
     - [ ] Given an Ideology build gated by a precept or ideoligion building, or a Biotech mechanitor item, then the slot is greyed with the matching reason (the causes T-32 left open: monolith, grav engine, Biotech, precept).
-    - [ ] *(UC-5)* An unresearched build (e.g. a tier-2 power building on a new colony) shows the research reason; a Biotech mechanitor item without a mechanitor is greyed.
+    - [ ] *(UC-5)* An unresearched build (e.g. a tier-2 power building on a new colony) shows the research reason; a Biotech mech building before its research is greyed with the research reason.
   - **Tests**: in-game UC-5.
   - **In-game check**: UC-5 (user)
   - **Size**: M

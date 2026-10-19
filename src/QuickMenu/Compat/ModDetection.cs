@@ -32,7 +32,10 @@ internal static class ModDetection
             Diagnostics.Log.LogOnce("Compat.Detect", $"Detecting other mods failed, assuming none: {ex}");
         }
 
-        Diagnostics.Log.Info($"Mods detected: Mint={Mint}, BetterArchitect={BetterArchitect}, Multiplayer={Multiplayer}");
+        if (Prefs.DevMode)
+        {
+            Diagnostics.Log.Info($"Mods detected: Mint={Mint}, BetterArchitect={BetterArchitect}, Multiplayer={Multiplayer}");
+        }
     }
 
     internal static string Summary() => $"mint={Mint} bam={BetterArchitect} multiplayer={Multiplayer}";

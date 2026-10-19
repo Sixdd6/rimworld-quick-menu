@@ -60,8 +60,7 @@ internal sealed class FirstRunNoticeWindow : Window
         float by = inRect.yMax - h;
         if (Widgets.ButtonText(new Rect(inRect.x, by, w, h), _useMiddle))
         {
-            QuickMenuMod.Settings.Trigger = TriggerBinding.Mouse(2);
-            QuickMenuMod.SaveSettings();
+            Settings.BindingRow.Set(TriggerBinding.Mouse(2));
             Close();
         }
 

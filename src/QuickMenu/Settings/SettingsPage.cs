@@ -238,9 +238,16 @@ internal static class SettingsPage
     /// <summary>A row label, vertically centred on the row's controls (<c>MiddleLeft</c>); the anchor is reset afterwards.</summary>
     internal static void RowLabel(Rect row, float width, string text)
     {
+        TextAnchor anchor = Text.Anchor;
         Text.Anchor = TextAnchor.MiddleLeft;
-        Widgets.Label(new Rect(row.x, row.y, width, row.height), text);
-        Text.Anchor = TextAnchor.UpperLeft;
+        try
+        {
+            Widgets.Label(new Rect(row.x, row.y, width, row.height), text);
+        }
+        finally
+        {
+            Text.Anchor = anchor;
+        }
     }
 
     private static void Heading(Listing_Standard listing, string text)
