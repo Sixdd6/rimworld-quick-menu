@@ -13,7 +13,7 @@ Setups: (b) Harmony + 5 DLC + BAM + Quick Menu; (b) + stress mod; (d) (b) + Dubs
 | Mint: one-time Mint message, Alt+click pins, Ctrl+click goes to Mint, settings shows Alt + Mint note, wheel works alongside Mint, message not repeated (T-67) | PASS — self-test `mint=True bam=True effectiveModifier=Alt` |
 | Slider rebuild: once per drag (10 rebuilds over the session, 1.5–5.8 ms each at UI 1) (T-95) | PASS |
 | UI scale 1.75 + button size 96: wheel, material ring, grid sharp and on screen | PASS (user) |
-| **Settings preview rim does not match the disc fill** at B 96 (rim too large, overflows box) and B 36 (rim too small, looks broken) — screenshots `uc5-preview-b96.png`, `uc5-preview-b36.png` | **FAIL** — fix in progress |
+| **Settings preview rim does not match the disc fill** at B 96 (rim too large, overflows box) and B 36 (rim too small, looks broken) — screenshots `uc5-preview-b96.png`, `uc5-preview-b36.png` | FAIL → fixed in 729d7cc (rim used the button stretch instead of its own); recheck PASS (user) |
 
 ## Other log notes
 - `ERROR InitializeDubsMintMenusReflection: toggleDesMethod is null` — from Better Architect Menu's own Mint integration (not Quick Menu). Note in compatibility docs.
