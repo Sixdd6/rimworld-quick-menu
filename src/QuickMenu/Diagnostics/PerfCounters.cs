@@ -4,6 +4,8 @@ using System.Globalization;
 using System.Text;
 using LudeonTK;
 using QuickMenu.Core.Diagnostics;
+using QuickMenu.Core.Settings;
+using QuickMenu.Menu;
 using Verse;
 
 namespace QuickMenu.Diagnostics;
@@ -31,6 +33,18 @@ internal enum StatId
 
     /// <summary>Rebuilding the wheel after an unpin; kept out of <see cref="Window"/> so P-9 allocations are not polluted.</summary>
     Rebuild,
+
+    /// <summary>Sub-bucket of <see cref="Window"/> (T-95): frames drawn with the main wheel on screen.</summary>
+    WindowWheel,
+
+    /// <summary>Sub-bucket of <see cref="Window"/>: frames drawn with the main grid on screen.</summary>
+    WindowGrid,
+
+    /// <summary>Sub-bucket of <see cref="Window"/>: frames drawn with a wheel satellite (sub-ring or material ring) open.</summary>
+    WindowSatellite,
+
+    /// <summary>Sub-bucket of <see cref="Window"/>: frames drawn with a sub-grid or material grid open.</summary>
+    WindowSubGrid,
 }
 
 /// <summary>
@@ -67,6 +81,11 @@ internal static class PerfCounters
         new("  of window: hover sound call (PlayOneShotOnCamera; frames where hover changed)", 256),
         new("  of window: TooltipHandler.TipRegion (hovered frames)", FrameRing),
         new("  of window: label plate (DrawAtlas + Widgets.Label; frames with a plate)", FrameRing),
+        new("rebuilding the wheel after an unpin (one sample per rebuild)", 256),
+        new("  P-8 by layout: wheel (main wheel on screen)", FrameRing),
+        new("  P-8 by layout: grid (main grid on screen)", FrameRing),
+        new("  P-8 by layout: wheel satellite (sub-ring or material ring open)", FrameRing),
+        new("  P-8 by layout: sub-grid (sub-grid or material grid open)", FrameRing),
     };
 
     internal static MeasureStats Get(StatId id) => EnsureStats()[(int)id];
@@ -83,11 +102,28 @@ internal static class PerfCounters
     {
         MeasureStats stats = Get(id);
         stats.Record(ticks, bytes, frame);
+        if (id == StatId.Window)
+        {
+            Get(WindowLayoutStat()).Record(ticks, bytes, frame); // the same sample, split by what is on screen
+        }
+
         if (ReferenceEquals(stats, _limited) && stats.Calls >= ClosedFrameTarget)
         {
             _limited = null;
             _reportPending = true; // printed next frame by the poller, outside any measured scope
         }
+    }
+
+    /// <summary>Which layout bucket a window sample belongs to; read only while measuring, allocates nothing.</summary>
+    private static StatId WindowLayoutStat()
+    {
+        RingContent? ring = MenuController.ActiveRing;
+        if (ring != null)
+        {
+            return ring.Model.Panel != null ? StatId.WindowSubGrid : StatId.WindowSatellite;
+        }
+
+        return QuickMenuMod.Settings.Layout == MenuLayout.Grid ? StatId.WindowGrid : StatId.WindowWheel;
     }
 
     /// <summary>Called when the menu opens; the next window frame is a first-after-open frame (P-9).</summary>
@@ -101,6 +137,10 @@ internal static class PerfCounters
         try
         {
             Get(StatId.Window).MarkOpen();
+            Get(StatId.WindowWheel).MarkOpen();
+            Get(StatId.WindowGrid).MarkOpen();
+            Get(StatId.WindowSatellite).MarkOpen();
+            Get(StatId.WindowSubGrid).MarkOpen();
         }
         catch (Exception ex)
         {
@@ -182,6 +222,8 @@ internal static class PerfCounters
                 + " | totalBytes=" + s.TotalBytes + " (ring " + t.Count + "/" + s.FrameTicks.Capacity + ")");
         }
 
+        sb.AppendLine("sized texture rebuilds this session=" + Textures.SizedRebuilds + " (T-95: at most one per slider drag), last took "
+            + F(Textures.LastSizedRebuildMs) + " ms with upload");
         sb.AppendLine("control window slots drawn N=" + ControlSlots + " (live wheel N is in the menu window line: same count and icon path)");
     }
 

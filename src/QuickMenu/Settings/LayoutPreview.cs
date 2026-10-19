@@ -17,7 +17,7 @@ namespace QuickMenu.Settings;
 /// The live layout preview of the settings page (design.md S7): the menu as the current settings would draw it, blank
 /// slots, at 50 % (smaller when it would not fit the area), with the "bigger than the screen" warning and the
 /// "pins stay hidden" note. The model is rebuilt only when a setting that shapes it changes, never per frame; the sized
-/// textures are rebuilt at the same moment (<see cref="WheelModel.Prepare"/>), as the next open does anyway.
+/// textures are rebuilt later, once per slider drag (<see cref="RebuildGate"/>, T-95), and the next open checks them anyway.
 /// A fault disables the preview for the session (<see cref="Site"/>); the rest of the page keeps working.
 /// </summary>
 internal static class LayoutPreview
@@ -28,6 +28,8 @@ internal static class LayoutPreview
 
     private static readonly Color _frameFill = new(0.07f, 0.07f, 0.07f, 0.55f);
 
+    private static readonly RebuildGate _gate = new();
+    private static long _textureKey;
     private static ModelKey _key;
     private static bool _built;
     private static WheelModel? _model;
@@ -53,6 +55,7 @@ internal static class LayoutPreview
         try
         {
             Refresh(settings);
+            UpdateTextures();
             float frameHeight = Math.Max(0f, Math.Min(SettingsPreview.Height, rect.height - NotesHeight));
             if (frameHeight <= 0f)
             {
@@ -95,6 +98,26 @@ internal static class LayoutPreview
         _model = BuildModel(key, plateHeight);
     }
 
+    /// <summary>
+    /// Rebuilds the sized textures when the gate says so (T-95: once when a slider drag ends, or after a quiet period
+    /// for stepper and shape changes), never per drag step. Until then the old textures are stretched in <see cref="DrawFrame"/>.
+    /// </summary>
+    private static void UpdateTextures()
+    {
+        if (_model == null)
+        {
+            return;
+        }
+
+        if (_gate.Observe(_textureKey, SettingsPage.ButtonSizeDragging, Environment.TickCount64))
+        {
+            Textures.EnsureSized(_model.ButtonSize, _model.RingsInUse);
+        }
+    }
+
+    private static long PackTextureKey(float buttonSize, int rings, float uiScale) =>
+        ((long)Math.Round(buttonSize * 8f) << 40) | ((long)rings << 32) | (uint)Math.Round(uiScale * 100f);
+
     private static WheelModel BuildModel(in ModelKey key, float plateHeight)
     {
         bool auto = key.Sizing == SizingMode.Auto;
@@ -129,7 +152,8 @@ internal static class LayoutPreview
 
         model.ShowEmptyHint = false;
         model.SetHubLabels(string.Empty, string.Empty);
-        model.Prepare();
+        model.Prepare(ensureTextures: false); // the textures follow the gate, see UpdateTextures
+        _textureKey = PackTextureKey(key.ButtonSize, model.RingsInUse, key.UiScale);
         return model;
     }
 
@@ -151,6 +175,8 @@ internal static class LayoutPreview
         Vec2 offset = SettingsPreview.HubOffset(_bounds, scale);
         var origin = new Vec2((area.width / 2f) + offset.X, (area.height / 2f) + offset.Y);
         var transform = new RenderTransform(default, origin, scale);
+        float built = Textures.SizedButtonSize;
+        MenuRenderer.SizedStretch = _gate.Pending && built > 0f ? _key.ButtonSize / built : 1f;
         GUI.BeginGroup(area);
         try
         {
@@ -165,6 +191,7 @@ internal static class LayoutPreview
         }
         finally
         {
+            MenuRenderer.SizedStretch = 1f;
             GUI.EndGroup();
         }
     }

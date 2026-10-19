@@ -154,12 +154,18 @@ internal static class MenuRenderer
         GUI.DrawTexture(Square(centre, drawSize), Textures.Mask(id));
     }
 
+    /// <summary>
+    /// Extra scale of size-dependent textures, 1 everywhere except inside the settings preview while a rebuild is pending
+    /// (T-95: the old textures are stretched to the slider value). The preview sets it and resets it in a finally.
+    /// </summary>
+    internal static float SizedStretch = 1f;
+
     /// <summary>A size-dependent texture centred on <paramref name="centre"/>, scaled; nothing when it is missing.</summary>
     internal static void DrawSized(in SizedTexture texture, Vec2 centre, float scale)
     {
         if (texture.Texture != null)
         {
-            GUI.DrawTexture(Square(centre, texture.DrawSize * scale), texture.Texture);
+            GUI.DrawTexture(Square(centre, texture.DrawSize * scale * SizedStretch), texture.Texture);
         }
     }
 

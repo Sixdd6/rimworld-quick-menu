@@ -518,9 +518,25 @@ internal static class SettingsPage
         _missingCheckedFrame = -1000;
     }
 
+    private static bool _sliderPressed;
+
+    /// <summary>True from a mouse press on the button-size slider until the button is released (T-95: the preview rebuilds textures when this ends).</summary>
+    internal static bool ButtonSizeDragging => _sliderPressed;
+
     private static void DrawButtonSize(Listing_Standard listing, QuickMenuSettings settings)
     {
         Rect row = listing.GetRect(RowHeight);
+        var sliderRect = new Rect(row.x + _rightLabelWidth, row.y, row.width - _rightLabelWidth, row.height);
+        Event current = Event.current;
+        if (current.type == EventType.MouseDown && current.button == 0 && sliderRect.Contains(current.mousePosition))
+        {
+            _sliderPressed = true; // read before the slider uses the event
+        }
+        else if (_sliderPressed && !Input.GetMouseButton(0))
+        {
+            _sliderPressed = false;
+        }
+
         if (settings.ButtonSize != _sizeFor)
         {
             _sizeFor = settings.ButtonSize;
@@ -529,7 +545,7 @@ internal static class SettingsPage
 
         RowLabel(row, _rightLabelWidth, _sizeText);
         float value = Widgets.HorizontalSlider(
-            new Rect(row.x + _rightLabelWidth, row.y, row.width - _rightLabelWidth, row.height),
+            sliderRect,
             settings.ButtonSize,
             LayoutConstants.MinButtonSize,
             LayoutConstants.MaxButtonSize,

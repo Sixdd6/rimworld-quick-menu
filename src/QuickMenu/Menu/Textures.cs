@@ -83,6 +83,15 @@ internal static class Textures
     private static byte[] _scratch = new byte[MaskSet.MaxByteCount];
     private static byte[] _rgba = new byte[MaskSet.MaxByteCount * 4];
     private static TextureSizing? _sizing;
+
+    /// <summary>Button size the sized textures were built for, 0 before the first build (the settings preview stretches them to the slider value meanwhile).</summary>
+    internal static float SizedButtonSize => _sizing?.ButtonSize ?? 0f;
+
+    /// <summary>Sized-texture rebuilds this session (T-95: at most one per slider drag), for the perf report.</summary>
+    internal static int SizedRebuilds { get; private set; }
+
+    /// <summary>Milliseconds the latest sized-texture rebuild took, with upload.</summary>
+    internal static double LastSizedRebuildMs { get; private set; }
     private static int _live;
     private static long _uploadTicks;
     private static SizedTexture _slotRing1;
@@ -258,9 +267,11 @@ internal static class Textures
 
             _sizing = next;
             ReleaseLargeBuffer();
+            SizedRebuilds++;
+            LastSizedRebuildMs = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
             if (Prefs.DevMode)
             {
-                Log.Info($"Textures rebuilt ({groups}) B={buttonSize} rings={ringsInUse} UI scale={next.UiScale} rim={next.Rim.TextureSize}px in {Stopwatch.GetElapsedTime(start).TotalMilliseconds:F2} ms (with upload; texture create + SetPixelData + Apply = {_uploadTicks * 1000.0 / Stopwatch.Frequency:F2} ms)");
+                Log.Info($"Textures rebuilt ({groups}) B={buttonSize} rings={ringsInUse} UI scale={next.UiScale} rim={next.Rim.TextureSize}px in {LastSizedRebuildMs:F2} ms (with upload; texture create + SetPixelData + Apply = {_uploadTicks * 1000.0 / Stopwatch.Frequency:F2} ms)");
             }
         }
         catch (Exception ex)
