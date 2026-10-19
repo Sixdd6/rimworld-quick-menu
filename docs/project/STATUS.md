@@ -4,7 +4,7 @@
 - **Autonomy**: gated   <!-- gated | autonomous -->
 - **Specialists**: visual-designer (all-UI product), performance-engineer (NFR-1 per-frame budget)
 - **Current phase**: 5 Build
-- **Current milestone / task**: M2 — build done; UC-2 session (T-33)
+- **Current milestone / task**: M2 done — awaiting approval to start M3
 - **Last updated**: 2026-10-19
 
 ## Phases
@@ -41,3 +41,4 @@ States: `not started` → `in progress` → `awaiting approval` → `done` (or `
 - 2026-10-19 — Plan approved: 6 milestones, 80 tasks, 6 user in-game sessions (UC-1..UC-6). Release version 0.9.0.
 - 2026-10-19 — M1 done: walking skeleton + spikes S-1..S-7 all passed in UC-1 (vanilla + BAM); perf baseline within 50% budgets (P-9 first-frame re-based to 128 KB per open by user decision); security audit PASS (fixes applied); 322 tests, Core 99.4%.
 - 2026-10-19 — M1 approved by user; M2 started.
+- 2026-10-19 — M2 done: pin by click (vanilla + BAM, dropdowns and entries), styled wheel, binding + settings page, persistence; UC-2 + UC-2b passed. User decisions: picker removed (FR-7 Won't), centre = Edit button, Ctrl+click unpins on the wheel, unavailable pins always shown greyed, no hover delay, keep vanilla tooltip.

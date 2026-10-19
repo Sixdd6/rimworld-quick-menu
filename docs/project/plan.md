@@ -488,7 +488,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-2 (user)
   - **Size**: M
 
-- [ ] **T-33**: UC-2 checklist, session guide and run
+- [x] **T-33**: UC-2 checklist, session guide and run
   - **Owner**: test-engineer
   - **Requirements**: FR-1, FR-3, FR-6, FR-8, FR-13, FR-15, FR-17, NFR-2, NFR-5
   - **Depends on**: T-26, T-27, T-28, T-29, T-30, T-31, T-32
@@ -500,7 +500,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-2 (user)
   - **Size**: S
 
-- [ ] **T-34**: M2 visual review · `parallel-ok`
+- [x] **T-34**: M2 visual review · `parallel-ok`
   - **Owner**: visual-designer
   - **Requirements**: NFR-5, NFR-7
   - **Depends on**: T-33
@@ -528,7 +528,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-2b (user)
   - **Size**: M
 
-- [ ] **T-82**: UC-2b follow-up in-game check: guide and run
+- [x] **T-82**: UC-2b follow-up in-game check: guide and run
   - **Owner**: test-engineer (visual-designer checks the screenshot; performance-engineer reads the perf blocks in T-35)
   - **Requirements**: FR-9 (centre Edit button, modifier+click unpin), FR-14 (greyed, never empty), FR-15, NFR-1 (P-9, P-16, P-18, texture rebuild), NFR-5
   - **Depends on**: T-81 (and the T-35 instrumentation changes already in the tree: settings breakdown, `Textures.Prewarm`, P-9 sub-buckets)
@@ -550,7 +550,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
     10. Copy every `[QuickMenu] BEGIN … END` block and send it back with the screenshots.
   - **Size**: S
 
-- [ ] **T-35**: M2 performance record and the UC-2 follow-up fixes · `parallel-ok`
+- [x] **T-35**: M2 performance record and the UC-2 follow-up fixes · `parallel-ok`
   - **Owner**: performance-engineer
   - **Requirements**: NFR-1 (P-1, P-2, P-5, P-6, P-7a, P-8, P-9 with control run, P-16, P-18, texture rebuild)
   - **Depends on**: T-33, T-82
