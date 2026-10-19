@@ -55,7 +55,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Tests**: the CI run itself; `git ls-files | grep -E 'reference/|0Harmony|Assemblies/.*dll'` is empty.
   - **Size**: S
 
-- [ ] **T-2**: Core geometry, ring capacity and Fixed wheel layout · `parallel-ok`
+- [x] **T-2**: Core geometry, ring capacity and Fixed wheel layout · `parallel-ok`
   - **Owner**: developer
   - **Requirements**: FR-4, FR-6, NFR-8 (design.md §1.1)
   - **Depends on**: —
@@ -68,7 +68,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Tests**: unit `RingCapacityTests`, `WheelLayoutTests` (worked defaults, property test over all B and rings).
   - **Size**: M
 
-- [ ] **T-3**: Core `PinKey` grammar, format and parse · `parallel-ok`
+- [x] **T-3**: Core `PinKey` grammar, format and parse · `parallel-ok`
   - **Owner**: developer
   - **Requirements**: FR-10, FR-15, FR-17, NFR-8 (ADR 0004)
   - **Depends on**: —
@@ -80,7 +80,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Tests**: unit `PinKeyTests` (round-trip table, sorting, malformed inputs, characters `|`, `\`, `,`, `~`, `@` in def or type names).
   - **Size**: M
 
-- [ ] **T-4**: Core `MaskRasterizer` v0 and PNG export (for spike S-7) · `parallel-ok`
+- [x] **T-4**: Core `MaskRasterizer` v0 and PNG export (for spike S-7) · `parallel-ok`
   - **Owner**: visual-designer
   - **Requirements**: NFR-7 (own assets), NFR-8 (design.md §3, §6; ADR 0007)
   - **Depends on**: —
@@ -94,14 +94,14 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Tests**: unit `MaskRasterizerTests` (pixel checks), `PngWriterTests` (header, CRC, decode with `System.IO.Compression` round-trip).
   - **Size**: M
 
-- [ ] **T-5**: Adapter foundation: LogOnce, PatchGuard, Harmony bootstrap, skeleton trigger poller
+- [x] **T-5**: Adapter foundation: LogOnce, PatchGuard, Harmony bootstrap, skeleton trigger poller
   - **Owner**: developer
   - **Requirements**: FR-1 (skeleton), NFR-1, NFR-3, NFR-6 (ADR 0001, 0003)
   - **Depends on**: —
   - **Files**: `src/QuickMenu/QuickMenuMod.cs`, `src/QuickMenu/Diagnostics/{Log,PatchGuard}.cs`, `src/QuickMenu/Trigger/TriggerPoller.cs`, `src/QuickMenu/Diagnostics/Spike/SkeletonTrigger.cs`, `mod/Languages/English/Keyed/QuickMenu.Debug.xml`
   - **Acceptance criteria**:
     - [ ] Given the mod ctor, when it runs, then Harmony id `sixdd.QuickMenu` applies the postfix on `RimWorld.UIRoot_Play.UIRootUpdate` inside try/catch, and a failure is logged once with `[QuickMenu]` and does not stop loading.
-    - [ ] Given `PatchGuard.Run(site, body)`, when the body throws, then the error is logged once per site, the site is disabled for the session, and later calls return without running the body (unit-testable part kept in the adapter, verified in game by T-72).
+    - [ ] Given a `PatchSite` guarding a patch body (`if (site.Disabled) return; try {…} catch (e) { site.Fail(e); }`, or `PatchGuard.Run(site, body)` on non-hot paths), when the body throws, then the error is logged once per site, the site is disabled for the session, and later calls return without running the body (unit-testable part kept in the adapter, verified in game by T-72).
     - [ ] Given the skeleton trigger (Mouse index 3; debug action "Quick Menu: cycle skeleton trigger" switches Mouse 4 / Mouse 5 / Middle), when the button is pressed on a colony map with no modal window and not in world view, then `MenuController.Open` is called once; otherwise nothing happens. The postfix body does no allocation (early return, one `Input` call).
     - [ ] *(UC-1)* Given setup (a), when the game loads, then the log shows no `[QuickMenu]` errors and the mod appears in the mod list.
   - **Tests**: build; in-game UC-1 (load, trigger).

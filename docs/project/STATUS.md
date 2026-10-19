@@ -4,8 +4,8 @@
 - **Autonomy**: gated   <!-- gated | autonomous -->
 - **Specialists**: visual-designer (all-UI product), performance-engineer (NFR-1 per-frame budget)
 - **Current phase**: 5 Build
-- **Current milestone / task**: M1 — T-1
-- **Last updated**: 2026-10-18
+- **Current milestone / task**: M1 — wave 2 (T-6, T-8, T-11, T-12)
+- **Last updated**: 2026-10-19
 
 ## Phases
 
