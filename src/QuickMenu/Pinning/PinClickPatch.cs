@@ -128,7 +128,7 @@ internal static class PinClickPatch
         }
     }
 
-    private static void Toggle(Designator designator)
+    internal static void Toggle(Designator designator)
     {
         if (DesignatorCatalog.Find(designator) is { } entry)
         {
