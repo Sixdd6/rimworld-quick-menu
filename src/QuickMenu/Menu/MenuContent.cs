@@ -27,11 +27,12 @@ internal sealed class MenuContent
 {
     private readonly string?[] _tips;
     private readonly string?[] _reasons;
+    private readonly bool[] _notOffered;
     private readonly string?[] _editTips;
     private string? _editTip;
     private string? _doneTip;
 
-    private MenuContent(WheelModel model, Designator?[] designators, PinEntry?[] pins)
+    private MenuContent(WheelModel model, Designator?[] designators, PinEntry?[] pins, bool[] notOffered)
     {
         Model = model;
         Designators = designators;
@@ -41,6 +42,7 @@ internal sealed class MenuContent
         StuffSets = new StuffOptionSet[designators.Length];
         _tips = new string?[designators.Length];
         _reasons = new string?[designators.Length];
+        _notOffered = notOffered;
         _editTips = new string?[designators.Length];
         BoardIndex = new int[designators.Length];
         System.Array.Fill(BoardIndex, -1);
@@ -106,6 +108,7 @@ internal sealed class MenuContent
 
         var designators = new Designator?[slots.Length];
         var pinsBySlot = new PinEntry?[slots.Length];
+        var notOffered = new bool[slots.Length];
         var materialPending = new System.Collections.Generic.List<(int Slot, Designator Target)>();
         for (int i = 0; i < slots.Length && i < pins.Count; i++)
         {
@@ -129,6 +132,7 @@ internal sealed class MenuContent
 
             Designator d = entry.Designator;
             designators[i] = d;
+            notOffered[i] = entry.ForcedUnavailable;
             bool usable = !entry.ForcedUnavailable && IsUsable(d);
             model.SetSlot(i, d, usable ? SlotKind.Normal : SlotKind.Disabled, entry.Label);
             materialPending.Add((i, d));
@@ -136,7 +140,7 @@ internal sealed class MenuContent
 
         model.SetHubLabels("QuickMenu.Menu.Edit".Translate(), "QuickMenu.Menu.Done".Translate());
         model.Prepare();
-        var content = new MenuContent(model, designators, pinsBySlot);
+        var content = new MenuContent(model, designators, pinsBySlot, notOffered);
         for (int i = 0; i < slots.Length && i < pins.Count; i++)
         {
             content.BoardIndex[i] = pins[i].Index;
@@ -279,7 +283,7 @@ internal sealed class MenuContent
             return null;
         }
 
-        return _reasons[slot] ??= UnavailableReasons.For(d);
+        return _reasons[slot] ??= AvailabilityResolver.ReasonFor(d, _notOffered[slot]);
     }
 
     /// <summary>

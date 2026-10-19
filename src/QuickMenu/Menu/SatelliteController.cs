@@ -94,7 +94,7 @@ internal sealed class RingContent
             return null;
         }
 
-        return _reasons[slot] ??= d == null ? "QuickMenu.Menu.Unavailable".Translate().Resolve() : UnavailableReasons.For(d);
+        return _reasons[slot] ??= d == null ? "QuickMenu.Menu.Unavailable".Translate().Resolve() : AvailabilityResolver.ReasonFor(d);
     }
 
     /// <summary>Tooltip of a sub-ring option (the designator's own text); null for material options (the plate names them).</summary>

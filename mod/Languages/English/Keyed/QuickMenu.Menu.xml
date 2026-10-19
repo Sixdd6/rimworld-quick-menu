@@ -29,5 +29,13 @@
   <QuickMenu.Menu.ReasonResearch>Requires research: {0}.</QuickMenu.Menu.ReasonResearch>
   <QuickMenu.Menu.ReasonBuildings>Requires a building: {0}.</QuickMenu.Menu.ReasonBuildings>
   <QuickMenu.Menu.ReasonTechMin>Requires a higher tech level ({0}).</QuickMenu.Menu.ReasonTechMin>
+  <QuickMenu.Menu.ReasonMonolith>Requires the monolith to reach level {0}.</QuickMenu.Menu.ReasonMonolith>
+  <QuickMenu.Menu.ReasonGravEngine>Requires the grav engine to be inspected.</QuickMenu.Menu.ReasonGravEngine>
+  <QuickMenu.Menu.ReasonMeme>Requires an ideoligion with the {0} meme.</QuickMenu.Menu.ReasonMeme>
+  <QuickMenu.Menu.ReasonPrecept>Requires an ideoligion precept that allows it.</QuickMenu.Menu.ReasonPrecept>
+  <QuickMenu.Menu.ReasonMechanitor>Requires a mechanitor in the colony.</QuickMenu.Menu.ReasonMechanitor>
+  <QuickMenu.Menu.ReasonDifficulty>Turned off by the difficulty settings.</QuickMenu.Menu.ReasonDifficulty>
+  <QuickMenu.Menu.ReasonPlaceWorker>Its placement requirements are not met.</QuickMenu.Menu.ReasonPlaceWorker>
+  <QuickMenu.Menu.ReasonDiscovery>Requires discovering {0} first.</QuickMenu.Menu.ReasonDiscovery>
   <QuickMenu.Menu.ReasonTechMax>Not available above the {0} tech level.</QuickMenu.Menu.ReasonTechMax>
 </LanguageData>
