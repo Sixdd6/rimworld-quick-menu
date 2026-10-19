@@ -2,7 +2,7 @@ using System;
 
 namespace QuickMenu.Core.Render;
 
-/// <summary>The shape masks of design.md §6, in generation order.</summary>
+/// <summary>The shape masks, badges and hub icons of design.md §6, in generation order.</summary>
 public enum MaskId
 {
     /// <summary>Filled circle, 256 px: slot fill, hub.</summary>
@@ -31,6 +31,27 @@ public enum MaskId
 
     /// <summary>9-slice filled rounded rect, 16 px atlas, radius 3, slice border 4: label, hint and help plates.</summary>
     Plate,
+
+    /// <summary>Glyph, 64 px: right triangle filling the top-right corner; sub-menu badge at 1:30 (design.md S4 state 12).</summary>
+    SubMenuBadge,
+
+    /// <summary>Glyph, 64 px: triangle pointing right; insert-cursor caret at 10:30 (S4 state 10).</summary>
+    Caret,
+
+    /// <summary>Glyph, 64 px: padlock (body + shackle); greyed-slot badge at 7:30 (S4 state 5).</summary>
+    Lock,
+
+    /// <summary>Glyph, 64 px: ×, the hub's Close main area in use mode (S4a).</summary>
+    IconClose,
+
+    /// <summary>Glyph, 64 px: pencil, tip bottom-left, the hub's Edit sub-button (S4a).</summary>
+    IconEdit,
+
+    /// <summary>Glyph, 64 px: check mark, the hub's Done main area in edit mode (S4a).</summary>
+    IconDone,
+
+    /// <summary>Glyph, 64 px: plus, the hub's Add sub-button in edit mode (S4a) and the edit-mode empty slot (S4 state 7).</summary>
+    IconAdd,
 }
 
 /// <summary>
@@ -43,7 +64,7 @@ public enum MaskId
 /// <param name="Height">Height in pixels.</param>
 /// <param name="SliceBorder">9-slice border in pixels (texels = UI px when drawn by <c>DrawAtlas</c>), or 0.</param>
 /// <param name="CornerRadius">Corner radius in pixels for rounded rects, else 0.</param>
-/// <param name="Stroke">Stroke width in pixels for rings and outlines, else 0.</param>
+/// <param name="Stroke">Stroke width in pixels for rings, outlines and glyph lines, else 0.</param>
 /// <param name="DashCount">Number of dashes for dashed rings, else 0.</param>
 /// <param name="DashDuty">Fraction of each dash period that is drawn, else 0.</param>
 public readonly record struct MaskSpec(
@@ -114,8 +135,11 @@ public static class MaskSet
     /// <summary>Plate corner radius (design.md §2 Radius).</summary>
     public const float PlateRadius = 3f;
 
+    /// <summary>Glyph mask size (<see cref="Glyphs.GridSize"/>).</summary>
+    public const int GlyphSize = Glyphs.GridSize;
+
     /// <summary>Number of masks in the set.</summary>
-    public const int Count = 9;
+    public const int Count = 16;
 
     /// <summary>Largest <see cref="MaskSpec.ByteCount"/> in the set: one buffer of this size fits every mask.</summary>
     public const int MaxByteCount = RoundSize * RoundSize;
@@ -131,6 +155,13 @@ public static class MaskSet
         new(MaskId.Panel, "Panel", PanelAtlas, PanelAtlas, PanelAtlas / 4, PanelRadius, 0f, 0, 0f),
         new(MaskId.PanelRim, "PanelRim", PanelAtlas, PanelAtlas, PanelAtlas / 4, PanelRadius, PanelRimStroke, 0, 0f),
         new(MaskId.Plate, "Plate", PlateAtlas, PlateAtlas, PlateAtlas / 4, PlateRadius, 0f, 0, 0f),
+        new(MaskId.SubMenuBadge, "SubMenuBadge", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
+        new(MaskId.Caret, "Caret", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
+        new(MaskId.Lock, "Lock", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
+        new(MaskId.IconClose, "IconClose", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
+        new(MaskId.IconEdit, "IconEdit", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
+        new(MaskId.IconDone, "IconDone", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
+        new(MaskId.IconAdd, "IconAdd", GlyphSize, GlyphSize, 0, 0f, Glyphs.Stroke, 0, 0f),
     ];
 
     /// <summary>Size and parameters of <paramref name="id"/>. Does not allocate.</summary>
@@ -178,8 +209,12 @@ public static class MaskSet
             case MaskId.PanelRim:
                 MaskRasterizer.RoundedRectRing(s.Width, s.Height, s.CornerRadius, s.Stroke, destination);
                 break;
-            default: // Panel, Plate
+            case MaskId.Panel:
+            case MaskId.Plate:
                 MaskRasterizer.RoundedRect(s.Width, s.Height, s.CornerRadius, destination);
+                break;
+            default: // SubMenuBadge … IconAdd
+                Glyphs.Render(id, s.Width, destination);
                 break;
         }
     }

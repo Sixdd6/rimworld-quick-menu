@@ -14,9 +14,13 @@ public class MaskSetTests
     // ---- Catalogue --------------------------------------------------------------------------------
 
     [Fact]
-    public void Set_ListsTheNineShapeMasksOfDesignSection6_InOrder()
+    public void Set_ListsTheShapeMasksBadgesAndIconsOfDesignSection6_InOrder()
     {
-        string[] expected = ["Circle", "Disc", "Ring1", "Ring2", "Ring3", "RingDashed", "Panel", "PanelRim", "Plate"];
+        string[] expected =
+        [
+            "Circle", "Disc", "Ring1", "Ring2", "Ring3", "RingDashed", "Panel", "PanelRim", "Plate",
+            "SubMenuBadge", "Caret", "Lock", "IconClose", "IconEdit", "IconDone", "IconAdd",
+        ];
 
         Assert.Equal(MaskSet.Count, expected.Length);
         Assert.Equal(expected.Length, Enum.GetValues<MaskId>().Length);
@@ -38,6 +42,13 @@ public class MaskSetTests
     [InlineData(MaskId.Panel, 64, 16)]
     [InlineData(MaskId.PanelRim, 64, 16)]
     [InlineData(MaskId.Plate, 16, 4)]
+    [InlineData(MaskId.SubMenuBadge, 64, 0)]
+    [InlineData(MaskId.Caret, 64, 0)]
+    [InlineData(MaskId.Lock, 64, 0)]
+    [InlineData(MaskId.IconClose, 64, 0)]
+    [InlineData(MaskId.IconEdit, 64, 0)]
+    [InlineData(MaskId.IconDone, 64, 0)]
+    [InlineData(MaskId.IconAdd, 64, 0)]
     public void Spec_HasDocumentedSizeAndSliceBorder(MaskId id, int size, int sliceBorder)
     {
         MaskSpec spec = MaskSet.Spec(id);
