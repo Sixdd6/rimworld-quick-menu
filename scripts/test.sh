@@ -7,6 +7,9 @@ cd "$REPO_ROOT"
 config="Release"; [ "${1:-}" = "-c" ] && config="${2:-Release}"
 min="${MIN_COVERAGE:-90}"
 
+# NFR-4: Keyed strings and key usage (fast).
+scripts/check-strings.sh
+
 # FR-17: nothing is written into save files. No saved component or Def-like class may exist in src/, and nothing may
 # implement saving outside src/QuickMenu/Settings/ (the mod settings are the only state). Comment lines are ignored.
 # SRC_DIR can be overridden to test the check itself against synthetic sources.

@@ -79,7 +79,7 @@ internal static class PerfCounters
         new("control window per frame (DoWindowContents)", FrameRing),
         new("pin click prefix (P-3; one sample per designator ProcessInput call)", 256),
         new("  of window: hover sound call (PlayOneShotOnCamera; frames where hover changed)", 256),
-        new("  of window: TooltipHandler.TipRegion (hovered frames)", FrameRing),
+        new("  of window: TooltipHandler.TipRegion (hovered frames)", FrameRing), // strings-ok: dev-mode perf label
         new("  of window: label plate (DrawAtlas + Widgets.Label; frames with a plate)", FrameRing),
         new("rebuilding the wheel after an unpin (one sample per rebuild)", 256),
         new("  P-8 by layout: wheel (main wheel on screen)", FrameRing),

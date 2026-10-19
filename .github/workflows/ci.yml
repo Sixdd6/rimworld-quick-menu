@@ -31,6 +31,9 @@ jobs:
           cache: true
           cache-dependency-path: "**/packages.lock.json"
 
+      - name: Keyed-string and key-usage check (NFR-4)
+        run: scripts/check-strings.sh
+
       # Game refs come from the Krafs.Rimworld.Ref NuGet package: no game files needed.
       - name: Restore (locked)
         run: dotnet restore QuickMenu.slnx --locked-mode

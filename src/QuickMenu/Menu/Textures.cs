@@ -356,7 +356,7 @@ internal static class Textures
         Texture2D? texture = null;
         try
         {
-            texture = new Texture2D(1, 2, TextureFormat.RGBA32, false) { name = "QuickMenu.SelfTestProbe" };
+            texture = new Texture2D(1, 2, TextureFormat.RGBA32, false) { name = "QuickMenu.SelfTestProbe" }; // strings-ok: object name, not a Keyed key
             byte[] data = [10, 20, 30, 40, 50, 60, 70, 80];
             texture.SetPixelData(data, 0, 0);
             texture.Apply(false, false);
