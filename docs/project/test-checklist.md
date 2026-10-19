@@ -329,3 +329,12 @@ e.11. Host: save the game (Multiplayer save). Search the save file for the mod: 
 e.12. Copy from both clients: the `[QuickMenu]` lines of the log and any Multiplayer desync or sync-error lines that mention `QuickMenu`, `Designator_Build` or `DesignatorManager`.
 
 **Pass**: e.4 to e.9 show identical blueprints and designations on both clients, no desync, no `[QuickMenu]` error, and e.11 gives 0. **Fail**: any desync or mismatch traced to a menu action becomes a bug task. A desync that also happens when the same thing is placed through the plain architect is a Multiplayer issue, not an FR-18 failure.
+
+## FR-8 Pinning only in the architect menu (added 2026-10-19)
+
+- Setup: any colony, vanilla architect, and also with Better Architect Menu if installed.
+- f.1. Close the Architect tab. Select a pawn or a built thing, then hold the pin modifier and click a command-bar designator (including the Copy and Build gizmos).
+- Expected: it activates normally and nothing is pinned (no "pinned" message or sound, the pin list is unchanged).
+- f.2. Open the Architect tab (vanilla, then Better Architect Menu, then with Dubs Mint Menus active both its build grid and its wheel; the default modifier is Alt there) and modifier+click a building, an order and a dropdown entry.
+- Expected: each one pins or unpins and does not activate.
+- f.3. With Mint active, close all of these and use Mint's always-visible designator bars (if enabled in its settings): modifier+click does not pin there (known gap, bars are not detected).

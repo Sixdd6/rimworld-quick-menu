@@ -93,7 +93,7 @@ internal static class PinClickPatch
             }
 
             // Only architect designators pin: a command-bar designator (for example Designator_MechControlGroup) behaves normally.
-            if (!IsArchitectDesignator(__instance))
+            if (!IsArchitectTabOpen() || !IsArchitectDesignator(__instance))
             {
                 return true;
             }
@@ -111,6 +111,49 @@ internal static class PinClickPatch
             Site.Fail(ex);
             return true;
         }
+    }
+
+    private static Type? _mintArchitectWindow;
+    private static Type? _mintWheelWindow;
+    private static bool _mintTypesResolved;
+
+    /// <summary>
+    /// True while an architect menu is open: the vanilla Architect main tab, or (with Dubs Mint Menus active) one of its two
+    /// architect windows. Better Architect Menu draws inside the vanilla tab (it patches <c>ArchitectCategoryTab.DesignationTabOnGUI</c>
+    /// and reads <c>MainButtonDefOf.Architect.TabWindow</c>), so it is covered by the vanilla check. Mint swaps the tab for its own
+    /// <c>MainTabWindow</c> subclasses (the build grid and the wheel), found by type name once and compared by reference after.
+    /// Pinning is limited to these menus (user rule 2026-10-19). Allocation-free.
+    /// </summary>
+    internal static bool IsArchitectTabOpen()
+    {
+        WindowStack stack = Find.WindowStack;
+        if (Find.MainTabsRoot.OpenTab == MainButtonDefOf.Architect)
+        {
+            return true;
+        }
+
+        if (!Compat.ModDetection.Mint)
+        {
+            return false;
+        }
+
+        if (!_mintTypesResolved)
+        {
+            _mintTypesResolved = true;
+            _mintArchitectWindow = AccessTools.TypeByName("DubsMintMenus.MainTabWindow_MintArchitect");
+            _mintWheelWindow = AccessTools.TypeByName("DubsMintMenus.MainTabWindow_MayaMenu");
+        }
+
+        for (int i = 0; i < stack.Count; i++)
+        {
+            Type type = stack[i].GetType();
+            if ((_mintArchitectWindow != null && type == _mintArchitectWindow) || (_mintWheelWindow != null && type == _mintWheelWindow))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>

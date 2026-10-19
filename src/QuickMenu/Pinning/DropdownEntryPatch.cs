@@ -76,7 +76,7 @@ internal static class DropdownEntryPatch
                 bool pin = false;
                 try
                 {
-                    pin = IsPinGesture() && PinClickPatch.IsArchitectDesignator(_entry);
+                    pin = IsPinGesture() && PinClickPatch.IsArchitectTabOpen() && PinClickPatch.IsArchitectDesignator(_entry);
                     if (pin)
                     {
                         PinClickPatch.Toggle(_entry);

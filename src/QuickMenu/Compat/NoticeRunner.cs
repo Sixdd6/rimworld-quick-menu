@@ -62,10 +62,11 @@ internal static class NoticeRunner
     /// <summary>True while a pausing or input-absorbing window (a dialog, the options screen) is open; the notice waits for it. Plain loop, runs only until the notice is shown.</summary>
     private static bool BlockedByWindow()
     {
-        IList<Window> windows = Find.WindowStack.Windows;
-        for (int i = 0; i < windows.Count; i++)
+        WindowStack stack = Find.WindowStack;
+        for (int i = 0; i < stack.Count; i++)
         {
-            if (windows[i].forcePause || windows[i].absorbInputAroundWindow)
+            Window window = stack[i];
+            if (window.forcePause || window.absorbInputAroundWindow)
             {
                 return true;
             }
