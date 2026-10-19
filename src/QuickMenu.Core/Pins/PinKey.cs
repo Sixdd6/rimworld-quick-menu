@@ -13,7 +13,7 @@ namespace QuickMenu.Core.Pins;
 /// </summary>
 public sealed class PinKey : IEquatable<PinKey>
 {
-    private const char _escape = '\\';
+    private const char Escape = '\\';
     private static readonly SearchValues<char> _specials = SearchValues.Create("\\,~@#|");
 
     private PinKey(
@@ -250,7 +250,7 @@ public sealed class PinKey : IEquatable<PinKey>
     {
         for (int i = 0; i < s.Length; i++)
         {
-            if (s[i] == _escape)
+            if (s[i] == Escape)
             {
                 i++;
             }
@@ -280,7 +280,7 @@ public sealed class PinKey : IEquatable<PinKey>
         {
             if (_specials.Contains(c))
             {
-                sb.Append(_escape);
+                sb.Append(Escape);
             }
 
             sb.Append(c);
@@ -302,7 +302,7 @@ public sealed class PinKey : IEquatable<PinKey>
         for (int i = 0; i < s.Length; i++)
         {
             char c = s[i];
-            if (c == _escape)
+            if (c == Escape)
             {
                 if (++i >= s.Length || !_specials.Contains(s[i]))
                 {
