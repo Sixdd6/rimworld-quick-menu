@@ -418,6 +418,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
     - [ ] Given startup, then every mask is uploaded once at the level chosen in T-14 (bilinear, no mipmaps, clamp), and rebuilt only when button size or UI scale changes (≤ 5 ms), never per frame.
     - [ ] Given `QMStyle`, then every colour token of design.md §2 exists with its exact value, and `danger` uses `ColorLibrary.RedReadable` only under the stated 3:1 rule. No drawing code uses colour literals.
     - [ ] If the PNG level was chosen: the PNGs are exported by our rasterizer, committed, and each has an assets.md row (MIT, made by the project).
+    - [ ] Given badges drawn at 0.18–0.25 B (≈ 8–14 px at B 36–56) and hub icons at 0.22 B / 0.6 e, then badge and hub-icon glyphs are rasterized at their actual draw size in screen px (`Glyphs.MinSize` lowered to 8, with tests) and rebuilt with the disc rim on button-size or UI-scale change within the ≤ 5 ms budget; a 64 px glyph is not minified without mipmaps (T-23 review).
   - **Tests**: build; in-game UC-2 visual review.
   - **In-game check**: UC-2 (user)
   - **Size**: S

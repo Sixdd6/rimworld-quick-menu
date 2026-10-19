@@ -132,8 +132,36 @@ public class GlyphsTests
         Assert.InRange(bar, 11.5, 12.5);
     }
 
+    [Fact]
+    public void Glyph_RendersAtBadgeSizes_DownToMinSize()
+    {
+        // Badges are drawn at 0.18–0.25 B (≈ 7–14 px at B = 36–56) and rasterized at that size (T-28).
+        for (int size = Glyphs.MinSize; size <= 14; size++)
+        {
+            for (MaskId id = MaskId.SubMenuBadge; id <= MaskId.IconAdd; id++)
+            {
+                byte[] m = Glyphs.Render(id, size);
+                double ink = 0;
+                foreach (byte a in m)
+                {
+                    ink += a / 255.0;
+                }
+
+                // Ink scales with the area: the same share of the box as at 64 px, within a loose band.
+                double ink64 = 0;
+                foreach (byte a in Glyphs.Render(id, 64))
+                {
+                    ink64 += a / 255.0;
+                }
+
+                double expected = ink64 * size * size / (64.0 * 64.0);
+                Assert.InRange(ink, expected * 0.75, (expected * 1.25) + 1.0);
+            }
+        }
+    }
+
     [Theory]
-    [InlineData(15)]
+    [InlineData(Glyphs.MinSize - 1)]
     [InlineData(0)]
     [InlineData(-64)]
     public void Glyph_RejectsTooSmallSize(int size)

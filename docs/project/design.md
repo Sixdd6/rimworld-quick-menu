@@ -295,7 +295,7 @@ The game's UI is dark only, so there is one theme. Tokens live in one adapter cl
 | `emptyBorder` | — | `#8A96A0` | Empty, dashed and reserved slots | ≥ 3:1 vs empty fill over dark ground |
 | `text` | — | `#FFFFFF` | Labels, plates | 15.8:1 vs slotBg; 12.6:1 on plate over snow |
 | `textMuted` | — | `#A7B0B8` | Secondary text, lock badge, headers | 7.2:1 vs slotBg; 5.7:1 on plate over snow |
-| `danger` | — | `#FF7A70`, or the game's `ColorLibrary.RedReadable` if it is within 3:1 of this value | Reasons, warnings, full | 6.2:1 vs slotBg; 7.0:1 vs windowBg |
+| `danger` | — | `#FF7A70`, or the game's `ColorLibrary.RedReadable` if its luminance contrast with `#FF7A70` is at most 3:1 **and** it reaches 4.5:1 on `slotBg`, `slotBgHover` and `windowBg` (`StyleTokens.ChooseDanger`). On 1.7.4982 `RedReadable` (#FF3333) reaches only 3.4:1 on `slotBgHover`, so `#FF7A70` is used | Reasons, warnings, full | 6.2:1 vs slotBg; 7.0:1 vs windowBg |
 | `unavailableIcon` | — | `#808080` α 0.75 (multiplied into the icon) | Greyed icons | 4.0:1 vs slotBg, always paired with the lock badge |
 | `plate` | — | black α 0.80 | Label, hint and help plates | — |
 | `dimmedMenu` | — | menu α 0.45 | Main menu behind a satellite | — |
@@ -324,10 +324,10 @@ Target: **WCAG 2.2 AA** (text ≥ 4.5:1, UI parts ≥ 3:1). Every text pair pass
 ### Components
 | Component | States | Built from |
 |---|---|---|
-| Disc | normal, dimmed | `Disc` mask (gradient) + `Ring2` mask (rim) + outline rings, tinted |
+| Disc | normal, dimmed | `Disc` mask (gradient, tinted `discCentre`) + the **disc rim** texture: 2 px `accent` with 1 px `rimOutline` on each side, colours baked in, rasterized at the actual disc diameter in screen px (`Core.Render.DiscRim`) and rebuilt when B, rings in use or UI scale change. The stretched 128 px `Ring2` is not used for the rim. Dimmed: drawn with `GUI.color` α `dimmedMenu` |
 | Grid panel | normal, dimmed | 9-slice `Panel` mask drawn with `Widgets.DrawAtlas` + 9-slice `PanelRim` |
 | Hub (S4a) | Close / Done main area; Edit / Add sub-button; each normal, hover, pressed; no hover until the mouse moves 4 px | `Circle` + `Ring1/2` + `IconClose`/`IconDone` (main), `Circle` + `Ring1/2` + `IconEdit`/`IconAdd` (sub-button) |
-| Slot | S4 states 1–14 | `Circle` (fill), `Ring1/2/3` (rings), `RingDashed`, badges, `Command.DrawIcon` |
+| Slot | S4 states 1–14 | `Circle` (fill), slot rings 1/2/3 px and dashed rasterized at B in screen px (`Textures.SlotRing1/2/3/Dashed`), badges at their drawn size (`Textures.Glyph`), `Command.DrawIcon` |
 | Plate (label, hint, help) | — | 9-slice `Plate` mask |
 | Binding row + capture dialog | bound, unbound, capturing, rejected, conflict warning | vanilla buttons and a dialog |
 | Segmented control, stepper, slider | selected / unselected; disabled at the limits | vanilla buttons with an `accent` outline for the selected segment |
@@ -338,7 +338,7 @@ Target: **WCAG 2.2 AA** (text ≥ 4.5:1, UI parts ≥ 3:1). Every text pair pass
 ## 3. Art direction
 - **Style**: functional HUD. A dark translucent disc so the colony stays visible, one cyan accent, and round slots that put the game's icons first. It is "Mint-like" in feel (the user likes the reference), drawn entirely by our code with our own values: a stronger edge alpha, a dark outline on the rim, and our own accent hex. No Mint file is used, traced or converted.
 - **Palette**: §2. Icons bring their own colour.
-- **Resolution/scale**: all our shapes are **white or grayscale alpha masks**, tinted with `GUI.color` at draw time, so one mask serves every state. Circles and rings are made by an anti-aliased distance-field rasterizer at mask size **256 px** (rings: stroke widths authored for 256 px, per ring width; see §6). The icons are drawn on a 64 px grid with a 4 px margin and 6 px strokes. Glyph shapes (`Core.Render.Glyphs`, T-23): `SubMenuBadge` is a right triangle filling the top-right corner (hypotenuse top-left to bottom-right); `Caret` is a triangle pointing right; `Lock` is a rounded body with a 6 px shackle; `IconClose` ×, `IconDone` ✓ (short arm left, vertex low) and `IconAdd` + are round-capped 6 px strokes; `IconEdit` is a filled pencil with its tip at the bottom left. The material dot (4:30) uses the `Circle` mask, and the edit-mode empty slot reuses `IconAdd`. Badge outlines (`rimOutline`) are drawn as the same mask tinted dark, 1 px larger, under the tinted mask.
+- **Resolution/scale**: all our shapes are **white or grayscale alpha masks**, tinted with `GUI.color` at draw time, so one mask serves every state. The one exception is the disc rim, whose `accent` and `rimOutline` colours are baked into one RGBA texture (drawn untinted; α still dims it). Circles and rings are made by an anti-aliased distance-field rasterizer at mask size **256 px** (rings: stroke widths authored for 256 px, per ring width; see §6). The icons are authored on a 64 px grid with a 4 px margin and 6 px strokes, and rasterized at their drawn size in screen px (badges 0.18–0.25 B, hub icons 0.22 B / 0.6 e). Glyph shapes (`Core.Render.Glyphs`, T-23): `SubMenuBadge` is a right triangle filling the top-right corner (hypotenuse top-left to bottom-right); `Caret` is a triangle pointing right; `Lock` is a rounded body with a 6 px shackle; `IconClose` ×, `IconDone` ✓ (short arm left, vertex low) and `IconAdd` + are round-capped 6 px strokes; `IconEdit` is a filled pencil with its tip at the bottom left. The material dot (4:30) uses the `Circle` mask, and the edit-mode empty slot reuses `IconAdd`. Badge outlines (`rimOutline`) are drawn as the same mask tinted dark, 1 px larger, under the tinted mask.
 - **No rotation at draw time**: every badge, the caret and the hub icons are rasterized in their final orientation.
 - **Animation**: none.
 
@@ -388,8 +388,8 @@ N/A, because the game's UI volume applies.
   - There are no binary files to review or keep in sync.
 - **Fallback trigger:** if spike **S-7** shows that runtime textures fail (exceptions, wrong alpha, not drawn), switch `UI.Textures` to `ContentFinder<Texture2D>.Get("QuickMenu/UI/<Name>")` and commit the exported PNGs (each gets a row in assets.md). If loose PNGs fail too, add a bake step with the game's `Waylith.AssetBake` (as Mint's `Assets.zip` suggests).
 - **Shape-specific notes:**
-  - Rings at 256 px are downsampled to B (as small as 36 px), and at small sizes the thin lines lose weight. So ring masks are rasterized with stroke widths for their typical drawn size: `Ring1/2/3` at 128 px with 2.3/4.6/6.9 px strokes (≈ 1/2/3 px at B = 56).
-  - On the runtime path, if a rebuild per (B × UIScale) is wanted, it costs ≤ 5 ms and runs only when settings or the scale change, never per frame.
+  - Rings at 256 px are downsampled to B (as small as 36 px), and at small sizes the thin lines lose weight. The static `Ring1/2/3` masks (128 px, 2.3/4.6/6.9 px strokes, ≈ 1/2/3 px only at B = 56) stay in the set, but **T-28 rasterizes the size-dependent shapes at their drawn size in screen px** (`Core.Render.TextureSizing`, `RoundTextureGeometry`): slot rings at B, hub sub-button rings at e, the disc rim at 2 D (capped at 2048 px), and the badge and hub-icon glyphs at their badge sizes (`Glyphs.MinSize` 8). A 64 px glyph minified 4–8× without mipmaps would alias, so mipmaps are not needed.
+  - The rebuild runs on open only when B, the rings in use or the UI scale changed (`TextureSizing.Changed`), never per frame; old textures are destroyed. Core rasterization of the worst case (B 96, 5 rings, UI scale 2, rim capped at 2048 px) takes about 3 ms; the dev-mode log line "Textures rebuilt … in N ms" gives the in-game time with the upload.
   - Textures use bilinear filtering, mipmaps off, clamp wrap.
 - **Spike S-7 (to add to the architecture's spike list, owner: developer with visual-designer review):**
   1. Create a `Texture2D(256, 256, RGBA32, false)` in a `[StaticConstructorOnStartup]` class, fill it with `SetPixels32`, `Apply()`, and draw it with `GUI.DrawTexture` under `GUI.color` tint at α 0.5 in a test window. Check that the alpha, tint and bilinear scaling look right at UI scale 1.0 and 2.0.

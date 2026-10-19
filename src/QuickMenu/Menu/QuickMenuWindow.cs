@@ -3,6 +3,7 @@ using QuickMenu.Catalog;
 using QuickMenu.Core.Geometry;
 using QuickMenu.Core.Layout;
 using QuickMenu.Core.Pins;
+using QuickMenu.Core.Render;
 using QuickMenu.Diagnostics;
 using QuickMenu.Skeleton;
 using RimWorld;
@@ -22,19 +23,18 @@ internal sealed class QuickMenuWindow : Window
 {
     private const float ButtonSize = 56f;
     private const float IconScale = 0.75f;
+    private const int Rings = 1;
 
     internal static readonly PatchSite DrawSite = new("QuickMenuWindow.DoWindowContents");
-
-    private static readonly Color _slotColor = new(0.12f, 0.12f, 0.12f, 0.85f);
-    private static readonly Color _slotHoverColor = new(0.30f, 0.30f, 0.30f, 0.95f);
-    private static readonly Color _hubColor = new(0f, 0f, 0f, 0.4f);
 
     private readonly int _openFrame;
     private readonly Map? _map;
     private readonly SlotPlacement[] _slots;
     private readonly Designator?[] _designators;
     private readonly int _count;
-    private readonly Rect _hubRect;
+    private readonly Rect _discRect;
+    private readonly Vector2 _centre;
+    private readonly float _circleDrawSize;
     private bool _loggedFirstDraw;
 
     internal QuickMenuWindow(int openFrame)
@@ -62,10 +62,12 @@ internal sealed class QuickMenuWindow : Window
             Log.Info($"Menu trigger frame={openFrame}");
         }
 
+        Textures.EnsureSized(ButtonSize, Rings);
+        float discRadius = LayoutConstants.DiscRadius(ButtonSize, Rings);
         Vector2 mouse = UI.MousePositionOnUIInverted;
-        float x = Mathf.Clamp(mouse.x, LayoutConstants.DiscRadius(ButtonSize, 1), UI.screenWidth - LayoutConstants.DiscRadius(ButtonSize, 1));
-        float y = Mathf.Clamp(mouse.y, LayoutConstants.DiscRadius(ButtonSize, 1), UI.screenHeight - LayoutConstants.DiscRadius(ButtonSize, 1));
-        SlotPlacement[] wheel = WheelLayout.Compute(new WheelParams(ButtonSize, 1, new Vec2(x, y)));
+        float x = Mathf.Clamp(mouse.x, discRadius, UI.screenWidth - discRadius);
+        float y = Mathf.Clamp(mouse.y, discRadius, UI.screenHeight - discRadius);
+        SlotPlacement[] wheel = WheelLayout.Compute(new WheelParams(ButtonSize, Rings, new Vec2(x, y)));
         PinKey[] pins = SkeletonPins.Create();
         _slots = wheel;
         _designators = new Designator?[wheel.Length];
@@ -76,7 +78,10 @@ internal sealed class QuickMenuWindow : Window
 
         _count = pins.Length < wheel.Length ? pins.Length : wheel.Length;
         MenuController.LastSlotCount = _count;
-        _hubRect = new Rect(x - (ButtonSize / 2f), y - (ButtonSize / 2f), ButtonSize, ButtonSize);
+        _centre = new Vector2(x, y);
+        float discDraw = RoundTextureGeometry.DrawSizeForFixedMask(2f * discRadius, MaskSet.RoundSize);
+        _discRect = new Rect(x - (discDraw / 2f), y - (discDraw / 2f), discDraw, discDraw);
+        _circleDrawSize = RoundTextureGeometry.DrawSizeForFixedMask(ButtonSize, MaskSet.RoundSize);
     }
 
     public override Vector2 InitialSize => new(UI.screenWidth, UI.screenHeight);
@@ -162,14 +167,25 @@ internal sealed class QuickMenuWindow : Window
             Color old = GUI.color;
             try
             {
-                GUI.color = _hubColor;
-                GUI.DrawTexture(_hubRect, BaseContent.WhiteTex);
+                // Skeleton look until the T-29 renderer: disc, rim, hub and slots from the T-28 textures and tokens.
+                if (Textures.Ready)
+                {
+                    GUI.color = QMStyle.DiscFill;
+                    GUI.DrawTexture(_discRect, Textures.Mask(MaskId.Disc));
+                    GUI.color = QMStyle.White;
+                    Textures.DiscRim.Draw(_centre.x, _centre.y);
+                    DrawSlotShape(_centre.x, _centre.y, hovered: false);
+                }
+
                 for (int i = 0; i < _count; i++)
                 {
-                    Rect box = SlotRect(i, 1f);
-                    GUI.color = i == hover ? _slotHoverColor : _slotColor;
-                    GUI.DrawTexture(box, BaseContent.WhiteTex);
-                    GUI.color = old;
+                    Vec2 c = _slots[i].Center;
+                    if (Textures.Ready)
+                    {
+                        DrawSlotShape(c.X, c.Y, i == hover);
+                    }
+
+                    GUI.color = QMStyle.White;
                     Designator? d = _designators[i];
                     if (d != null)
                     {
@@ -224,6 +240,14 @@ internal sealed class QuickMenuWindow : Window
         {
             Log.LogOnce("Menu.Close", $"Closing the menu failed: {ex}");
         }
+    }
+
+    private void DrawSlotShape(float cx, float cy, bool hovered)
+    {
+        GUI.color = hovered ? QMStyle.SlotBgHover : QMStyle.SlotBg;
+        GUI.DrawTexture(new Rect(cx - (_circleDrawSize / 2f), cy - (_circleDrawSize / 2f), _circleDrawSize, _circleDrawSize), Textures.Mask(MaskId.Circle));
+        GUI.color = hovered ? QMStyle.Accent : QMStyle.SlotBorder;
+        (hovered ? Textures.SlotRing2 : Textures.SlotRing1).Draw(cx, cy);
     }
 
     private Rect SlotRect(int index, float scale)

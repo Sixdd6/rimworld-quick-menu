@@ -196,7 +196,8 @@ public static class MaskRasterizer
                 double dx = x + 0.5 - c;
                 double d = Math.Sqrt((dx * dx) + (dy * dy));
                 double sd = Math.Abs(d - mid) - half;
-                if (!solid)
+                // Outside the band the coverage is 0 whatever the dash test says, so skip the Atan2 there.
+                if (!solid && sd < 0.5)
                 {
                     // Angle measured clockwise from 12 o'clock (rows go down), folded into the nearest dash centre.
                     double a = Math.Atan2(dx, -dy);

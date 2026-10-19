@@ -14,7 +14,7 @@ public enum MaskId
     /// <summary>Ring, 128 px, 2.3 px stroke (≈ 1 px at B = 56): normal and empty slot rings, disc outlines.</summary>
     Ring1,
 
-    /// <summary>Ring, 128 px, 4.6 px stroke (≈ 2 px at B = 56): disc rim, hover, target, open parent.</summary>
+    /// <summary>Ring, 128 px, 4.6 px stroke (≈ 2 px at B = 56): hover, target, open parent. Not the disc rim, which <see cref="DiscRim"/> rasterizes at the disc diameter.</summary>
     Ring2,
 
     /// <summary>Ring, 128 px, 6.9 px stroke (≈ 3 px at B = 56): insert cursor, last used.</summary>

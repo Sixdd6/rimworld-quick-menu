@@ -31,8 +31,12 @@ public static class Glyphs
     /// <summary>Stroke width of the line glyphs (×, ✓, +, lock shackle), in grid pixels.</summary>
     public const float Stroke = 6f;
 
-    /// <summary>Smallest size <see cref="Render(MaskId, int)"/> accepts (the margin is still 1 px there).</summary>
-    public const int MinSize = 16;
+    /// <summary>
+    /// Smallest size <see cref="Render(MaskId, int)"/> accepts. Badges are drawn at 0.18–0.25 B (about 7–14 px at
+    /// B = 36–56), so the adapter rasterizes them at their drawn size instead of minifying the 64 px grid; at 8 px the
+    /// margin is 0.5 px and the strokes are 0.75 px, still one coverage sample per pixel.
+    /// </summary>
+    public const int MinSize = 8;
 
     private const double HalfStroke = Stroke / 2.0;
     private const double InvSqrt2 = 0.70710678118654752;
