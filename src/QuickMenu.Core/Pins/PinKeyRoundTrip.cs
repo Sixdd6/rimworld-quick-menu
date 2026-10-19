@@ -9,6 +9,22 @@ public static class PinKeyRoundTrip
     public static bool Parses(PinKey key)
     {
         ArgumentNullException.ThrowIfNull(key);
-        return PinKey.TryParse(key.Value, out PinKey? parsed) && parsed == key;
+        return TryRoundTrip(key, out _);
+    }
+
+    /// <summary>
+    /// Parses the canonical string of <paramref name="key"/>. Returns true when that gives an equal key, and
+    /// <paramref name="parsed"/> is then the freshly parsed key (so callers can resolve what a save would load).
+    /// </summary>
+    public static bool TryRoundTrip(PinKey key, out PinKey? parsed)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        if (PinKey.TryParse(key.Value, out parsed) && parsed == key)
+        {
+            return true;
+        }
+
+        parsed = null;
+        return false;
     }
 }

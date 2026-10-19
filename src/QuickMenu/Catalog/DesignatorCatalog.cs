@@ -43,6 +43,9 @@ internal static class DesignatorCatalog
     /// <summary>Wall-clock time of the last build, for the self-test (budget P-11c: at most 200 ms).</summary>
     internal static TimeSpan BuildTime { get; private set; }
 
+    /// <summary>How many times <see cref="Rebuild"/> has run this session (budget P-12: expected 1).</summary>
+    internal static int BuildCount { get; private set; }
+
     /// <summary>Number of entries dropped from the key lookup because their key was already taken.</summary>
     internal static int DuplicateKeyCount => _duplicateKeys.Count;
 
@@ -101,6 +104,7 @@ internal static class DesignatorCatalog
 
     internal static void Rebuild()
     {
+        BuildCount++;
         var stopwatch = Stopwatch.StartNew();
         try
         {

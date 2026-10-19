@@ -64,7 +64,8 @@ internal static class SelfTest
         }
 
         sb.AppendLine("buildMs=" + DesignatorCatalog.BuildTime.TotalMilliseconds.ToString("F2", CultureInfo.InvariantCulture)
-            + " (budget 200) buildSiteDisabled=" + DesignatorCatalog.BuildSite.Disabled);
+            + " (budget 200) builds=" + DesignatorCatalog.BuildCount.ToString(CultureInfo.InvariantCulture)
+            + " (P-12 expects 1) buildSiteDisabled=" + DesignatorCatalog.BuildSite.Disabled);
         sb.AppendLine("complete=" + DesignatorCatalog.IsComplete + " skipped=" + DesignatorCatalog.SkippedCount.ToString(CultureInfo.InvariantCulture)
             + " duplicateKeys=" + DesignatorCatalog.DuplicateKeyCount.ToString(CultureInfo.InvariantCulture));
         var dupes = new BoundedLines(ExampleLimit);
@@ -96,20 +97,10 @@ internal static class SelfTest
         var failures = new BoundedLines(ExampleLimit);
         foreach (CatalogEntry e in DesignatorCatalog.Entries)
         {
-            if (!PinKeyRoundTrip.Parses(e.Key))
+            string status = CatalogDump.RoundTripStatus(e);
+            if (status != "ok")
             {
-                failures.Add("#" + e.Id + " parse mismatch: " + e.Key.Value);
-                continue;
-            }
-
-            CatalogEntry? resolved = DesignatorCatalog.Resolve(e.Key);
-            if (resolved == null)
-            {
-                failures.Add("#" + e.Id + " unresolved: " + e.Key.Value);
-            }
-            else if (!ReferenceEquals(resolved.Designator, e.Designator))
-            {
-                failures.Add("#" + e.Id + " resolves to #" + resolved.Id + ": " + e.Key.Value);
+                failures.Add("#" + e.Id + " rt=" + status + ": " + e.Key.Value);
             }
         }
 
@@ -121,12 +112,17 @@ internal static class SelfTest
         Append(sb, "roundTrip failure", failures);
     }
 
+    /// <summary>
+    /// Probes god mode per entry, so run it after loading and reload the save before normal play. Dev-mode-only
+    /// detection is a name hint only (not measured).
+    /// </summary>
     private static void DevOnlyAndReasons(StringBuilder sb)
     {
-        int invisible = 0, disabled = 0, withReason = 0, threw = 0, hinted = 0;
+        int invisible = 0, disabled = 0, withReason = 0, threw = 0, hinted = 0, explained = 0;
         var godOnly = new BoundedLines(ExampleLimit);
         var hints = new BoundedLines(ExampleLimit);
         var causes = new Dictionary<string, int>();
+        var godCauses = new Dictionary<string, int>();
         foreach (CatalogEntry e in DesignatorCatalog.Entries)
         {
             if (CatalogDump.VisibleText(e.Designator) == "false")
@@ -149,26 +145,24 @@ internal static class SelfTest
                 withReason++;
             }
 
-            string cause = CatalogDump.BuildCauses(e);
+            CatalogDump.GodClass god = CatalogDump.ClassifyGod(e, out string cause);
             foreach (string part in cause.Split(';', StringSplitOptions.RemoveEmptyEntries))
             {
                 string name = part.Split('=')[0];
                 causes[name] = causes.GetValueOrDefault(name) + 1;
+                if (god == CatalogDump.GodClass.Explained)
+                {
+                    godCauses[name] = godCauses.GetValueOrDefault(name) + 1;
+                }
             }
 
-            bool god;
-            try
-            {
-                god = CatalogDump.AppearsOnlyInGodMode(e.Designator, out _);
-            }
-            catch (Exception)
-            {
-                god = false;
-            }
-
-            if (god)
+            if (god == CatalogDump.GodClass.NoKnownCause)
             {
                 godOnly.Add(e.Key.Value);
+            }
+            else if (god == CatalogDump.GodClass.Explained)
+            {
+                explained++;
             }
             else if (CatalogDump.LooksDevOnly(e))
             {
@@ -184,10 +178,19 @@ internal static class SelfTest
             sb.AppendLine("  cause " + kv.Key + "=" + kv.Value.ToString(CultureInfo.InvariantCulture));
         }
 
-        Append(sb, "god-mode-only designator", godOnly);
-        sb.AppendLine("name-hint dev-only (not god-mode gated)=" + hinted.ToString(CultureInfo.InvariantCulture));
+        sb.AppendLine("god-only, explained by build causes (not dev-only)=" + explained.ToString(CultureInfo.InvariantCulture));
+        foreach (KeyValuePair<string, int> kv in godCauses)
+        {
+            sb.AppendLine("  god-only explained by " + kv.Key + "=" + kv.Value.ToString(CultureInfo.InvariantCulture));
+        }
+
+        sb.AppendLine("god-only, no known cause (dev-only candidates)=" + godOnly.Total.ToString(CultureInfo.InvariantCulture));
+        Append(sb, "god-only no known cause", godOnly);
+        sb.AppendLine("name-hint dev-only (not god-mode gated)=" + hinted.ToString(CultureInfo.InvariantCulture)
+            + "; dev-mode-only detection is name-hint only (not measured)");
         Append(sb, "name hint", hints);
-        sb.AppendLine("full per-entry list: debug action 'Quick Menu: catalog dump'");
+        sb.AppendLine("run after loading; reload the save before normal play (the god-mode probe toggles DebugSettings.godMode)");
+        sb.AppendLine("full list in catalog dump: debug action 'Quick Menu: catalog dump' (rt= and dup= per line)");
     }
 
     private static void Append(StringBuilder sb, string label, BoundedLines lines)
@@ -199,7 +202,7 @@ internal static class SelfTest
 
         if (lines.Omitted > 0)
         {
-            sb.AppendLine("  ... " + lines.Omitted.ToString(CultureInfo.InvariantCulture) + " more " + label + " lines omitted");
+            sb.AppendLine("  ... " + lines.Omitted.ToString(CultureInfo.InvariantCulture) + " more " + label + " lines omitted (full list in catalog dump)");
         }
     }
 
