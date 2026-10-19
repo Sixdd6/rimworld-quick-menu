@@ -81,6 +81,35 @@ internal sealed class MenuContent
         return new MenuContent(model, designators, pinsBySlot);
     }
 
+    /// <summary>
+    /// Edit-mode tooltip of a reserved-missing pin (design.md S4 state 8): its stored label, the mod it came from and
+    /// how to remove it. Built on first hover and kept for this open. Null for other slots.
+    /// </summary>
+    internal string? ReservedTip(int slot)
+    {
+        PinEntry? pin = Pins[slot];
+        if (pin == null || Model.Kinds[slot] != SlotKind.Reserved)
+        {
+            return null;
+        }
+
+        string? tip = _tips[slot];
+        if (tip == null)
+        {
+            string modifierKey = QuickMenuMod.EffectiveModifier switch
+            {
+                PinModifier.Alt => "QuickMenu.Settings.Modifier.Alt",
+                PinModifier.Shift => "QuickMenu.Settings.Modifier.Shift",
+                _ => "QuickMenu.Settings.Modifier.Ctrl",
+            };
+            string mod = string.IsNullOrEmpty(pin.PackageId) ? "QuickMenu.Menu.UnknownMod".Translate().Resolve() : pin.PackageId!;
+            tip = "QuickMenu.Menu.ReservedTip".Translate(pin.Label, mod, modifierKey.Translate()).Resolve();
+            _tips[slot] = tip;
+        }
+
+        return tip.Length == 0 ? null : tip;
+    }
+
     /// <summary>The designator's own tooltip text (label and description), built on first hover and kept for this open.</summary>
     internal string? Tip(int slot)
     {

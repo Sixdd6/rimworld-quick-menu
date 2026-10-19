@@ -272,6 +272,14 @@ internal sealed class QuickMenuWindow : Window
             TooltipHandler.TipRegion(new Rect(model.Center.X - hubHalf, model.Center.Y - hubHalf, 2f * hubHalf, 2f * hubHalf), new TipSignal(_content!.HubTip(editing), TooltipIdBase - 1));
         }
 
+        if (editing && hit.Kind == HitKind.Slot && _content!.ReservedTip(hit.Index) is { } reservedTip)
+        {
+            float half = model.ButtonSize / 2f;
+            Vec2 c = model.Slots[hit.Index].Center;
+            using var tipScope = new MeasureScope(StatId.WindowTip);
+            TooltipHandler.TipRegion(new Rect(c.X - half, c.Y - half, model.ButtonSize, model.ButtonSize), new TipSignal(reservedTip, TooltipIdBase + hit.Index));
+        }
+
         if (slot >= 0 && _content!.Tip(slot) is { } tip)
         {
             float half = model.ButtonSize / 2f;

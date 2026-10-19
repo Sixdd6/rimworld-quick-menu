@@ -83,6 +83,9 @@ public enum SlotRing
 
     /// <summary>3 px <c>accent</c>: last-used material.</summary>
     Accent3,
+
+    /// <summary>Dashed 1 px <c>emptyBorder</c>: a reserved-missing pin in edit mode (state 8).</summary>
+    EmptyDashed,
 }
 
 /// <summary>Slot badges, each on its own 45° diagonal at radius B/2 (design.md S4).</summary>
@@ -160,6 +163,16 @@ public static class WheelVisuals
 
         return SlotRing.Border1;
     }
+
+    /// <summary>
+    /// The ring with the slot kind and mode: a reserved-missing pin (state 8) shows a dashed <c>emptyBorder</c> ring in
+    /// edit mode and looks empty in use mode; otherwise as <see cref="Ring(SlotVisualState, SlotDecor)"/>.
+    /// </summary>
+    public static SlotRing Ring(SlotVisualState state, SlotDecor decor, SlotKind kind, bool editing) =>
+        ShowsReservedMarker(kind, editing) ? SlotRing.EmptyDashed : Ring(state, decor);
+
+    /// <summary>Whether a slot shows the reserved-missing marker (S4 state 8: dashed ring and "?"): edit mode only.</summary>
+    public static bool ShowsReservedMarker(SlotKind kind, bool editing) => editing && kind == SlotKind.Reserved;
 
     /// <summary>
     /// Whether <paramref name="badge"/> is drawn. Badges 12 and 13 combine with states 1–5 (also greyed); the lock

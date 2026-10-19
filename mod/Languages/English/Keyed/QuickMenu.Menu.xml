@@ -7,6 +7,10 @@
   <!-- Hub tooltips (vanilla delay). -->
   <QuickMenu.Menu.EditTip>Edit the quick menu: move and remove pins.</QuickMenu.Menu.EditTip>
   <QuickMenu.Menu.DoneTip>Finish editing (Esc)</QuickMenu.Menu.DoneTip>
+  <!-- Edit-mode tooltip of a pin whose mod is not loaded (design.md S4 state 8). {0} label, {1} mod, {2} pin modifier. -->
+  <QuickMenu.Menu.ReservedTip>{0}\nFrom {1}, which is not loaded. It comes back when the mod is added back.\n{2}+click to remove.</QuickMenu.Menu.ReservedTip>
+  <!-- Used for {1} above when the pin does not record its mod. -->
+  <QuickMenu.Menu.UnknownMod>a mod</QuickMenu.Menu.UnknownMod>
   <!-- Reason shown when a slot is clicked that cannot be used and the designator gives none (U-4). -->
   <QuickMenu.Menu.Unavailable>Not available right now.</QuickMenu.Menu.Unavailable>
   <!-- Composed reasons for an unavailable building (FR-14) when the designator gives none. -->

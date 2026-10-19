@@ -9,7 +9,8 @@ namespace QuickMenu.Menu;
 /// <summary>
 /// One slot (design.md S4), one routine for every layout. Base states Normal (1), Hover (2), Pressed (3), Empty (6),
 /// combined with the decorations of T-42: last-used material (4, 3 px <c>accent</c>), greyed with lock (5), sub-menu
-/// badge (12, 1:30), material dot (13, 4:30) and open parent (14, 2 px <c>accent</c>).
+/// badge (12, 1:30), material dot (13, 4:30), open parent (14, 2 px <c>accent</c>), and in edit mode the
+/// reserved-missing pin (8: dashed <c>emptyBorder</c> ring and "?"; in use mode it looks empty).
 /// </summary>
 /// <remarks>
 /// Order: fill <c>Circle</c> at B (+ hover overlay), the icon (<c>Command.DrawIcon</c> in a 0.75 B square, or a
@@ -20,6 +21,9 @@ namespace QuickMenu.Menu;
 /// </remarks>
 internal static class SlotRenderer
 {
+    // The reserved-missing marker (S4 state 8): a symbol, not a word, so it is not Keyed.
+    private const string ReservedMark = "?";
+
     /// <summary>Draws slot <paramref name="index"/> of <paramref name="model"/> at its layout position.</summary>
     internal static void Draw(WheelModel model, int index, SlotVisualState state, in RenderTransform transform) =>
         DrawAt(model, index, model.Slots[index].Center, state, model.Decor(index), transform);
@@ -58,7 +62,12 @@ internal static class SlotRenderer
             }
         }
 
-        DrawRing(WheelVisuals.Ring(state, decor), c, scale);
+        DrawRing(WheelVisuals.Ring(state, decor, kind, model.Editing), c, scale);
+        if (WheelVisuals.ShowsReservedMarker(kind, model.Editing))
+        {
+            DrawReservedMark(model, layoutCentre, transform);
+        }
+
         if (WheelVisuals.ShowsBadge(SlotBadge.SubMenu, kind, decor))
         {
             DrawBadge(Textures.Glyph(MaskId.SubMenuBadge), QMStyle.TextMuted, WheelVisuals.BadgeCentre(SlotBadge.SubMenu, layoutCentre, model.ButtonSize), transform);
@@ -120,6 +129,10 @@ internal static class SlotRenderer
                 MenuRenderer.Tint(QMStyle.Accent);
                 MenuRenderer.DrawSized(Textures.SlotRing2, c, scale);
                 break;
+            case SlotRing.EmptyDashed:
+                MenuRenderer.Tint(QMStyle.EmptyBorder);
+                MenuRenderer.DrawSized(Textures.SlotRingDashed, c, scale);
+                break;
             case SlotRing.EmptyBorder1:
                 MenuRenderer.Tint(QMStyle.SlotBorderEmpty);
                 MenuRenderer.DrawSized(Textures.SlotRing1, c, scale);
@@ -128,6 +141,26 @@ internal static class SlotRenderer
                 MenuRenderer.Tint(QMStyle.SlotBorder);
                 MenuRenderer.DrawSized(Textures.SlotRing1, c, scale);
                 break;
+        }
+    }
+
+    // State 8 (edit mode): "?" in the icon square, game font (no glyph mask exists for it yet), textMuted.
+    private static void DrawReservedMark(WheelModel model, Vec2 layoutCentre, in RenderTransform transform)
+    {
+        Rect rect = MenuRenderer.ToRect(transform.Rect(WheelVisuals.IconRect(layoutCentre, model.ButtonSize)));
+        GameFont oldFont = Text.Font;
+        TextAnchor oldAnchor = Text.Anchor;
+        try
+        {
+            Text.Font = GameFont.Medium;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            MenuRenderer.Tint(QMStyle.TextMuted);
+            Widgets.Label(rect, ReservedMark);
+        }
+        finally
+        {
+            Text.Anchor = oldAnchor;
+            Text.Font = oldFont;
         }
     }
 

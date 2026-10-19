@@ -142,6 +142,30 @@ public class SlotStateTests
         Assert.Equal(0.18f * B, WheelVisuals.MaterialDotSize(B), 4);
     }
 
+    [Fact]
+    public void Reserved_slot_is_drawn_as_empty_in_use_mode()
+    {
+        Assert.False(WheelVisuals.ShowsReservedMarker(SlotKind.Reserved, editing: false));
+        Assert.Equal(SlotRing.EmptyBorder1, WheelVisuals.Ring(SlotVisualState.Empty, SlotDecor.None, SlotKind.Reserved, editing: false));
+    }
+
+    [Fact]
+    public void Reserved_slot_shows_a_dashed_ring_and_question_mark_in_edit_mode()
+    {
+        // S4 state 8: edit mode, Fixed: dashed emptyBorder ring + "?".
+        Assert.True(WheelVisuals.ShowsReservedMarker(SlotKind.Reserved, editing: true));
+        Assert.Equal(SlotRing.EmptyDashed, WheelVisuals.Ring(SlotVisualState.Empty, SlotDecor.None, SlotKind.Reserved, editing: true));
+    }
+
+    [Fact]
+    public void Empty_slot_stays_plain_in_edit_mode()
+    {
+        // S4 state 6: no "+", no dashed ring in edit mode.
+        Assert.False(WheelVisuals.ShowsReservedMarker(SlotKind.Empty, editing: true));
+        Assert.Equal(SlotRing.EmptyBorder1, WheelVisuals.Ring(SlotVisualState.Empty, SlotDecor.None, SlotKind.Empty, editing: true));
+        Assert.Equal(SlotRing.Accent2, WheelVisuals.Ring(SlotVisualState.Hover, SlotDecor.None, SlotKind.Normal, editing: true));
+    }
+
     private static void AssertNear(Vec2 expected, Vec2 actual)
     {
         Assert.Equal(expected.X, actual.X, 3);
