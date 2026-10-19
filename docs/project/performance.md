@@ -170,6 +170,45 @@ No M3 row fails the 50% line except the satellite rim watch item. No `perf:` tas
 
 Machine: user's main Linux PC (Fedora, 2560x1440, UI scale 1.0); RimWorld 1.7.4982 (Waylith, CoreCLR .NET 10); Harmony mod 3.0.1.0 (lib 3.0.0-rc.3); dev-mode Stopwatch scopes (`PerfCounters`), not the Frame Profiler. Single session, single run per setup, medians over the frame counts shown; no run-to-run spread yet.
 
+### UC-4 record (2026-10-19, T-62)
+
+Setup (b): Harmony + 5 DLC + BAM + Quick Menu, 10 mods, 723 catalog entries (571 top-level), the user's colony (with an ideoligion), UI scale 1.0 (1.5 tried), user's Linux PC. Dev-mode Stopwatch scopes, one session, one run, no run-to-run spread. Pass/fail at 50% of budget. Source: the session's self-test and perf report (raw log kept local only).
+
+| Date | Build / commit | Metric | Value | Change vs baseline | Notes |
+|---|---|---|---|---|---|
+| 2026-10-19 | UC-4 (e890f8e) | P-7c Ideology refresh | 0.27 ms (last of 3 rebuilds, 5 Ideology entries) | UC-3: crashed, not timed | **PASS** (budget 0.5 ms). 54% of budget, so 0.02 ms over the 50% line: **watch item, not a failure**. It is the last rebuild time; an open where the fingerprint is unchanged short-circuits and was not timed separately. **Closes the M3 carry-over.** |
+| 2026-10-19 | UC-4 | P-9 control run (same session) | menu window median 96 B/frame vs control window 32 B/frame = **+64 B** | UC-3: +64 B inferred | **PASS** (limit 50% of 512 B = 256 B over control). **Closes the M3 carry-over**: the delta is now measured, not inferred. p99 1,648 B, max 2,480 B: the spikes come from the game's hover sound call (`PlayOneShotOnCamera`, median 1,528 B per call on 69 hover changes), not mod code. First frame after open max 312 B (control 344 B). |
+| 2026-10-19 | UC-4 | P-8 draw + input per frame (whole session: wheel, grid, edit mode, satellites, material ring open) | median 29.8 us, p99 84.5 us, max 337 us (2,452 steady frames, 12 opens) | UC-3: 39.7 us | **PASS** (6% of the 0.5 ms limit; p99 17%). Includes a material ring open, so the UC-4 sub-ring carry-over is **closed** for the wheel. Control window (6 slots, same calls) median 8.6 us. Sub-costs: label plate 2.1 us median, tooltip 0.7 us. The counter spans the whole session, so grid, sub-grid, edit mode and max size are **not separated** (see not measured). |
+| 2026-10-19 | UC-4 | P-7a open path | median 47 us, p99 and first 318 us; 4.5 KB median, max 38.7 KB (12 opens); same-frame draw 12/12 per trigger lines (P-6 holds) | UC-3: 78 us, 4.7 KB | **PASS** (limit 1.5 ms; first open 21% of it). |
+| 2026-10-19 | UC-4 | P-1 poller (open and closed frames) | median 0.24 us, p99 0.89 us (6,755 frames); max 320 us / 46.6 KB | UC-1: 0.15 us | **PASS** (limit 5 us). Max is the one report-printing frame as in UC-1 note 3. Median is slightly higher because open frames are included. |
+| 2026-10-19 | UC-4 | Satellite rim rebuild | 0.86 ms (234 px rim, with upload); first one this session 2.12 ms (210 px) | UC-3: 3.1 ms | **PASS** (budget 5 ms; 50% line 2.5 ms; 0.86 ms is 17%). **Closes the M3 watch item.** The 2.12 ms first build is also under the 50% line. |
+| 2026-10-19 | UC-4 | Texture rebuilds from the settings page, UI 1.0 | 0.91 to 2.16 ms (all textures 2.16 ms at B 64, 2 rings, rim 378 px) | UC-2: 5.1 to 6.5 ms | **PASS** (50% line 2.5 ms). Prewarm at the main menu: 13 masks in 21.8 ms, all-texture build 9.8 ms (6.4 ms of it create + upload); off the play path. |
+| 2026-10-19 | UC-4 | Texture rebuilds from the settings page, UI 1.5, button-size slider dragged with 5 rings | **32.5 ms** (B 96, rim 1,742 px); 20.3, 19.7, 13.7, 13.8 ms for B 76 to 64 (rim 1,412 to 1,214 px); rim only 6.1 and 7.2 ms (998 px), 2.1 to 3.0 ms (782 and 566 px) | none (first measurement of this case) | **FAIL** (budget 5 ms; worst case 6.5x the budget). The session summary reported only the UI 1.0 and rim 1.37 to 2.16 ms figures. Cause: the rebuild runs on every slider step and the cost follows rim size (create + upload alone is 23.6 ms at 1,742 px). Impact: dropped frames while dragging a slider in the settings page at UI 1.5 with many rings. Never on the in-play path. Not a player-visible regression in play, but the budget is exceeded. **Needs a `perf:` task**: rebuild once when the slider drag ends (or after a short debounce), keep drawing the old textures or a scaled preview meanwhile. Proposed task id to be assigned by the planner (suggest M6 pass, S size). |
+| 2026-10-19 | UC-4 | P-11c catalog build | 6.21 ms, 723 entries (571 top-level), builds=1, round trip 100 % (0 failures) | UC-3: 10.9 ms at 2,850 entries | **PASS** (limit 100 ms; 6%). |
+| 2026-10-19 | UC-4 | P-12 builds per session | 1 | | **PASS**. |
+| 2026-10-19 | UC-4 | P-18 mod constructor | 84.7 ms (patching 24.4 incl. the 20.6 ms override scan, 8 patched, 0 failed; settings load incl. the game's read 59.5) | UC-3: 87.3 ms | **PASS** (10 mods, 723 entries, vanilla tier: 50% of 150 ms = 75 ms, **over by 9.7 ms**, but 28% of the 300 ms large-list tier line and the settings share is the game's file read and 18.5 ms of JIT inside `GetSettings`). Judged against the tier that matches the setup (large list), PASS; against the vanilla tier it would not. Same call as UC-3. |
+| 2026-10-19 | UC-4 | P-16 settings load, our part | PostLoad 2.81 ms + 0.08 ms after | UC-3: 4.2 + 0.17 ms | **PASS** (limit 10 ms). |
+| 2026-10-19 | UC-4 | Texture leak check | live 27 = expected 27 (13 static, 13 sized, 1 satellite rim); `staticDisabled=False sizedDisabled=False` | | **PASS**. |
+| 2026-10-19 | UC-4 | Settings writes (P-17 count) | 25 saves over the session | | **Info.** The session had many settings toggles and several edit sessions, so 25 is not "one per edit session". The per-edit-session write count and `WriteSettings` time were not isolated: still open (T-52 criterion "one write per edit session" is verified by its unit test, not by this count). |
+| 2026-10-19 | UC-4 | P-4 idle prefix calls, P-3 pin prefix | pin prefix counter 0 calls (no pin click in the measured window) | | **Not measured** (P-3 has no calls to time; P-4 not re-run). |
+
+**M3 carry-overs after UC-4:** P-7c, P-9 control run, sub-ring per-frame with a material ring open (wheel) and satellite rim are **closed**. The 8,000-def stress run stays open (below).
+
+**Still not measured after UC-4 (assigned):**
+
+| Item | Why open | Assigned to |
+|---|---|---|
+| P-8 for the grid layout, with a sub-grid open, reported separately | One session-wide counter; no per-layout split | **UC-5**: split the P-8 counter by layout (wheel, grid, sub-ring, sub-grid) in the perf report, then read each. A tiny developer task (Stopwatch label per layout); open a task before T-69. |
+| P-8 and open path with Auto sizing at the maximum size (capacity 5+ rings, 96 px) | Only a settings-page preview reached that size, not the real menu | **UC-5** (a pass at max size in wheel and grid), final at UC-6 |
+| 8,000-def stress run (P-11c at scale) | Low priority, linear scaling argues for about 25,000 entries under 100 ms | **UC-6** (final pass) |
+| UI scale 2.0 (satellite rim and texture rebuild, P-8, P-7a) | Session ran UI 1.0 and 1.5 only; the 1.5 slider case above is already a FAIL | **UC-5** (one run at 2.0 for rebuild times), final at **UC-6** |
+| Texture rebuild fix check (after the slider-drag `perf:` task) | New | **UC-5** or **UC-6**, whichever follows the fix |
+| P-3 pin click prefix, P-5 pin click, P-17 `WriteSettings` time and writes per edit session | No pin clicks timed; saves not split | **UC-5** (pin by click in vanilla and BAM, then read the P-3 line), final at **UC-6** |
+| P-4 idle count with BAM loaded | Carried since UC-1 | **UC-5** (setup (c), (d) and BAM) |
+| Frame Profiler cross-check (P-1), P-6 at 30 fps, run-to-run spread | Carried since UC-1 | **UC-6** |
+
+No `perf:` task is required for any in-play row. One is required for the settings-page texture rebuild FAIL above.
+
 ### UC-1 baseline notes (2026-10-19)
 Pass/fail uses 50% of each budget (architecture section 7 hardware margin), except the zero/equality budgets (P-2, P-4, P-6, P-12), which need no margin. Setup (a): Harmony + 5 DLC + Quick Menu, 8 mods, 454 entries. Setup (b): (a) + Better Architect Menu, 10 mods, 718 entries.
 
