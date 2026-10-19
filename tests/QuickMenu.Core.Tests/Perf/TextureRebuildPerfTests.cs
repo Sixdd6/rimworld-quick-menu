@@ -8,8 +8,9 @@ namespace QuickMenu.Core.Tests.Perf;
 /// <summary>
 /// T-28: a size-dependent texture rebuild (rim, slot and hub rings, glyphs) stays within 5 ms; gated at 5 x the
 /// budget like the other timing gates (performance.md section 4), because the Perf classes run in parallel. Measured here is the
-/// Core rasterization only, for the largest rim the adapter allows (2048 px) plus the small masks; the upload is
-/// measured in game (dev-mode log line "Textures rebuilt …").
+/// Core rasterization only, for the worst case (B 96, 8 rings in Auto, UI scale 2: the rim is capped at 2048 px) plus
+/// the small masks. The upload is not measured here; it is measured in game at UC-2 (dev-mode log line
+/// "Textures rebuilt …").
 /// </summary>
 [Trait("Category", "Perf")]
 public class TextureRebuildPerfTests
@@ -20,7 +21,7 @@ public class TextureRebuildPerfTests
     [Fact]
     public void Worst_case_sized_rebuild_rasterizes_within_budget()
     {
-        TextureSizing sizing = TextureSizing.Create(96f, 5, 2f);
+        TextureSizing sizing = TextureSizing.Create(96f, TextureSizing.MaxRingsInUse, 2f);
         RoundTextureGeometry rim = sizing.Rim;
         RoundTextureGeometry slot = sizing.SlotRing;
         RoundTextureGeometry hub = sizing.HubRing;

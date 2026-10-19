@@ -1,6 +1,9 @@
 using System;
 using System.Diagnostics;
+using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using QuickMenu.Core.Render;
 using QuickMenu.Diagnostics;
 using UnityEngine;
@@ -44,22 +47,42 @@ internal readonly struct SizedTexture
 /// <remarks>
 /// <para><b>Static masks</b> (every <see cref="MaskSet"/> mask at its authored size) are uploaded once at startup.</para>
 /// <para><b>Sized textures</b> are rasterized at their drawn size in screen pixels so the widths of design.md §2 stay
-/// exact: slot rings (1, 2, 3 px, dashed) at B, hub sub-button rings at e, the disc rim (2 px accent + 1 px outlines,
-/// colours baked in) at the disc diameter, and the badge and hub-icon glyphs at their badge sizes (a 64 px glyph
-/// minified 4–8× without mipmaps would alias). <see cref="EnsureSized"/> runs on each open and rebuilds only the
-/// groups whose size changed (<see cref="TextureSizing.Changed"/>): button size, rings in use or UI scale. Old textures
-/// are destroyed. Nothing here runs per frame.</para>
-/// <para>Masks are top row first; <c>SetPixels32</c> takes the bottom row first, so rows are flipped in Core.</para>
+/// exact: slot rings (1, 2, 3 px, dashed) at B, hub sub-button rings at e, the main disc rim (2 px accent + 1 px
+/// outlines, colours baked in) at the disc diameter, and the badge and hub-icon glyphs at their badge sizes (a 64 px
+/// glyph minified 4–8× without mipmaps would alias). <see cref="EnsureSized"/> runs on each open and rebuilds only the
+/// groups whose size changed (<see cref="TextureSizing.Changed"/>): button size, rings in use or UI scale.</para>
+/// <para><b>Satellite rim</b>: satellites have their own disc (<c>D_s</c>, design.md §1.1). The rim cache holds the
+/// main rim plus one satellite rim (<see cref="EnsureSatelliteRim"/>, policy in
+/// <see cref="TextureSizing.ChooseSatelliteRim"/>), so opening satellites never rebuilds the main rim.</para>
+/// <para>Old textures are destroyed. Nothing here runs per frame. Uploads go through one reusable RGBA buffer
+/// (<c>SetPixelData</c>) and are made non-readable (<c>Apply(false, true)</c>) so no CPU copy is kept.</para>
+/// <para>Masks are top row first; Unity pixel data is bottom row first, so rows are flipped in Core.</para>
+/// <para>Two fault sites: <see cref="Site"/> for the static masks and <see cref="SizedSite"/> for the size-dependent
+/// textures, so a rim or rebuild failure leaves the static masks working.</para>
 /// </remarks>
 [StaticConstructorOnStartup]
 internal static class Textures
 {
+    /// <summary>Fault site of the static masks.</summary>
     internal static readonly PatchSite Site = new("Textures");
+
+    /// <summary>Fault site of the size-dependent textures (rings, rims, glyphs).</summary>
+    internal static readonly PatchSite SizedSite = new("Textures.Sized");
+
+    /// <summary>The RGBA buffer is kept between rebuilds up to this size (a rim of about 1000 px); larger is released.</summary>
+    private const int RetainedRgbaBytes = 4 << 20;
+
+    private const int GlyphCount = MaskId.IconAdd - MaskId.SubMenuBadge + 1;
+
+    // Slot rings 1/2/3/dashed, hub rings 1/2, glyphs, main rim.
+    private const int SizedCount = 4 + 2 + GlyphCount + 1;
 
     private static readonly Texture2D?[] _masks = new Texture2D?[MaskSet.Count];
     private static readonly SizedTexture[] _glyphs = new SizedTexture[MaskSet.Count];
     private static byte[] _scratch = new byte[MaskSet.MaxByteCount];
+    private static byte[] _rgba = new byte[MaskSet.MaxByteCount * 4];
     private static TextureSizing? _sizing;
+    private static int _live;
     private static SizedTexture _slotRing1;
     private static SizedTexture _slotRing2;
     private static SizedTexture _slotRing3;
@@ -67,6 +90,8 @@ internal static class Textures
     private static SizedTexture _hubRing1;
     private static SizedTexture _hubRing2;
     private static SizedTexture _discRim;
+    private static SizedTexture _satelliteRim;
+    private static RoundTextureGeometry? _satelliteRimGeometry;
 
     static Textures()
     {
@@ -92,8 +117,17 @@ internal static class Textures
         }
     }
 
-    /// <summary>False when building a texture failed; drawing code then skips the shapes that need them.</summary>
+    /// <summary>False when building the static masks failed; drawing code then skips the shapes that need them.</summary>
     internal static bool Ready => !Site.Disabled;
+
+    /// <summary>
+    /// False when building a size-dependent texture failed. The sized textures are then invalid and
+    /// <see cref="SizedTexture.Draw"/> draws nothing; the static masks still work.
+    /// </summary>
+    internal static bool SizedReady => !SizedSite.Disabled;
+
+    /// <summary>Textures created by this class and not yet destroyed (dev self-test).</summary>
+    internal static int LiveCount => _live;
 
     /// <summary>A static mask at its authored size, or the white texture when it could not be built.</summary>
     internal static Texture2D Mask(MaskId id) => _masks[(int)id] ?? BaseContent.WhiteTex;
@@ -116,7 +150,10 @@ internal static class Textures
     /// <inheritdoc cref="HubRing1"/>
     internal static SizedTexture HubRing2 => _hubRing2;
 
-    /// <summary>The disc rim with baked colours; draw it with <see cref="QMStyle.White"/> (α scaled when dimmed).</summary>
+    /// <summary>
+    /// The main disc rim with baked colours; draw it with <see cref="QMStyle.White"/> (α scaled when dimmed). For a
+    /// satellite use <see cref="EnsureSatelliteRim"/>.
+    /// </summary>
     internal static SizedTexture DiscRim => _discRim;
 
     /// <summary>A badge or hub-icon glyph at its drawn size (design.md §2 badges, S4a).</summary>
@@ -126,9 +163,11 @@ internal static class Textures
     /// Makes the sized textures match the button size, the rings in use and the current UI scale. Call once per open
     /// (or when the layout cache is rebuilt), never per frame. Rebuilds only what changed.
     /// </summary>
+    /// <param name="buttonSize">B in UI px.</param>
+    /// <param name="ringsInUse">Rings the main disc covers, 0…<see cref="TextureSizing.MaxRingsInUse"/> (Auto grows to 8).</param>
     internal static void EnsureSized(float buttonSize, int ringsInUse)
     {
-        if (Site.Disabled)
+        if (SizedSite.Disabled)
         {
             return;
         }
@@ -161,7 +200,7 @@ internal static class Textures
 
             if ((groups & SizedGroups.Rim) != 0)
             {
-                _discRim = Replace(_discRim, BuildRim(next.Rim));
+                _discRim = Replace(_discRim, BuildRim(next.Rim, "DiscRim"));
             }
 
             if ((groups & SizedGroups.Glyphs) != 0)
@@ -175,15 +214,128 @@ internal static class Textures
             }
 
             _sizing = next;
+            ReleaseLargeBuffer();
             if (Prefs.DevMode)
             {
-                Log.Info($"Textures rebuilt ({groups}) B={buttonSize} rings={ringsInUse} UI scale={next.UiScale} rim={next.Rim.TextureSize}px in {Stopwatch.GetElapsedTime(start).TotalMilliseconds:F2} ms");
+                Log.Info($"Textures rebuilt ({groups}) B={buttonSize} rings={ringsInUse} UI scale={next.UiScale} rim={next.Rim.TextureSize}px in {Stopwatch.GetElapsedTime(start).TotalMilliseconds:F2} ms (with upload)");
             }
         }
         catch (Exception ex)
         {
-            Site.Fail(ex);
+            SizedSite.Fail(ex);
         }
+    }
+
+    /// <summary>
+    /// The rim of a satellite (sub-menu or material ring) with <paramref name="satelliteRings"/> rings, at the current
+    /// button size and UI scale (disc <c>D_s</c>, design.md §1.1). Call once when the satellite opens, after
+    /// <see cref="EnsureSized"/> for the open menu, and keep the result for the satellite's lifetime; never per frame.
+    /// Returns the main rim when the discs match, the cached satellite rim when it has this size, and otherwise
+    /// rebuilds the one satellite slot. The returned texture stays valid until the next call of this method or of
+    /// <see cref="EnsureSized"/>. Invalid (draws nothing) before <see cref="EnsureSized"/> or after a failure.
+    /// </summary>
+    internal static SizedTexture EnsureSatelliteRim(int satelliteRings)
+    {
+        if (SizedSite.Disabled || _sizing is not { } sizing)
+        {
+            return default;
+        }
+
+        try
+        {
+            RoundTextureGeometry wanted = sizing.SatelliteRim(satelliteRings);
+            switch (TextureSizing.ChooseSatelliteRim(sizing.Rim, _satelliteRimGeometry, wanted))
+            {
+                case SatelliteRimSource.Main:
+                    return _discRim;
+                case SatelliteRimSource.Cached:
+                    return _satelliteRim;
+            }
+
+            long start = Stopwatch.GetTimestamp();
+            _satelliteRim = Replace(_satelliteRim, BuildRim(wanted, "SatelliteRim"));
+            _satelliteRimGeometry = wanted;
+            ReleaseLargeBuffer();
+            if (Prefs.DevMode)
+            {
+                Log.Info($"Satellite rim rebuilt rings={satelliteRings} rim={wanted.TextureSize}px in {Stopwatch.GetElapsedTime(start).TotalMilliseconds:F2} ms (with upload)");
+            }
+
+            return _satelliteRim;
+        }
+        catch (Exception ex)
+        {
+            SizedSite.Fail(ex);
+            return default;
+        }
+    }
+
+    /// <summary>
+    /// Dev self-test section: live texture count against the expected count, the <c>Color32</c> layout, and a
+    /// 1×2 pixel round trip through the same upload call the masks use.
+    /// </summary>
+    internal static void AppendSelfTest(StringBuilder sb)
+    {
+        int expected = (Site.Disabled ? 0 : MaskSet.Count)
+            + (_sizing is null ? 0 : SizedCount)
+            + (_satelliteRimGeometry is null ? 0 : 1);
+        sb.AppendLine("live=" + _live.ToString(CultureInfo.InvariantCulture)
+            + " expected=" + expected.ToString(CultureInfo.InvariantCulture)
+            + " (static " + MaskSet.Count.ToString(CultureInfo.InvariantCulture)
+            + ", sized " + SizedCount.ToString(CultureInfo.InvariantCulture) + " once a menu was opened, +1 satellite rim)"
+            + " staticDisabled=" + Site.Disabled + " sizedDisabled=" + SizedSite.Disabled);
+        if (_sizing is { } s)
+        {
+            sb.AppendLine("sizing B=" + s.ButtonSize.ToString(CultureInfo.InvariantCulture)
+                + " rings=" + s.RingsInUse.ToString(CultureInfo.InvariantCulture)
+                + " uiScale=" + s.UiScale.ToString(CultureInfo.InvariantCulture)
+                + " rim=" + s.Rim.TextureSize.ToString(CultureInfo.InvariantCulture) + "px"
+                + " satelliteRim=" + (_satelliteRimGeometry is { } g ? g.TextureSize.ToString(CultureInfo.InvariantCulture) + "px" : "none"));
+        }
+
+        var probe = new Color32(1, 2, 3, 4);
+        ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(new ReadOnlySpan<Color32>(in probe));
+        bool layoutOk = Unsafe.SizeOf<Color32>() == 4 && bytes[0] == 1 && bytes[1] == 2 && bytes[2] == 3 && bytes[3] == 4;
+        sb.AppendLine("Color32 size=" + Unsafe.SizeOf<Color32>().ToString(CultureInfo.InvariantCulture) + " rgbaOrder=" + layoutOk + (layoutOk ? " ok" : " FAIL"));
+
+        // Bottom row (10, 20, 30, 40), top row (50, 60, 70, 80): Unity order, as the uploads write it.
+        Texture2D? texture = null;
+        try
+        {
+            texture = new Texture2D(1, 2, TextureFormat.RGBA32, false) { name = "QuickMenu.SelfTestProbe" };
+            byte[] data = [10, 20, 30, 40, 50, 60, 70, 80];
+            texture.SetPixelData(data, 0, 0);
+            texture.Apply(false, false);
+            Color32[] back = texture.GetPixels32();
+            bool roundTrip = back.Length == 2
+                && back[0].r == 10 && back[0].g == 20 && back[0].b == 30 && back[0].a == 40
+                && back[1].r == 50 && back[1].a == 80;
+            sb.AppendLine("SetPixelData round trip (bottom row first, RGBA)=" + (roundTrip ? "ok" : "FAIL got " + Describe(back)));
+        }
+        catch (Exception ex)
+        {
+            sb.AppendLine("SetPixelData round trip threw: " + ex.GetType().Name + ": " + ex.Message);
+        }
+        finally
+        {
+            if (texture != null)
+            {
+                UnityEngine.Object.Destroy(texture);
+            }
+        }
+
+        sb.AppendLine("UC-2 visual check: uploads are SetPixelData + Apply(false, true) (non-readable); confirm the rim, slot rings and the lock/caret glyphs draw, upright, in the open menu");
+    }
+
+    private static string Describe(Color32[] pixels)
+    {
+        var sb = new StringBuilder();
+        foreach (Color32 c in pixels)
+        {
+            sb.Append('(').Append(c.r).Append(',').Append(c.g).Append(',').Append(c.b).Append(',').Append(c.a).Append(')');
+        }
+
+        return sb.ToString();
     }
 
     private static SizedTexture BuildRing(RoundTextureGeometry g, float widthUi, int dashes, string name)
@@ -202,29 +354,28 @@ internal static class Textures
         return new SizedTexture(UploadMask(n, n, name), g.DrawSize);
     }
 
-    private static SizedTexture BuildRim(RoundTextureGeometry g)
+    private static SizedTexture BuildRim(RoundTextureGeometry g, string name)
     {
         int n = g.TextureSize;
-        var pixels = new Color32[n * n];
         Core.Render.DiscRim.Render(
             n,
             g.Texels(Core.Render.DiscRim.RimWidth),
             g.Texels(Core.Render.DiscRim.OutlineWidth),
             StyleTokens.Accent,
             StyleTokens.RimOutline,
-            MemoryMarshal.AsBytes(pixels.AsSpan()));
-        return new SizedTexture(Upload(pixels, n, n, "DiscRim"), g.DrawSize);
+            Rgba(Core.Render.DiscRim.ByteCount(n)));
+        return new SizedTexture(Upload(n, n, name), g.DrawSize);
     }
 
-    /// <summary>Uploads the first <c>width × height</c> bytes of the scratch buffer as a white mask.</summary>
+    /// <summary>Uploads the first <c>width × height</c> bytes of the mask scratch buffer as a white mask.</summary>
     private static Texture2D UploadMask(int width, int height, string name)
     {
-        var pixels = new Color32[width * height];
-        TexturePixels.MaskToRgbaBottomUp(_scratch, width, height, MemoryMarshal.AsBytes(pixels.AsSpan()));
-        return Upload(pixels, width, height, name);
+        TexturePixels.MaskToRgbaBottomUp(_scratch, width, height, Rgba(width * height * 4));
+        return Upload(width, height, name);
     }
 
-    private static Texture2D Upload(Color32[] pixels, int width, int height, string name)
+    /// <summary>Uploads the first <c>width × height × 4</c> bytes of the RGBA buffer (bottom row first).</summary>
+    private static Texture2D Upload(int width, int height, string name)
     {
         var texture = new Texture2D(width, height, TextureFormat.RGBA32, false)
         {
@@ -232,8 +383,13 @@ internal static class Textures
             wrapMode = TextureWrapMode.Clamp,
             filterMode = FilterMode.Bilinear,
         };
-        texture.SetPixels32(pixels);
-        texture.Apply(false);
+        _live++;
+
+        // SetPixelData reads exactly one mip level from the start of the buffer, so a larger buffer is fine.
+        texture.SetPixelData(_rgba, 0, 0);
+
+        // No mipmaps; makeNoLongerReadable drops the CPU copy (unverified on Waylith: checked at UC-2).
+        texture.Apply(false, true);
         return texture;
     }
 
@@ -247,11 +403,30 @@ internal static class Textures
         return _scratch.AsSpan(0, bytes);
     }
 
+    private static Span<byte> Rgba(int bytes)
+    {
+        if (_rgba.Length < bytes)
+        {
+            _rgba = new byte[bytes];
+        }
+
+        return _rgba.AsSpan(0, bytes);
+    }
+
+    private static void ReleaseLargeBuffer()
+    {
+        if (_rgba.Length > RetainedRgbaBytes)
+        {
+            _rgba = new byte[MaskSet.MaxByteCount * 4];
+        }
+    }
+
     private static SizedTexture Replace(SizedTexture old, SizedTexture next)
     {
-        if (old.Texture != null)
+        if (old.Texture != null && old.Texture != next.Texture)
         {
             UnityEngine.Object.Destroy(old.Texture);
+            _live--;
         }
 
         return next;

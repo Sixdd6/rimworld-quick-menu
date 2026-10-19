@@ -20,7 +20,7 @@ public static class SettingsRules
     public const int MaxRows = 7;
 
     /// <summary>Auto growth limits (design.md §1.1).</summary>
-    public const int AutoMaxRings = 8;
+    public const int AutoMaxRings = LayoutConstants.AutoMaxRings;
     public const int AutoMaxRows = 9;
 
     public static int ClampRings(int value) => Math.Clamp(value, LayoutConstants.MinRings, LayoutConstants.MaxRings);

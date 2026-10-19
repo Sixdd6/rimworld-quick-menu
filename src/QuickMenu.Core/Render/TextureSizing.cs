@@ -26,6 +26,19 @@ public enum SizedGroups
     All = SlotRings | HubRings | Rim | Glyphs,
 }
 
+/// <summary>Where a satellite's disc rim comes from (<see cref="TextureSizing.ChooseSatelliteRim"/>).</summary>
+public enum SatelliteRimSource
+{
+    /// <summary>The satellite disc has the main disc's size: draw the main rim.</summary>
+    Main,
+
+    /// <summary>The cached satellite rim already has the wanted size.</summary>
+    Cached,
+
+    /// <summary>Rasterize the satellite rim again (replacing the cached one).</summary>
+    Rebuild,
+}
+
 /// <summary>
 /// The inputs that decide the size of the size-dependent textures: button size B, rings in use m and the game's UI
 /// scale. Masks drawn at a small size (rings, badges) or a very large one (the rim) are rasterized at their actual
@@ -46,6 +59,14 @@ public readonly record struct TextureSizing(float ButtonSize, int RingsInUse, fl
     /// <inheritdoc cref="Ring1Width"/>
     public const float Ring3Width = 3f;
 
+    /// <summary>
+    /// Largest accepted rings in use: the larger of the Fixed setting limit (<see cref="LayoutConstants.MaxRings"/>)
+    /// and the Auto growth limit (<see cref="LayoutConstants.AutoMaxRings"/>).
+    /// </summary>
+    public const int MaxRingsInUse = LayoutConstants.AutoMaxRings > LayoutConstants.MaxRings
+        ? LayoutConstants.AutoMaxRings
+        : LayoutConstants.MaxRings;
+
     /// <summary>Validated constructor.</summary>
     /// <exception cref="ArgumentOutOfRangeException">An input is outside its range.</exception>
     public static TextureSizing Create(float buttonSize, int ringsInUse, float uiScale)
@@ -55,9 +76,9 @@ public readonly record struct TextureSizing(float ButtonSize, int RingsInUse, fl
             throw new ArgumentOutOfRangeException(nameof(buttonSize), buttonSize, "Button size must be positive and finite.");
         }
 
-        if (ringsInUse < 0 || ringsInUse > LayoutConstants.MaxRings)
+        if (ringsInUse < 0 || ringsInUse > MaxRingsInUse)
         {
-            throw new ArgumentOutOfRangeException(nameof(ringsInUse), ringsInUse, "Rings in use must be 0…MaxRings.");
+            throw new ArgumentOutOfRangeException(nameof(ringsInUse), ringsInUse, "Rings in use must be 0…MaxRingsInUse.");
         }
 
         if (!(uiScale > 0f) || float.IsInfinity(uiScale))
@@ -82,6 +103,40 @@ public readonly record struct TextureSizing(float ButtonSize, int RingsInUse, fl
 
     /// <summary>Geometry of the disc rim texture.</summary>
     public RoundTextureGeometry Rim => RoundTextureGeometry.For(DiscDiameter, UiScale);
+
+    /// <summary>
+    /// Geometry of the rim of a satellite (sub-menu or material ring) with <paramref name="rings"/> rings around a
+    /// parent slot: disc <c>D_s = m·P + B/2 + rimPad</c> (design.md §1.1). Not limited by the ring settings, because
+    /// the option count decides it; very large discs are capped by <see cref="RoundTextureGeometry.MaxTextureSize"/>.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="rings"/> is below 1.</exception>
+    public RoundTextureGeometry SatelliteRim(int rings)
+    {
+        if (rings < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(rings), rings, "A satellite has at least one ring.");
+        }
+
+        return RoundTextureGeometry.For(2f * LayoutConstants.DiscRadius(ButtonSize, rings), UiScale);
+    }
+
+    /// <summary>
+    /// The rim cache policy: the main rim plus one satellite slot. A satellite whose disc matches the main disc
+    /// draws the main rim; otherwise the satellite slot is reused when it has the wanted size and rebuilt when not.
+    /// So opening satellites never rebuilds the main rim, and repeated opens of one satellite size rebuild nothing.
+    /// </summary>
+    /// <param name="main">Geometry of the built main rim, or null when none is built.</param>
+    /// <param name="cached">Geometry of the cached satellite rim, or null when none is built.</param>
+    /// <param name="wanted">Geometry the satellite needs (<see cref="SatelliteRim"/>).</param>
+    public static SatelliteRimSource ChooseSatelliteRim(RoundTextureGeometry? main, RoundTextureGeometry? cached, RoundTextureGeometry wanted)
+    {
+        if (main == wanted)
+        {
+            return SatelliteRimSource.Main;
+        }
+
+        return cached == wanted ? SatelliteRimSource.Cached : SatelliteRimSource.Rebuild;
+    }
 
     /// <summary>
     /// Drawn size in UI px of glyph <paramref name="id"/> (design.md §2 badges, S4a): sub-menu 0.22 B, caret 0.2 B,

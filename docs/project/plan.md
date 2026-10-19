@@ -420,7 +420,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
     - [ ] If the PNG level was chosen: the PNGs are exported by our rasterizer, committed, and each has an assets.md row (MIT, made by the project).
     - [ ] Given badges drawn at 0.18–0.25 B (≈ 8–14 px at B 36–56) and hub icons at 0.22 B / 0.6 e, then badge and hub-icon glyphs are rasterized at their actual draw size in screen px (`Glyphs.MinSize` lowered to 8, with tests) and rebuilt with the disc rim on button-size or UI-scale change within the ≤ 5 ms budget; a 64 px glyph is not minified without mipmaps (T-23 review).
   - **Tests**: build; in-game UC-2 visual review.
-  - **In-game check**: UC-2 (user)
+  - **In-game check**: UC-2 (user). Also check (T-28 review): with uploads now `SetPixelData` + `Apply(false, true)` (non-readable), the rim, slot rings and lock/caret glyphs still draw and are upright; the self-test section "textures (T-28)" shows `live` = `expected`, `Color32 size=4 … ok` and the round trip `ok`; record the "Textures rebuilt … (with upload)" time in performance.md.
   - **Size**: S
 
 - [ ] **T-29**: Wheel renderer: disc, base slot states, hub, label plate

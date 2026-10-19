@@ -6,6 +6,7 @@ using LudeonTK;
 using QuickMenu.Catalog;
 using QuickMenu.Core.Diagnostics;
 using QuickMenu.Core.Pins;
+using QuickMenu.Menu;
 using QuickMenu.Pinning;
 using Verse;
 
@@ -29,6 +30,7 @@ internal static class SelfTest
         Section(sb, "S-5 dev-only and reasons", DevOnlyAndReasons);
         Section(sb, "startup (P-18)", PerfStartup.Append);
         Section(sb, "perf counters", PerfCounters.AppendCounters);
+        Section(sb, "textures (T-28)", Textures.AppendSelfTest);
         sb.AppendLine(Log.Prefix + "END self-test");
         return sb.ToString();
     }

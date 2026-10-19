@@ -93,13 +93,105 @@ public class TextureSizingTests
     [InlineData(float.NaN, 1, 1f)]
     [InlineData(float.PositiveInfinity, 1, 1f)]
     [InlineData(56f, -1, 1f)]
-    [InlineData(56f, 6, 1f)]
+    [InlineData(56f, 9, 1f)]
     [InlineData(56f, 1, 0f)]
     [InlineData(56f, 1, float.NaN)]
     [InlineData(56f, 1, float.PositiveInfinity)]
     public void Sizing_RejectsBadInput(float b, int rings, float scale)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => TextureSizing.Create(b, rings, scale));
+    }
+
+    [Fact]
+    public void Sizing_AcceptsEveryRingCountAutoCanReach()
+    {
+        // Auto grows to 8 rings (design.md §1.1), past the Fixed setting's 5; rejecting it disabled every texture.
+        Assert.Equal(8, LayoutConstants.AutoMaxRings);
+        Assert.Equal(LayoutConstants.AutoMaxRings, TextureSizing.MaxRingsInUse);
+        Assert.True(TextureSizing.MaxRingsInUse >= LayoutConstants.MaxRings);
+        for (int m = 0; m <= TextureSizing.MaxRingsInUse; m++)
+        {
+            TextureSizing s = TextureSizing.Create(56f, m, 1f);
+            Assert.Equal(2f * LayoutConstants.DiscRadius(56f, m), s.DiscDiameter);
+        }
+    }
+
+    [Fact]
+    public void Sizing_EightRingsAtLargestSize_IsCappedAndKeepsUiWidths()
+    {
+        TextureSizing s = TextureSizing.Create(96f, 8, 2f);
+
+        Assert.Equal(1784f, s.DiscDiameter); // 2 × (8 × 104 + 48 + 12)
+        Assert.Equal(RoundTextureGeometry.MaxTextureSize, s.Rim.TextureSize);
+        float outerUi = ((s.Rim.TextureSize / 2f) - MaskRasterizer.EdgePadding) / s.Rim.TexelsPerUi;
+        Assert.Equal(892f, outerUi, 2);
+    }
+
+    // ---- Satellite rim (design.md §1.1: D_s = m·P + B/2 + rimPad) -------------------------------
+
+    [Fact]
+    public void SatelliteRim_UsesTheSatelliteDiscDiameter()
+    {
+        TextureSizing s = TextureSizing.Create(56f, 2, 1.5f);
+
+        Assert.Equal(RoundTextureGeometry.For(2f * LayoutConstants.DiscRadius(56f, 1), 1.5f), s.SatelliteRim(1));
+        Assert.Equal(s.Rim, s.SatelliteRim(2));
+
+        // Satellites are not limited by the ring settings: many materials can need more rings; the cap holds.
+        Assert.Equal(RoundTextureGeometry.MaxTextureSize, s.SatelliteRim(20).TextureSize);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void SatelliteRim_RejectsNoRings(int rings)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => TextureSizing.Create(56f, 2, 1f).SatelliteRim(rings));
+    }
+
+    [Fact]
+    public void ChooseSatelliteRim_ReusesMainWhenTheDiscsMatch()
+    {
+        TextureSizing s = TextureSizing.Create(56f, 2, 1f);
+
+        Assert.Equal(SatelliteRimSource.Main, TextureSizing.ChooseSatelliteRim(s.Rim, null, s.SatelliteRim(2)));
+        Assert.Equal(SatelliteRimSource.Main, TextureSizing.ChooseSatelliteRim(s.Rim, s.SatelliteRim(1), s.SatelliteRim(2)));
+    }
+
+    [Fact]
+    public void ChooseSatelliteRim_ReusesTheCachedSatellite_OrRebuildsIt()
+    {
+        TextureSizing s = TextureSizing.Create(56f, 2, 1f);
+
+        Assert.Equal(SatelliteRimSource.Rebuild, TextureSizing.ChooseSatelliteRim(s.Rim, null, s.SatelliteRim(1)));
+        Assert.Equal(SatelliteRimSource.Cached, TextureSizing.ChooseSatelliteRim(s.Rim, s.SatelliteRim(1), s.SatelliteRim(1)));
+        Assert.Equal(SatelliteRimSource.Rebuild, TextureSizing.ChooseSatelliteRim(s.Rim, s.SatelliteRim(1), s.SatelliteRim(3)));
+        Assert.Equal(SatelliteRimSource.Rebuild, TextureSizing.ChooseSatelliteRim(null, null, s.SatelliteRim(1)));
+
+        // A UI scale change makes the cached geometry stale even for the same ring count.
+        TextureSizing scaled = TextureSizing.Create(56f, 2, 1.5f);
+        Assert.Equal(SatelliteRimSource.Rebuild, TextureSizing.ChooseSatelliteRim(scaled.Rim, s.SatelliteRim(1), scaled.SatelliteRim(1)));
+    }
+
+    [Fact]
+    public void ChooseSatelliteRim_AlternatingSatellitesNeverRebuildTheMainRim()
+    {
+        // Main rim (2 rings) plus one satellite slot: opening 1-ring and 2-ring satellites in turn rebuilds only the
+        // satellite slot when the size actually changes, never the main rim.
+        TextureSizing s = TextureSizing.Create(56f, 2, 1f);
+        RoundTextureGeometry? cached = null;
+        int rebuilds = 0;
+        foreach (int rings in new[] { 1, 2, 1, 2, 1, 1 })
+        {
+            SatelliteRimSource source = TextureSizing.ChooseSatelliteRim(s.Rim, cached, s.SatelliteRim(rings));
+            if (source == SatelliteRimSource.Rebuild)
+            {
+                rebuilds++;
+                cached = s.SatelliteRim(rings);
+            }
+        }
+
+        Assert.Equal(1, rebuilds);
     }
 
     [Fact]

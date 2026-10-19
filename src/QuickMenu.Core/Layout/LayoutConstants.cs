@@ -16,6 +16,12 @@ public static class LayoutConstants
     public const int MinRings = 1;
     public const int MaxRings = 5;
 
+    /// <summary>
+    /// Rings the Auto wheel can grow to (design.md §1.1 "Auto full ... or m = 8"). Larger than <see cref="MaxRings"/>,
+    /// which limits only the Fixed rings setting; anything sized by the rings in use must accept this many.
+    /// </summary>
+    public const int AutoMaxRings = 8;
+
     /// <summary>Pitch P = B + G.</summary>
     public static float Pitch(float buttonSize) => buttonSize + Gap;
 
