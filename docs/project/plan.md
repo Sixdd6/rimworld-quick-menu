@@ -1006,7 +1006,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: grep audit in the checklist; in-game setup (e) when available (UC-6).
   - **Size**: S
 
-- [ ] **T-69**: UC-5 checklist, session guide and run
+- [x] **T-69**: UC-5 checklist, session guide and run
   - **Owner**: test-engineer
   - **Requirements**: FR-2 (toggle only), FR-6, FR-8, FR-14, FR-17, NFR-1, NFR-2, NFR-6
   - **Depends on**: T-65, T-66, T-67, T-68, T-93, T-94, T-95
