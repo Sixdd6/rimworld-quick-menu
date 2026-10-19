@@ -132,7 +132,7 @@ This checks spike S-3: does the game call a designator's `ProcessInput` only on 
 - Expected: a log line `[QuickMenu] Quick Menu: measuring 10000 frames; leave the map idle and do not open the menu.`
 
 4.2. Leave the map **idle** for about 3 minutes (10,000 frames at 60 fps; longer if your frame rate is lower). Do not click, do not scroll, do not open any window. You can keep the game running at normal speed.
-- Expected: after the frame count is reached, a block `[QuickMenu] BEGIN closed-frame measurement` ... `END closed-frame measurement` appears in the log.
+- Expected: after the frame count is reached, a block `[QuickMenu] BEGIN closed-frame measurement` ... `END closed-frame measurement` appears in the log. It is printed on the frame after the 10,000th, so wait a moment before copying it.
 - It shows `medianUs` (P-1 target 10 microseconds or less, goal 2 or less) and `allocatedBytesTotal=0` (P-2).
 - Copy: this block. Paste under "Closed-frame measurement". Measuring stays ON afterwards; leave it on.
 
@@ -171,8 +171,8 @@ The skeleton wheel is a test menu with two slots: Mine and Wall.
 
 ### Part 6: Open/close cost and control run (about 6 min)
 
-6.1. Make sure measuring is ON (it is after Part 4). If you restarted the game since, run **perf measuring (toggle)** once, so the log says `perf measuring ON`.
-- Do not toggle it a second time, or it turns OFF and the counters stay empty.
+6.1. Reset the counters so this run is clean: run **perf measuring (toggle)** twice (the log says `perf measuring OFF`, then `perf measuring ON`). If you restarted the game since Part 4, run it once only, so the log ends with `perf measuring ON`.
+- Make sure the last message is `perf measuring ON`; if it says OFF, the counters stay empty.
 
 6.2. Open and close the wheel **20 times** (trigger, then Esc). Do about half of the openings with the mouse near the screen centre and half near a screen edge.
 - Expected: no stutter, no errors in the log.
@@ -180,14 +180,14 @@ The skeleton wheel is a test menu with two slots: Mine and Wall.
 6.3. Hold the menu open once for about 10 seconds with the mouse sweeping over both slots (P-8 draw cost), then close it.
 - Expected: the menu stays up and responds.
 
-6.4. Debug actions, Quick Menu, click **control window**. A full-screen invisible window opens for 10 seconds. It draws 40 plain squares. Leave your mouse still and do not click (a click closes it early).
+6.4. Debug actions, Quick Menu, click **control window**. A full-screen invisible window opens for 10 seconds. It draws the same number of slots (N) and the same icons as the wheel you just opened, so you must have opened the wheel at least once before this step. Leave your mouse still and do not click (a click closes it early).
 - Expected: after 10 seconds it closes. Log line "control window open for 10 s; run 'perf report' afterwards."
 
 6.5. Debug actions, Quick Menu, click **perf report**.
 - Expected: a block `[QuickMenu] BEGIN perf report` ... `END perf report`. It lists startup time (P-18), and for each counter calls, median, p99 and bytes per frame.
-  - P-7a: "open path" median/max (within about 3 ms of the closed median).
-  - P-8: "QuickMenuWindow.DoWindowContents" median 1.0 ms or less (the report prints it in microseconds, so 1000 us).
-  - P-9: allocated bytes per frame for the draw and for the "control window" (compare them; the target is at most 512 B per frame above the control).
+  - P-7a: the "open path" line, median/max (within about 3 ms of the closed median). Its `firstCallUs` is the first open of the session (S-4), and the `firstFrameAfterOpen` fields show the first frame after each open.
+  - P-8: the "menu window per frame" line, median 1.0 ms or less (the report prints microseconds, so 1000 us). All numbers are per frame, as medians.
+  - P-9: compare bytes per frame on the "menu window per frame" line with the "control window per frame" line (the report prints N for both; the target is at most 512 B per frame above the control).
   - P-18: `modCtorMs`.
 - Copy: this block. Paste under "Perf report (a)".
 
