@@ -108,7 +108,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **In-game check**: UC-1 (user)
   - **Size**: M
 
-- [ ] **T-6**: `DesignatorCatalog` v1 (static part) and Core `PinKeyFactory`
+- [x] **T-6**: `DesignatorCatalog` v1 (static part) and Core `PinKeyFactory`
   - **Owner**: developer
   - **Requirements**: FR-7, FR-10, FR-13, NFR-1, NFR-2 (ADR 0004, 0006)
   - **Depends on**: T-3
@@ -136,7 +136,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **In-game check**: UC-1 (user)
   - **Size**: M
 
-- [ ] **T-8**: Spike S-1 and S-3: patch every `ProcessInput` override in observe mode · `parallel-ok`
+- [x] **T-8**: Spike S-1 and S-3: patch every `ProcessInput` override in observe mode · `parallel-ok`
   - **Owner**: developer
   - **Requirements**: FR-8, FR-10, NFR-1 (P-4), NFR-2 (ADR 0005)
   - **Depends on**: T-5
@@ -178,7 +178,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **In-game check**: UC-1 (user)
   - **Size**: S
 
-- [ ] **T-11**: Spike S-2: input probe · `parallel-ok`
+- [x] **T-11**: Spike S-2: input probe · `parallel-ok`
   - **Owner**: developer
   - **Requirements**: FR-1, FR-2 (ADR 0003)
   - **Depends on**: T-5
@@ -191,7 +191,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **In-game check**: UC-1 (user)
   - **Size**: S
 
-- [ ] **T-12**: Spike S-7: texture probe window · `parallel-ok`
+- [x] **T-12**: Spike S-7: texture probe window · `parallel-ok`
   - **Owner**: developer (visual-designer reviews the screenshots in T-14)
   - **Requirements**: NFR-5, NFR-7 (ADR 0007, design.md §6)
   - **Depends on**: T-4, T-5
