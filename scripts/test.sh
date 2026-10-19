@@ -51,8 +51,8 @@ report="TestResults/coverage.cobertura.xml"
 [ -f "$report" ] || { echo "coverage gate: no report at $report" >&2; exit 1; }
 rate="$(grep -o '<coverage [^>]*line-rate="[0-9.]*"' "$report" | grep -o 'line-rate="[0-9.]*"' | head -1 | tr -dc '0-9.')"
 if grep -q '<packages */>' "$report"; then
-  echo "coverage gate: report has no instrumented code yet (Core has no executable lines). Gate is vacuous until Core has code."
-  exit 0
+  echo "coverage gate: FAILED - the report has no instrumented code. Core has code, so coverage collection is broken (e.g. a PathMap build hiding source paths)." >&2
+  exit 1
 fi
 pct="$(awk -v r="$rate" 'BEGIN { printf "%.1f", r * 100 }')"
 echo "coverage gate: QuickMenu.Core line coverage ${pct}% (minimum ${min}%)"

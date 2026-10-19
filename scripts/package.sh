@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$REPO_ROOT"
 version="$(sed -n 's:.*<modVersion>\(.*\)</modVersion>.*:\1:p' mod/About/About.xml | head -1)"
 [ -n "$version" ] || { echo "modVersion not found in mod/About/About.xml" >&2; exit 1; }
-dotnet build QuickMenu.slnx -c Release --no-restore -v q
+dotnet build QuickMenu.slnx -c Release --no-restore -v q -p:MapLocalPaths=true --no-incremental
 for dll in QuickMenu.dll QuickMenu.Core.dll; do
   [ -f "mod/1.7/Assemblies/$dll" ] || { echo "$dll missing after build" >&2; exit 1; }
 done
