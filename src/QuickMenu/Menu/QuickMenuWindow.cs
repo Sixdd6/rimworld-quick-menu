@@ -102,7 +102,7 @@ internal sealed class QuickMenuWindow : Window
         catch (Exception ex)
         {
             DrawSite.Fail(ex);
-            MenuController.Close();
+            SafeClose();
         }
     }
 
@@ -147,7 +147,7 @@ internal sealed class QuickMenuWindow : Window
         catch (Exception ex)
         {
             DrawSite.Fail(ex);
-            MenuController.Close();
+            SafeClose();
         }
     }
 
@@ -196,6 +196,12 @@ internal sealed class QuickMenuWindow : Window
                     {
                         d.ProcessInput(ev);
                     }
+                    catch (Exception ex)
+                    {
+                        // A foreign designator's fault must not disable the whole menu (DrawSite stays enabled).
+                        Type type = d.GetType();
+                        Log.LogOnce($"Menu.Activation.{type.FullName}", $"Designator {type.FullName} threw during activation: {ex}");
+                    }
                     finally
                     {
                         MenuActivation.Exit();
@@ -204,7 +210,19 @@ internal sealed class QuickMenuWindow : Window
             }
 
             ev.Use();
+            SafeClose();
+        }
+    }
+
+    private static void SafeClose()
+    {
+        try
+        {
             MenuController.Close();
+        }
+        catch (Exception ex)
+        {
+            Log.LogOnce("Menu.Close", $"Closing the menu failed: {ex}");
         }
     }
 
