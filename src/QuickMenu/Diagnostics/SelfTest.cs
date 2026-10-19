@@ -31,6 +31,7 @@ internal static class SelfTest
         Section(sb, "startup (P-18)", PerfStartup.Append);
         Section(sb, "perf counters", PerfCounters.AppendCounters);
         Section(sb, "textures (T-28)", Textures.AppendSelfTest);
+        Section(sb, "mods (T-67)", b => b.AppendLine(Compat.ModDetection.Summary() + " effectiveModifier=" + QuickMenuMod.EffectiveModifier + " firstRunShown=" + QuickMenuMod.Settings.FirstRunNoticeShown + " mintShown=" + QuickMenuMod.Settings.MintNoticeShown));
         Section(sb, "settings writes (T-57)", b => b.AppendLine("saves=" + QuickMenuMod.SaveCount.ToString(CultureInfo.InvariantCulture)));
         sb.AppendLine(Log.Prefix + "END self-test");
         return sb.ToString();

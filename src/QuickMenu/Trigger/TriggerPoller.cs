@@ -47,6 +47,11 @@ internal static class TriggerPoller
                 PerfCounters.PrintPendingReport(); // deferred 10,000-frame report, outside the measured scope
             }
 
+            if (Compat.NoticeRunner.Pending)
+            {
+                Compat.NoticeRunner.Tick();
+            }
+
             using var scope = new MeasureScope(StatId.Poller); // one cached bool check while measuring is off
             if (!TriggerPressed())
             {

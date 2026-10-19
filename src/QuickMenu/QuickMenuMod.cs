@@ -25,13 +25,19 @@ public sealed class QuickMenuMod : Mod
     /// <summary>The loaded settings (defaults until the mod is constructed or when loading failed).</summary>
     internal static QuickMenuSettings Settings => _settings;
 
-    /// <summary>Package id of Dubs Mint Menus; with it active the pin modifier defaults to Alt (FR-8).</summary>
-    private const string MintPackageId = "Dubwise.DubsMintMenus";
+    /// <summary>Whether Dubs Mint Menus was active when the game started; the pin modifier then defaults to Alt (FR-8).</summary>
+    internal static bool MintActive => _mintActive;
 
     private static bool _mintActive;
 
-    /// <summary>Whether Dubs Mint Menus was active when the game started.</summary>
-    internal static bool MintActive => _mintActive;
+    /// <summary>Opens this mod's page in the game's mod settings window.</summary>
+    internal static void OpenSettings()
+    {
+        if (_instance != null)
+        {
+            Find.WindowStack.Add(new Dialog_ModSettings(_instance));
+        }
+    }
 
     /// <summary>
     /// The pin modifier in effect, cached at startup and by <see cref="RefreshEffectiveModifier"/>. The pin prefix reads
@@ -78,15 +84,8 @@ public sealed class QuickMenuMod : Mod
 
         long ownStart = Stopwatch.GetTimestamp();
         _settings.ApplyCapacity();
-        try
-        {
-            _mintActive = ModsConfig.IsActive(MintPackageId);
-        }
-        catch (Exception ex)
-        {
-            Diagnostics.Log.LogOnce("Pinning.MintDetect", $"Detecting Dubs Mint Menus failed, assuming it is not active: {ex}");
-        }
-
+        Compat.ModDetection.Detect();
+        _mintActive = Compat.ModDetection.Mint;
         RefreshEffectiveModifier();
         long ownTicks = Stopwatch.GetTimestamp() - ownStart;
         long settingsTicks = getTicks + ownTicks;

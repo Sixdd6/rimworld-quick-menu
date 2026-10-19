@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <QuickMenu.Notice.FirstRun.Title>Quick Menu is ready</QuickMenu.Notice.FirstRun.Title>
+  <QuickMenu.Notice.FirstRun.Body>Press Mouse 4 (a side mouse button) on the map to open the quick menu. No side button? Use the middle mouse button instead.</QuickMenu.Notice.FirstRun.Body>
+  <QuickMenu.Notice.Mint>Dubs Mint Menus is active: pin with Alt+click, so Ctrl+click stays with Mint. You can change this in the Quick Menu settings.</QuickMenu.Notice.Mint>
+  <QuickMenu.Notice.UseMiddle>Use middle mouse</QuickMenu.Notice.UseMiddle>
+  <QuickMenu.Notice.OpenSettings>Open settings</QuickMenu.Notice.OpenSettings>
+  <QuickMenu.Notice.Ok>OK</QuickMenu.Notice.Ok>
+</LanguageData>
