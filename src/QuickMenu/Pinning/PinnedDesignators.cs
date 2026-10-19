@@ -31,6 +31,12 @@ internal static class PinnedDesignators
     internal static PinMark Lookup(Designator designator) =>
         _set.Lookup(designator, designator is Designator_Build build ? build.PlacingDef : null);
 
+    /// <summary>
+    /// The mark of a single entry inside an open dropdown list: its own identity only (never the def map, never its parent), so a
+    /// whole-dropdown pin marks no entries. Allocation-free.
+    /// </summary>
+    internal static PinMark LookupEntry(Designator entry) => _set.Lookup(entry);
+
     /// <summary>Rebuilds from the board and the resolved cache. Never throws: a failure is logged once and the old set stays.</summary>
     internal static void Rebuild()
     {

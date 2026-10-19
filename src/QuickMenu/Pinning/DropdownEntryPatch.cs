@@ -60,6 +60,9 @@ internal static class DropdownEntryPatch
         }
     }
 
+    /// <summary>The entry designator a dropdown option's action wraps, or null when the action is not ours (Mint's rewrap, other menus).</summary>
+    internal static Designator? EntryOf(Action? action) => action?.Target is EntryAction wrapper ? wrapper.Entry : null;
+
     private sealed class EntryAction
     {
         private readonly Designator _entry;
@@ -70,6 +73,8 @@ internal static class DropdownEntryPatch
             _entry = entry;
             _original = original;
         }
+
+        internal Designator Entry => _entry;
 
         internal void Run()
         {

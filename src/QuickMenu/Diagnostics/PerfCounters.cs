@@ -48,6 +48,9 @@ internal enum StatId
 
     /// <summary>The pin-marker hook on <c>Command.GizmoOnGUIInt</c> (P-19): one sample per frame, covering every call of that frame.</summary>
     PinMarker,
+
+    /// <summary>The dropdown-entry marker postfixes (P-19, hook site 5): one sample per frame, covering every option draw of that frame.</summary>
+    PinMarkerEntry,
 }
 
 /// <summary>
@@ -90,6 +93,7 @@ internal static class PerfCounters
         new("  P-8 by layout: wheel satellite (sub-ring or material ring open)", FrameRing),
         new("  P-8 by layout: sub-grid (sub-grid or material grid open)", FrameRing),
         new("pin marker hook per frame (P-19; calls = hook calls, calls/steadyFrames = calls per frame; every command gizmo, drawn or not)", FrameRing),
+        new("pin marker dropdown-entry hooks per frame (P-19; calls = float-menu option draws while a mapped list exists)", FrameRing),
     };
 
     internal static MeasureStats Get(StatId id) => EnsureStats()[(int)id];

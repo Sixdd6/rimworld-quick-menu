@@ -132,6 +132,7 @@ public sealed class QuickMenuMod : Mod
         PatchGuard.Run(PinClickPatch.Site, () => PinClickPatch.Apply(harmony));
         DropdownEntryPatch.Apply(harmony);
         PinMarkerPatch.Apply(harmony);
+        DropdownMarkerPatch.Apply(harmony);
     }
 
     private static void ApplyPostfix(Harmony harmony, Diagnostics.PatchSite site, Type targetType, string targetMethod, Type patchType, string postfix)

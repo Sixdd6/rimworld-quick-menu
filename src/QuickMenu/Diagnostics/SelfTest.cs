@@ -106,6 +106,12 @@ internal static class SelfTest
             + " textureSiteDisabled=" + Textures.PinMarkerSite.Disabled
             + " markedSetEmpty=" + PinnedDesignators.IsEmpty
             + " setVersion=" + PinnedDesignators.Version.ToString(CultureInfo.InvariantCulture));
+        sb.AppendLine("dropdown marker patches (Designator_Dropdown.ProcessInput, FloatMenuOption.DoGUI, FloatMenuGridOption.OnGUI postfixes): map="
+            + (DropdownMarkerPatch.MapPatched ? "patched" : "failed")
+            + " row=" + (DropdownMarkerPatch.RowPatched ? "patched" : "failed")
+            + " grid=" + (DropdownMarkerPatch.GridPatched ? "patched" : "failed")
+            + " siteDisabled=" + DropdownMarkerPatch.Site.Disabled
+            + " mappedOptions=" + DropdownMarkerPatch.MappedCount.ToString(CultureInfo.InvariantCulture));
     }
 
     private static void RoundTrip(StringBuilder sb)

@@ -20,6 +20,8 @@ public enum FaultPoint
     BindingCaptureWindow = 11,
     PinMarker = 12,
     TexturesPinMarker = 13,
+    DropdownMarkerMap = 14,
+    DropdownMarkerDraw = 15,
 }
 
 /// <summary>
