@@ -233,7 +233,7 @@ Two columns inside `DoSettingsWindowContents` (about 860 × 580), using vanilla 
 
 **Right column, "Layout"**
 - **Shape**: [Wheel] [Grid] segmented control.
-- **Size**: ( ) Fixed ( ) Auto.
+- **Size**: [Fixed] [Auto] segmented control (UC-4 review).
 - **Rings** [−] 2 [+] "18 slots" for the wheel, or **Columns** [−] 5 [+] / **Rows** [−] 3 [+] "14 slots" for the grid (steps of 2). Hidden in Auto, except Columns for the grid.
 - **Button size**: slider 36–96, step 4.
 - **Preview** (410 × 270): the real layout from Core at 50% with blank slots, updated live.
@@ -502,3 +502,33 @@ Evidence: [uc3-material-ring.png](design/spikes/uc3-material-ring.png) (wheel, F
 | 10 | Not shown | States 4 (alone), 5, 12 (sub-menu badge), edit-mode hub (Done), pressed (3), hub hover, edge-dodge corners, rim over snow, UI scale 2.0. | Carried to UC-4 (T-60) and T-61 |
 
 **T-86 values (declined by the user 2026-10-19; kept for reference).** New token `satelliteUnderlay` = black α **0.55**. Draw it once per frame, before the satellite disc (S1 step 6): the `Circle` mask at diameter `2·D_s − 4` (inside the rim's outer outline), centred on the satellite centre. With the gradient on top, the covered alpha is about 0.93 at the centre and 0.80 at the edge (1 − 0.45·0.15 and 1 − 0.45·0.45), so main content under the satellite falls to about a fifth of its dimmed strength. The map is still faintly visible near the satellite edge. Outside the satellite nothing changes, and `dimmedMenu` stays 0.45. The grid sub-grid gets the same underlay on its panel (9-slice `Panel` mask, same token).
+
+### UC-4 visual review (T-61, 2026-10-19)
+Evidence: [uc4-material-ring-lastused.png](design/spikes/uc4-material-ring-lastused.png) (wheel, Fixed, 2 rings, B 64, UI scale 1, Wall material ring open, mouse not over an option) and [uc4-settings-page.png](design/spikes/uc4-settings-page.png) (settings v2, Wheel / Fixed / 2 rings / B 64). Compared with [uc3-material-ring.png](design/spikes/uc3-material-ring.png), S3, S4 (states 4, 13, 14), S7, §2 and the [UC-4 results](spikes/uc-4-results.md) (all functional checks passed). Pixel values were measured on the PNGs (1:1).
+
+**Verdict: the material ring passes, and the last-used highlight is now clear. The settings page works and matches S7 in structure and size. Three small polish items for the settings page go to T-93 (M5). No blocker.**
+
+| # | Area | Finding | Result |
+|---|---|---|---|
+| 1 | Last-used option alone (state 4) | The last-used stone option has a 3 px `accent` ring (measured: 2 full px plus anti-aliasing on each side) on the normal `slotBg` fill (#1D2125). The other options have the 1 px `slotBorder` ring, and the open parent has 2 px. With no hover, it is the only highlighted option and reads as "this one again" at a glance. | Pass |
+| 2 | Last-used vs hover | Hover is 2 px `accent`, a lifted fill (#3B454F, measured at UC-3) and the label plate. Last-used is 3 px on the dark fill, with no plate. The fill lift and the plate are the main cues, and the 1 px ring difference is secondary. If the player hovers another option, both stay distinct. A screenshot with both at once was not taken. | Pass (user to confirm by eye in UC-6) |
+| 3 | Material dot (state 13) | The parent's dot is now #696969, a stuff colour, not `textMuted` (#A7B0B8). This confirms that the last-used material is remembered. Dark stuffs give a low-contrast dot (here about 2.9:1 vs `slotBg`), but the dot is supplementary: the ring in the open material ring carries the information. | Pass, no change |
+| 4 | Satellite see-through | The dimmed main wheel shows through the satellite (the main hub pencil at 6 o'clock, ghost ring-2 slots). This is the user's choice (T-86 declined). | Pass (user decision) |
+| 5 | Settings: size and structure | The window is the vanilla mod-settings window (about 900 × 700). Two columns, with the section headers ("Opening the menu", "Layout") on one baseline. The preview box measures exactly 410 × 270, and the wheel in it is 187 px across (the in-game B 64 wheel is 374 px, so 50 % is correct). Reset to defaults is at the bottom left. The missing-pins section is absent because no pins were missing. This is correct (S7: it shows only when missing pins exist), and UC-5 tests it. "Size" is a Fixed/Auto segmented control, not radio buttons. It is consistent with "Shape" and is accepted (S7 text updated below). | Pass |
+| 6 | Settings: left column empty space | About 300 px is empty between "Clear all pins…" and "Reset to defaults". The design also places the Trigger mode rows (T-64, M5), the Mint line and the missing-pins block in this column, so most of the gap is reserved. A bottom-anchored Reset is the vanilla pattern. | Accept, no change |
+| 7 | **Settings: selected segment** | The selected segment (Wheel, Fixed) uses only `Widgets.DrawHighlightSelected`: a lighter button fill (#866E3E vs #6B512F, about **1.5:1**). This looks like a hover lift, and the selection can be seen only by comparing the two buttons. S7 and §2 say that `accent` marks the selected segment. WCAG 1.4.11 needs 3:1 for a state indicator. | **Change (T-93)**: also draw a 2 px `accent` outline inside the selected segment (8.3:1 vs `windowBg`) |
+| 8 | **Settings: preview border** | The preview box border is pure white (#FFFFFF, the `Widgets.DrawBox` default, about 17:1 vs the window). It is the loudest line in the window, and it competes with the preview's `accent` rim. | **Change (T-93)**: draw the 1 px border in `slotBorder` (#56626E, about 2.8:1, decorative) |
+| 9 | **Settings: label alignment** | Row labels (Open menu with, Pin with, Shape, Size, Rings, Button size) are drawn top-anchored in the 30 px row, so they sit about 4 px above the centred button text. In the left column the controls start at different x positions: the binding button at +125 px and the Ctrl button at +90 px. | **Change (T-93)**: `TextAnchor.MiddleLeft` for row labels; one label width per column (the widest measured label in that column, at least 90) |
+| 10 | Settings: slot count | "18 slots" is drawn in Tiny `textMuted` on its own line under "Rings". S7 puts it on the stepper row. It is readable, but it reads as a caption of the label, not of the value. | **Change (T-93, minor)**: draw it on the stepper row, 8 px after [+], Small `textMuted` (7.2:1) |
+| 11 | Settings: Reset vs Close | Reset to defaults (bottom left) sits 6 px above the vanilla Close button (centred). Close is owned by the vanilla window. | Accept |
+| 12 | Not shown | See the carry-over list below. | Carried to UC-6 (T-75) and T-77 |
+
+**Not captured in UC-4: check in UC-6 (T-75) and take the screenshots for T-77.** These do not block M4, because the functional checks passed in the UC-4 results.
+- Grid: main panel with hover, plate and the Edit hub cell; a fine-tile sub-grid; a Wall material grid; edge dodge at a corner.
+- Edit mode: the help panel with the capacity line (normal, and `danger` when full); the drag ghost (state 9), the drop target (11) and the dragged icon in low-light (the T-55 deviation: the dragged designator icon is about 60 %, not 80 %); the Done hub.
+- The empty-menu hint plate (FR-16), in Fixed and in Auto.
+- Last-used (4) and hover (2) on two options at the same time.
+- Greyed with lock (5), sub-menu badge (12), pressed (3), rim over snow or ice. These were carried from UC-3 and are still not captured.
+- **UI scale 2.0**: the game refuses 2.0 at 2560 × 1440. Use the highest scale it offers at that resolution (1.75 if listed; a non-integer scale is a harder test of mask sharpness), with B 96. 2.0 needs a display at least 1536 px high, or the user can accept 1.75 as the evidence for NFR-5/NFR-7. The UC-4 results confirm 1.5 (warning text and texture rebuilds).
+
+**S7 amendment (accepted at this review).** Size is a [Fixed] [Auto] segmented control, like Shape. The slot count sits on the stepper row.

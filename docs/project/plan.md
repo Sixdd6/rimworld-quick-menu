@@ -22,9 +22,9 @@
 | M2 | Pin by click, use the wheel | Ctrl+click any designator in vanilla or BAM pins it (message; full; toggle). The bindable trigger opens the styled Fixed wheel centred on the mouse, dodging edges; clicking a slot activates it like the architect. Unavailable pins (e.g. Ideology morbid slabs) always show greyed with the reason. The centre is the Edit button (it does nothing until M3 and never closes the menu); modifier+click on a slot unpins it. Pins and settings persist across saves and restarts. A short follow-up session (UC-2b) checks the post-UC-2 fixes and re-measures settings load, texture prewarm and window allocations | T-16 … T-35, T-81, T-82 | 22 |
 | M3 | Sub-menus, materials, edit mode shell | Whole dropdowns pinned from the architect fan out as a sub-ring; stuff builds open a material ring (last-used first); Ideology designators resolve and refresh; edit mode shell (the centre Edit button enters it and shows Done; Done/Esc leave; modifier+click unpins; plain clicks do nothing); design, performance and architecture documents aligned with the picker removal | T-36, T-37, T-40 … T-44, T-46 … T-49, T-83 … T-85 | 14 |
 | M4 | Edit mode, grid, Auto sizing | Drag to swap (Fixed: onto an empty slot moves the pin there), help panel, full state, one settings write per edit session; grid layout with sub-grids; Auto sizing (new pins at the end); full layout settings with live preview; empty-menu hint (the satellite underlay T-86 was removed by the user) | T-50 … T-62 | 13 |
-| M5 | Hold mode, availability, compatibility | Hold-and-release with 150 ms hover-open; greyed slots with the game's (or composed) reason for every cause; missing-mod pins kept and restored; Mint detection with Alt default and notices; first-run notice; Multiplayer-safe audit | T-63 … T-71 | 9 |
+| M5 | Hold mode, availability, compatibility | Hold-and-release with 150 ms hover-open; greyed slots with the game's (or composed) reason for every cause; missing-mod pins kept and restored; Mint detection with Alt default and notices; first-run notice; Multiplayer-safe audit | T-63 … T-71, T-93 | 10 |
 | M6 | Pin marker, hardening and release prep | Pinned designators show a small pin marker on their architect button and pinned single entries show it in an open dropdown list, in vanilla and BAM, updating the next frame after pin/unpin at no measurable per-frame cost (FR-19, last feature, before release prep); fault isolation verified, string and clean-room audits, final performance pass, final regression on all setups (marker included), Preview.png, README, CHANGELOG, Workshop description, release package (publishing is the separate gated Phase 7) | T-72 … T-74, T-87 … T-92, T-75 … T-80 | 15 |
-| | | | **Total** | **88** active (92 IDs; T-38, T-39, T-45, T-86 removed) |
+| | | | **Total** | **89** active (93 IDs; T-38, T-39, T-45, T-86 removed) |
 
 **Critical path** (milestone gates included): T-3 → T-6 → T-7 / T-9 → T-13 **[UC-1]** → T-14 → T-28 → T-29 → T-32 → T-33 **[UC-2]** → T-34 → T-81 → T-82 **[UC-2b]** → T-41 → T-43 → T-47 **[UC-3]** → T-56 → T-57 → T-60 **[UC-4]** → T-64 → T-69 **[UC-5]** → T-87 → T-90 → T-91 → T-92 → T-75 **[UC-6]** → T-77 → T-80. In M6, T-72 (fault-injection list), T-88 (P-19 budget) and T-89 (marker glyph) run beside T-87/T-90 and must finish before T-91; T-73 and T-74 run beside the whole marker chain. Each user session sits on the path, so how soon you can run a session decides the schedule more than agent work does.
 
@@ -908,13 +908,14 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: token unit test; build; in-game UC-4 screenshot (T-61).
   - **Size**: XS
 
-- [ ] **T-61**: M4 visual review (UI scale 1.0 and 2.0) · `parallel-ok`
+- [x] **T-61**: M4 visual review (UI scale 1.0 and 2.0) · `parallel-ok`
   - **Owner**: visual-designer
   - **Requirements**: NFR-5, NFR-7
   - **Depends on**: T-60
   - **Files**: `docs/project/design/screens/m4/*`, `docs/project/design.md`
   - **Acceptance criteria**:
     - [ ] Every S4 state in wheel and grid at both UI scales matches design.md; masks are sharp at B = 96 and UI scale 2; the user confirms.
+  - **Result (2026-10-19)**: reviewed on `design/spikes/uc4-material-ring-lastused.png` and `uc4-settings-page.png` (design.md §8 "UC-4 visual review"). The last-used highlight (state 4, 3 px) is clear and stays distinct from hover. The material dot shows the stuff colour. The settings page matches S7 (preview 410 × 270 at 50 %). Settings polish → T-93 (selected-segment accent outline, preview border token, label alignment, slot count on the stepper row). Grid, edit-mode help panel, drag ghost, empty hint, last-used + hover together, states 3/5/12, rim over snow and UI scale 2.0 (refused by the game at 2560 × 1440; use 1.75 or a taller display) were not captured; they move to UC-6 (T-75) / T-77. They do not block M4 (all functional checks passed in UC-4).
   - **Tests**: screenshot review.
   - **Size**: S
 
@@ -1011,7 +1012,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
 - [ ] **T-69**: UC-5 checklist, session guide and run
   - **Owner**: test-engineer
   - **Requirements**: FR-2, FR-8, FR-14, FR-17, NFR-2, NFR-6
-  - **Depends on**: T-64, T-65, T-66, T-67, T-68
+  - **Depends on**: T-64, T-65, T-66, T-67, T-68, T-93
   - **Files**: `docs/project/test-checklist.md` (M5, UC-5), `docs/project/test-reports/uc-5.md`
   - **Acceptance criteria**:
     - [ ] *(UC-5)* Carry-over M3 checks: an Ideology-gated pin resolves live after loading a game whose ideoligion allows it and after a precept change (rebuild count +1 only on change); moddrop pin with BAM resolves; carpets keep their own icons in their sub-ring.
@@ -1039,6 +1040,20 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Acceptance criteria**:
     - [ ] Metrics recorded with pass/fail at 50 % of budget; P-4 must be 0 with vanilla, BAM and Mint, or R-1 is reopened.
   - **Tests**: none.
+  - **Size**: S
+
+- [ ] **T-93**: Settings page polish from the UC-4 review
+  - **Owner**: visual-designer
+  - **Requirements**: FR-6, NFR-5, NFR-7 (design.md S7, §8 "UC-4 visual review" items 7–10)
+  - **Depends on**: T-64 (same file; do it after the trigger-mode rows exist so the alignment covers them)
+  - **Files**: `src/QuickMenu/Settings/SettingsPage.cs`, `src/QuickMenu/Settings/LayoutPreview.cs` (preview border), `src/QuickMenu/Settings/BindingRow.cs` (if the binding row label is drawn there)
+  - **Acceptance criteria**:
+    - [ ] Given a segmented control (Shape, Size), then the selected segment keeps `DrawHighlightSelected` and also has a 2 px `accent` outline inside its rect; unselected segments have none.
+    - [ ] Given the preview box, then its 1 px border is `slotBorder`, not white.
+    - [ ] Given any labelled row (Open menu with, Pin with, Trigger mode, Shape, Size, Rings/Columns/Rows, Button size), then the label is `TextAnchor.MiddleLeft` in the row rect, and `Text.Anchor` is reset afterwards. Within each column, every control starts at one x: the widest measured label of that column + 8, at least 90.
+    - [ ] Given the Rings/Columns/Rows stepper, then the slot count ("18 slots") is on the stepper row, 8 px after [+], Small `textMuted`, and the row below it is removed.
+    - [ ] All colours come from `StyleTokens`; no literals. No per-frame allocations are added (labels and widths cached as now).
+  - **Tests**: build and format; screenshot check in UC-5 (T-69), reviewed in T-70.
   - **Size**: S
 
 ### M6: Hardening and release prep
@@ -1195,6 +1210,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Depends on**: T-75
   - **Files**: `mod/About/Preview.png`, `scripts/make-preview.sh`, `docs/project/assets.md`
   - **Acceptance criteria**:
+    - [ ] Given the UC-6 session, then the screenshots listed in design.md §8 "UC-4 visual review" (not captured in UC-4) exist and are reviewed: grid with sub-grid and material grid, edit-mode help panel (normal and full), drag ghost and drop target, empty hint, last-used + hover together, states 3/5/12, rim over snow, and the highest UI scale the game allows (2.0, or 1.75 at 2560 × 1440) with B 96.
     - [ ] Given the UC-6 screenshots, then `Preview.png` is 2.468:1 (e.g. 1234 × 500), under 1 MB, made by a checked-in `magick` script with title text, contains no Mint imagery, and its assets.md row is in the main table; the user confirms the look.
   - **Tests**: `identify mod/About/Preview.png` size check.
   - **Size**: S
