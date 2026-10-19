@@ -12,6 +12,7 @@ using RimWorld;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
+using GridLayout = QuickMenu.Core.Layout.GridLayout;
 
 namespace QuickMenu.Menu;
 
@@ -370,10 +371,33 @@ internal static class MenuController
     {
         Settings.QuickMenuSettings settings = QuickMenuMod.Settings;
         float buttonSize = SettingsRules.ClampButtonSize(settings.ButtonSize);
-        int rings = SettingsRules.ClampRings(settings.Rings);
-        var key = new WheelLayoutKey(settings.Revision, UI.screenWidth, UI.screenHeight, Prefs.UIScale, buttonSize, rings);
-        PlacedWheel placed = _layout.Place(key, mouse, WheelModel.DefaultPlateHeight);
-        return MenuContent.Build(placed, buttonSize, rings);
+        var screen = new Vec2(UI.screenWidth, UI.screenHeight);
+        float plateHeight = WheelModel.DefaultPlateHeight;
+        bool auto = settings.Sizing == SizingMode.Auto;
+        System.Collections.Generic.IReadOnlyList<PinSlot> pins = PinService.Board.VisibleSlots(PinService.Resolver);
+        MenuPlacement placement;
+        if (settings.Layout == MenuLayout.Grid)
+        {
+            int columns = SettingsRules.ClampColumns(settings.GridColumns);
+            int rows = auto ? Capacity.AutoGridRows(pins.Count, columns) : SettingsRules.ClampRows(settings.GridRows);
+            float plateWidth = GridLayout.Panel(new GridParams(buttonSize, columns, rows, default)).Width;
+            PlacedGrid grid = GridLayout.Place(buttonSize, columns, rows, mouse, screen, plateWidth, plateHeight);
+            placement = new MenuPlacement(grid.Center, grid.Slots, 1, grid.Panel, columns, rows);
+        }
+        else if (auto)
+        {
+            PlacedAutoWheel wheel = WheelLayout.PlaceAuto(pins.Count, buttonSize, mouse, screen, plateHeight);
+            placement = new MenuPlacement(wheel.Center, wheel.Slots, wheel.Rings);
+        }
+        else
+        {
+            int rings = SettingsRules.ClampRings(settings.Rings);
+            var key = new WheelLayoutKey(settings.Revision, UI.screenWidth, UI.screenHeight, Prefs.UIScale, buttonSize, rings);
+            PlacedWheel placed = _layout.Place(key, mouse, plateHeight);
+            placement = new MenuPlacement(placed.Center, placed.Slots, rings);
+        }
+
+        return MenuContent.Build(placement, buttonSize, pins);
     }
 
     private static void Reset()

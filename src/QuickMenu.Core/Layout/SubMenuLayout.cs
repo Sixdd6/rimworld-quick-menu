@@ -126,6 +126,13 @@ public static class SubMenuLayout
         return Math.Min(cols, MaxSubGridColumns);
     }
 
+    /// <summary>Panel width of a sub-grid of <paramref name="count"/> options: what to pass as the plate width to <see cref="PlaceSubGrid"/>.</summary>
+    public static float SubGridWidth(int count, float buttonSize)
+    {
+        ValidateSize(buttonSize);
+        return (SubGridColumns(count) * LayoutConstants.Pitch(buttonSize)) - LayoutConstants.Gap + (2f * LayoutConstants.RimPad);
+    }
+
     /// <summary>
     /// Places a sub-grid beside the main panel. The side is right when <c>parent.X &gt;= mainCenterX</c>, else left,
     /// and switches if the chosen side leaves the screen margin horizontally and the other does not. The first row's

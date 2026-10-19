@@ -91,4 +91,31 @@ public static class WheelLayout
             index += onRing;
         }
     }
+
+    /// <summary>
+    /// Places an Auto-sized wheel for <paramref name="count"/> pins: <see cref="Capacity.AutoWheelRings"/> rings, the
+    /// slots spread by <see cref="ComputeSpread"/> around the centre, and the disc plus label plate edge-dodged on
+    /// <paramref name="screen"/>. Count 0 gives a hub-only wheel of one ring.
+    /// </summary>
+    public static PlacedAutoWheel PlaceAuto(
+        int count,
+        float buttonSize,
+        Vec2 mouse,
+        Vec2 screen,
+        float plateHeight = LayoutConstants.PlateHeight)
+    {
+        if (count < 0 || count > RingCapacity.Total(LayoutConstants.AutoMaxRings))
+        {
+            throw new ArgumentOutOfRangeException(nameof(count), count, "Count must fit the Auto maximum of rings.");
+        }
+
+        var rings = Capacity.AutoWheelRings(count);
+        var center = mouse + EdgeDodger.Fit(MenuBounds.ForWheel(mouse, buttonSize, rings, plateHeight), screen);
+        var slots = new SlotPlacement[count];
+        ComputeSpread(count, buttonSize, center, slots);
+        return new PlacedAutoWheel(center, rings, slots);
+    }
 }
+
+/// <summary>An Auto wheel placed by <see cref="WheelLayout.PlaceAuto"/>.</summary>
+public readonly record struct PlacedAutoWheel(Vec2 Center, int Rings, SlotPlacement[] Slots);

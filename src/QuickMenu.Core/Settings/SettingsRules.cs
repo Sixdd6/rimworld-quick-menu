@@ -1,4 +1,5 @@
 using System;
+using QuickMenu.Core.Geometry;
 using QuickMenu.Core.Layout;
 
 namespace QuickMenu.Core.Settings;
@@ -55,6 +56,28 @@ public static class SettingsRules
         }
 
         return (ClampColumns(columns) * (auto ? AutoMaxRows : ClampRows(rows))) - 1;
+    }
+
+    /// <summary>
+    /// True when an Auto menu holding <paramref name="count"/> pins cannot take another one (FR-5): the next ring or row
+    /// would not fit <paramref name="screen"/>, or the maximum is reached. Fixed menus are full by
+    /// <see cref="PinCapacity"/> alone, so this is false for them.
+    /// </summary>
+    public static bool IsAutoFull(MenuLayout layout, SizingMode sizing, int count, int columns, float buttonSize, Vec2 screen, float plateHeight)
+    {
+        if (sizing != SizingMode.Auto)
+        {
+            return false;
+        }
+
+        if (layout == MenuLayout.Wheel)
+        {
+            return Capacity.IsAutoWheelFull(count, buttonSize, screen, plateHeight);
+        }
+
+        int cols = ClampColumns(columns);
+        float plateWidth = GridLayout.Panel(new GridParams(buttonSize, cols, GridLayout.MinRows, default)).Width;
+        return Capacity.IsAutoGridFull(count, cols, buttonSize, screen, plateWidth, plateHeight);
     }
 
     private static int ClampOdd(int value, int min, int max)

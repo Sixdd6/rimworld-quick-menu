@@ -196,8 +196,7 @@ internal sealed class QuickMenuWindow : Window
         Vec2 mouse = new(ev.mousePosition.x, ev.mousePosition.y);
         RingContent? ring = MenuController.ActiveRing;
         WheelModel hitModel = ring?.Model ?? model;
-        HitLayout layout = hitModel.HitLayout;
-        Hit hit = HitTester.Hit(mouse, in layout);
+        Hit hit = ring != null ? ring.HitTest(mouse) : model.HitTest(mouse);
         switch (ev.type)
         {
             case EventType.Repaint:
@@ -257,9 +256,22 @@ internal sealed class QuickMenuWindow : Window
         bool editing = MenuController.IsEditing;
         main.Editing = editing;
         WheelModel model = ring?.Model ?? main;
+        bool grid = main.Panel != null;
         if (ring == null)
         {
-            MenuRenderer.Draw(main, hit, _pressHit);
+            if (grid)
+            {
+                GridRenderer.Draw(main, hit, _pressHit);
+            }
+            else
+            {
+                MenuRenderer.Draw(main, hit, _pressHit);
+            }
+        }
+        else if (grid)
+        {
+            GridRenderer.DrawDimmed(main, ring.ParentSlot);
+            GridRenderer.DrawSubGrid(model, hit, _pressHit);
         }
         else
         {

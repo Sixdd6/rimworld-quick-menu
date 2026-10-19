@@ -64,6 +64,19 @@ internal sealed class RingContent
     /// </summary>
     internal ThingDef?[] Stuffs { get; }
 
+    /// <summary>
+    /// Grid layout only: the centre of the parent cell in the main grid. A sub-grid or material grid has no hub, so a click on
+    /// the open parent cell counts as the hub (it goes back, like the hub of a ring).
+    /// </summary>
+    internal Vec2? ParentCenter { get; init; }
+
+    /// <summary>The hit at <paramref name="point"/> on this satellite (a ring's hub is its centre; a grid's is the parent cell).</summary>
+    internal Hit HitTest(Vec2 point)
+    {
+        Hit hit = Model.HitTest(point);
+        return ParentCenter is { } parent && hit.Kind == HitKind.Outside && HitTester.InCell(point, parent, Model.ButtonSize) ? Hit.HubEdit : hit;
+    }
+
     /// <summary>Material ring: the stuff build to activate.</summary>
     internal Designator? Target { get; init; }
 
@@ -231,9 +244,9 @@ internal sealed class SatelliteController
         }
 
         WheelModel main = _main.Model;
-        PlacedSatellite placed = SubMenuLayout.PlaceSatellite(elements.Count, main.ButtonSize, main.Slots[slot].Center, Screen, WheelModel.DefaultPlateHeight);
-        var model = new WheelModel(placed.Hub, main.ButtonSize, placed.Rings, placed.Slots, placed.Slots.Length, WheelModel.DefaultPlateHeight);
-        var ring = new RingContent(model, main, slot, slot, elements.Count) { Dropdown = dropdown };
+        Vec2 parent = main.Slots[slot].Center;
+        WheelModel model = PlaceModel(main, elements.Count, parent);
+        var ring = new RingContent(model, main, slot, slot, elements.Count) { Dropdown = dropdown, ParentCenter = main.Panel != null ? parent : null };
         List<ThingDef> present = StuffOptions.Present();
         ThingDef?[]? materials = MaterialVariantIcons.For(elements);
         for (int i = 0; i < elements.Count; i++)
@@ -253,7 +266,7 @@ internal sealed class SatelliteController
         }
 
         model.SetHubLabels(main.Label(slot), main.Label(slot));
-        model.PrepareSatellite();
+        Prepare(model);
         return ring;
     }
 
@@ -301,9 +314,9 @@ internal sealed class SatelliteController
 
         WheelModel main = _main.Model;
         int n = set.Options.Count;
-        PlacedSatellite placed = SubMenuLayout.PlaceSatellite(n, main.ButtonSize, main.Slots[parentSlot].Center, Screen, WheelModel.DefaultPlateHeight);
-        var model = new WheelModel(placed.Hub, main.ButtonSize, placed.Rings, placed.Slots, placed.Slots.Length, WheelModel.DefaultPlateHeight);
-        var ring = new RingContent(model, hubSource, hubIndex, parentSlot, n) { IsMaterial = true, Target = target, Dropdown = dropdown };
+        Vec2 parent = main.Slots[parentSlot].Center;
+        WheelModel model = PlaceModel(main, n, parent);
+        var ring = new RingContent(model, hubSource, hubIndex, parentSlot, n) { IsMaterial = true, Target = target, Dropdown = dropdown, ParentCenter = main.Panel != null ? parent : null };
         for (int i = 0; i < n; i++)
         {
             StuffOption option = set.Options[i];
@@ -313,7 +326,41 @@ internal sealed class SatelliteController
 
         string parentLabel = hubSource.Label(hubIndex);
         model.SetHubLabels(parentLabel, parentLabel);
-        model.PrepareSatellite();
+        Prepare(model);
         return ring;
+    }
+
+    /// <summary>
+    /// Places a satellite of <paramref name="count"/> options for the parent cell at <paramref name="parent"/>: a ring around
+    /// the parent for a wheel menu, a sub-grid beside the main panel for a grid menu (edge-dodged either way).
+    /// </summary>
+    private static WheelModel PlaceModel(WheelModel main, int count, Vec2 parent)
+    {
+        float plateHeight = WheelModel.DefaultPlateHeight;
+        if (main.Panel is not { } mainPanel)
+        {
+            PlacedSatellite placed = SubMenuLayout.PlaceSatellite(count, main.ButtonSize, parent, Screen, plateHeight);
+            return new WheelModel(placed.Hub, main.ButtonSize, placed.Rings, placed.Slots, placed.Slots.Length, plateHeight);
+        }
+
+        float plateWidth = SubMenuLayout.SubGridWidth(count, main.ButtonSize);
+        PlacedSubGrid grid = SubMenuLayout.PlaceSubGrid(count, main.ButtonSize, mainPanel, main.Center.X, parent, Screen, plateWidth, plateHeight);
+        var center = new Vec2(grid.Panel.X + (grid.Panel.Width / 2f), grid.Panel.Y + (grid.Panel.Height / 2f));
+        var model = new WheelModel(center, main.ButtonSize, 1, grid.Cells, grid.Cells.Length, plateHeight);
+        model.SetPanel(grid.Panel);
+        return model;
+    }
+
+    /// <summary>Labels (and the satellite rim of a ring) once when the satellite opens; a sub-grid shares the main textures.</summary>
+    private static void Prepare(WheelModel model)
+    {
+        if (model.Panel != null)
+        {
+            model.Prepare(ensureTextures: false);
+        }
+        else
+        {
+            model.PrepareSatellite();
+        }
     }
 }

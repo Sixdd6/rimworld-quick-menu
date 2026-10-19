@@ -139,6 +139,35 @@ internal sealed class WheelModel
     /// </summary>
     internal void SetPanel(Rect2 panel) => Panel = panel;
 
+    /// <summary>Columns of the main grid (0 for a wheel, a sub-grid or a material grid).</summary>
+    internal int GridColumns { get; private set; }
+
+    /// <summary>Rows of the main grid (0 for a wheel, a sub-grid or a material grid).</summary>
+    internal int GridRows { get; private set; }
+
+    /// <summary>Makes this the main grid of <paramref name="columns"/> × <paramref name="rows"/> cells around <see cref="Center"/> (the Edit hub is the centre cell). Call with <see cref="SetPanel"/>.</summary>
+    internal void SetGridShape(int columns, int rows)
+    {
+        GridColumns = columns;
+        GridRows = rows;
+    }
+
+    /// <summary>
+    /// Hit test for whichever shape this model is: a wheel, the main grid (centre cell = <see cref="HitKind.HubEdit"/>) or a
+    /// sub-grid / material grid (cells only, no hub). Allocation-free.
+    /// </summary>
+    internal Hit HitTest(Vec2 point)
+    {
+        if (Panel is not { } panel)
+        {
+            return HitTester.Hit(point, HitLayout);
+        }
+
+        return GridColumns > 0
+            ? HitTester.HitGrid(point, new GridHitLayout(Center, ButtonSize, GridColumns, GridRows))
+            : HitTester.HitSubGrid(point, panel, Slots, SlotCount, ButtonSize);
+    }
+
     /// <summary>The label plate for a label of <paramref name="textWidth"/>: under the disc (wheel) or the panel (grid).</summary>
     internal Rect2 PlateRect(float textWidth) => Panel is { } panel
         ? PanelVisuals.PlateRect(panel, textWidth, PlateHeight)

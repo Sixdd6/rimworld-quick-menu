@@ -137,6 +137,38 @@ public static class HitTester
             : QuickMenu.Core.Layout.Hit.Outside;
     }
 
+    /// <summary>
+    /// Hit test of a sub-grid or material grid (no hub): cell <c>i</c> of <paramref name="cells"/> owns the pitch-sized
+    /// square around its centre, gaps included. Then the panel is <see cref="Hit.Inside"/>, anything else
+    /// <see cref="Hit.Outside"/>.
+    /// </summary>
+    public static Hit HitSubGrid(Vec2 point, Rect2 panel, SlotPlacement[] cells, int count, float buttonSize)
+    {
+        if (!float.IsFinite(point.X) || !float.IsFinite(point.Y))
+        {
+            return QuickMenu.Core.Layout.Hit.Outside;
+        }
+
+        var half = LayoutConstants.Pitch(buttonSize) / 2f;
+        var n = count < cells.Length ? count : cells.Length;
+        for (var i = 0; i < n; i++)
+        {
+            if (MathF.Abs(point.X - cells[i].Center.X) <= half && MathF.Abs(point.Y - cells[i].Center.Y) <= half)
+            {
+                return QuickMenu.Core.Layout.Hit.Slot(i);
+            }
+        }
+
+        return panel.Contains(point) ? QuickMenu.Core.Layout.Hit.Inside : QuickMenu.Core.Layout.Hit.Outside;
+    }
+
+    /// <summary>True when <paramref name="point"/> is inside the pitch-sized cell around <paramref name="cellCenter"/>.</summary>
+    public static bool InCell(Vec2 point, Vec2 cellCenter, float buttonSize)
+    {
+        var half = LayoutConstants.Pitch(buttonSize) / 2f;
+        return MathF.Abs(point.X - cellCenter.X) <= half && MathF.Abs(point.Y - cellCenter.Y) <= half;
+    }
+
     private static int LowerCell(float f, int count)
     {
         var cell = (int)MathF.Ceiling(f) - 1;

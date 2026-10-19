@@ -1,5 +1,6 @@
 using System;
 using QuickMenu.Catalog;
+using QuickMenu.Core.Geometry;
 using QuickMenu.Core.Input;
 using QuickMenu.Core.Layout;
 using QuickMenu.Core.Materials;
@@ -11,6 +12,9 @@ using Verse;
 using Log = QuickMenu.Diagnostics.Log;
 
 namespace QuickMenu.Menu;
+
+/// <summary>Where one open of the menu was placed: a wheel (<see cref="Panel"/> null) or the main grid (panel, columns, rows).</summary>
+internal readonly record struct MenuPlacement(Vec2 Center, SlotPlacement[] Slots, int Rings, Rect2? Panel = null, int Columns = 0, int Rows = 0);
 
 /// <summary>
 /// Everything one open of the menu shows, resolved once at open from the pin board (the cached resolution in
@@ -62,14 +66,19 @@ internal sealed class MenuContent
     /// <summary>The saved pin behind each slot (null for empty slots; reserved ones included); what modifier+click unpins.</summary>
     internal PinEntry?[] Pins { get; }
 
-    internal static MenuContent Build(PlacedWheel placed, float buttonSize, int rings)
+    internal static MenuContent Build(in MenuPlacement placed, float buttonSize, System.Collections.Generic.IReadOnlyList<PinSlot> pins)
     {
         SlotPlacement[] slots = placed.Slots;
-        var model = new WheelModel(placed.Center, buttonSize, rings, slots, slots.Length, WheelModel.DefaultPlateHeight);
+        var model = new WheelModel(placed.Center, buttonSize, placed.Rings, slots, slots.Length, WheelModel.DefaultPlateHeight);
+        if (placed.Panel is { } panel)
+        {
+            model.SetPanel(panel);
+            model.SetGridShape(placed.Columns, placed.Rows);
+        }
+
         var designators = new Designator?[slots.Length];
         var pinsBySlot = new PinEntry?[slots.Length];
         var materialPending = new System.Collections.Generic.List<(int Slot, Designator Target)>();
-        System.Collections.Generic.IReadOnlyList<PinSlot> pins = PinService.Board.VisibleSlots(PinService.Resolver);
         for (int i = 0; i < slots.Length && i < pins.Count; i++)
         {
             PinEntry? pin = pins[i].Entry;

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using QuickMenu.Catalog;
+using QuickMenu.Core.Geometry;
 using QuickMenu.Core.Pins;
 using QuickMenu.Core.Settings;
 using QuickMenu.Diagnostics;
@@ -205,7 +206,7 @@ internal static class PinService
     private static PinResult Toggle(PinKey key, string label, string? packageId, CatalogEntry? known, bool persist)
     {
         EnsureCurrent();
-        PinResult result = Board.Toggle(key, label, packageId);
+        PinResult result = AutoMenuFull(key) ? PinResult.Full : Board.Toggle(key, label, packageId);
         if (result == PinResult.Unpinned)
         {
             _resolved.Remove(key);
@@ -223,6 +224,39 @@ internal static class PinService
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// True when <paramref name="key"/> would be a new pin in an Auto menu that has no room for it on this screen
+    /// (<see cref="SettingsRules.IsAutoFull"/>): the board's own capacity ignores the screen, so the pin is refused here with
+    /// the same Full result. An already pinned key is never full (toggling it unpins).
+    /// </summary>
+    private static bool AutoMenuFull(PinKey key)
+    {
+        QuickMenuSettings settings = QuickMenuMod.Settings;
+        if (settings.Sizing != SizingMode.Auto)
+        {
+            return false;
+        }
+
+        int count = 0;
+        foreach (PinEntry? stored in Board.Entries)
+        {
+            if (stored == null)
+            {
+                continue;
+            }
+
+            if (stored.Key.Equals(key))
+            {
+                return false;
+            }
+
+            count++;
+        }
+
+        float buttonSize = SettingsRules.ClampButtonSize(settings.ButtonSize);
+        return SettingsRules.IsAutoFull(settings.Layout, settings.Sizing, count, settings.GridColumns, buttonSize, new Vec2(UI.screenWidth, UI.screenHeight), Menu.WheelModel.DefaultPlateHeight);
     }
 
     private static long Stamp()
