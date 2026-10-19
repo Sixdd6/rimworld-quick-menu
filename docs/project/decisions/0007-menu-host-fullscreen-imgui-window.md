@@ -3,6 +3,8 @@
 - **Status**: accepted (2026-10-19)
 - **Date**: 2026-10-19
 
+> **Update (2026-10-19).** User decisions after UC-2/UC-2b: there is no `PickerWindow` (spec FR-7 Won't), so that line below is historical. The hub (centre) is **one Edit button** that shows Done in edit mode; there is no Close target and a click on the centre never closes the menu (FR-9). The menu closes with Esc, a click outside, right-click or the trigger; edit mode uses drag and pin-modifier+click (right-click closes, it does not unpin). Hover reacts immediately, with no movement threshold or hover delay. The host decision (full-screen transparent `Verse.Window`, IMGUI, runtime masks) stands. See architecture.md sections 3 and 3.1.
+
 ## Context
 The menu opens centred on the mouse, does not pause, closes on Esc, on an outside click, after a selection, or when leaving the map. Sub-rings and the material ring can extend beyond the main wheel. Edit mode needs drag and right-click. NFR-1 asks for zero cost while closed and opening within one frame. On 1.7, UI is IMGUI implemented by Ludeon's host (`RimWorldWaylith.Imgui`). Ludeon advises against migrating Imgui to native Waylith. Both BAM and Mint patch `GUIUtility.RotateAroundPivot`, which suggests rotation is fragile under the shim.
 

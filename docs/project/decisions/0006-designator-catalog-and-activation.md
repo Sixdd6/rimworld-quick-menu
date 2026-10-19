@@ -5,6 +5,8 @@
 
 > **Superseded in part (2026-10-19).** The **picker** part of this ADR is superseded: spec FR-7 is now Won't (user decision after UC-2), so there is no picker window, no `SearchEntry` records and no `SearchIndex`. References below to "the picker", FR-7, search entries and the dev-only filter for the picker are historical. **The catalog decision stands**: the `DesignatorCatalog` is still built once at startup from `DesignationCategoryDef`s (designator table and key map), with the Ideology refresh, and it still resolves pins, feeds `AvailabilityResolver`, `StuffOptions` and the self-test. Activation is unchanged. See architecture.md section 3.1.
 
+> **Update (2026-10-19, UC-3).** FR-12 now keeps the architect's **fixed material order** (never re-sorted); the last-used material is only highlighted, so "last-used first" below is historical. FR-11a: a dropdown whose entries are one item in different materials (e.g. fine stone tiles) shows each option with its material's icon (`MaterialVariants`, `MaterialVariantIcons`). Activation is unchanged.
+
 ## Context
 - FR-7: the picker lists every architect designator, whichever architect UI is installed.
 - FR-13: selecting a slot activates the designator exactly as the architect menu would.

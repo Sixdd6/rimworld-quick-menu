@@ -3,6 +3,8 @@
 - **Status**: accepted (2026-10-19)
 - **Date**: 2026-10-19
 
+> **Update (2026-10-19).** Spec FR-7 (picker) is Won't and FR-9 changed (user decisions after UC-2): pins are added only by modifier+click in the architect menu, there is no picker and no insert cursor, and a single pin is removed by pin-modifier+click (Ctrl by default) in use or edit mode, not by right-click. Below, "the picker skips it" and "right-click clear in edit mode" are historical. Per FR-14, a pin that resolves but is unavailable is always drawn greyed with its reason; only missing-mod pins are reserved or hidden as described. The key scheme and global storage stand.
+
 ## Context
 Pins must survive game restarts, apply across all saves (FR-17), never duplicate (FR-15), represent whole dropdowns (FR-10), and be kept when their mod is removed so they return in place when it is re-added (FR-14). Designator instances are rebuilt each session, so pins need a stable string identity.
 

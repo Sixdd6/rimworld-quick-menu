@@ -3,6 +3,8 @@
 - **Status**: accepted (2026-10-19)
 - **Date**: 2026-10-19
 
+> **Update (2026-10-19).** Spec FR-7 (picker) is now Won't (user decision after UC-2), so the `SearchEntry` record and the Core search index are dropped; Core exposes `SlotPlacement[]`, `PinResult` and `MenuCommand` only. References to `SearchEntry` below are historical. The decision (Core/adapter split, xUnit v3, 90 % coverage gate, separate Perf step) stands. See architecture.md section 3.1.
+
 ## Context
 NFR-8 requires layout maths (ring/grid placement, edge dodging, sizing) and pin identity/serialisation to be unit-tested outside the game. Game types (`Verse.*`, `UnityEngine.*` from UnityStubs) cannot be loaded in a plain test host without the game's custom runtime and data. Much of the mod's risk is in maths and state handling: edge cases near screen edges, Fixed vs Auto pins, toggle/hold transitions.
 

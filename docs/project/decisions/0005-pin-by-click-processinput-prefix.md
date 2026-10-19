@@ -3,6 +3,8 @@
 - **Status**: accepted (2026-10-19)
 - **Date**: 2026-10-19
 
+> **Update (2026-10-19).** Spec FR-7 (picker) is Won't (user decision after UC-2), so the consequence "the picker (FR-7) still does" no longer holds: **there is no fallback**. A designator whose `ProcessInput` override cannot be patched, or whose UI never calls `ProcessInput`, cannot be pinned. Accepted risk: the self-test patch count, the startup `LogOnce` and the self-test's list of failed methods are the safety net, and such a designator is documented as a known limit. S-1 found 8 of 8 overrides patched. The decision stands. See architecture.md section 11 (Risks).
+
 ## Context
 FR-8: modifier+click on any designator gizmo pins or unpins it. It must work in any architect UI (vanilla, Better Architect Menu, Mint's architect window) through a hook on the designator, and the normal click action must not happen. The default modifier is Ctrl, or Alt when Dubs Mint Menus is detected (with a one-time notice), and it is configurable.
 
