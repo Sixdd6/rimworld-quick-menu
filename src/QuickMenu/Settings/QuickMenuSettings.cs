@@ -48,6 +48,41 @@ internal sealed class QuickMenuSettings : ModSettings
         }
     }
 
+    /// <summary>Incremented on every settings change that affects the menu. A cached layout is valid only for the revision it was built at.</summary>
+    internal int Revision { get; private set; }
+
+    /// <summary>Marks the settings changed: recomputes the board capacity and invalidates cached layouts.</summary>
+    internal void NotifyChanged()
+    {
+        ApplyCapacity();
+        Revision++;
+    }
+
+    /// <summary>Removes every pin, including hidden and unresolved ones.</summary>
+    internal void ClearAllPins()
+    {
+        while (Board.Entries.Count > 0)
+        {
+            Board.SetSlot(Board.Entries.Count - 1, null);
+        }
+    }
+
+    /// <summary>Restores every option to its default. Pins are not touched.</summary>
+    internal void ResetOptions()
+    {
+        Trigger = TriggerBinding.TryParse(SettingsRules.DefaultTrigger, out TriggerBinding d) ? d : TriggerBinding.Mouse(3);
+        TriggerMode = TriggerMode.Toggle;
+        Layout = MenuLayout.Wheel;
+        Sizing = SizingMode.Fixed;
+        Rings = SettingsRules.DefaultRings;
+        GridColumns = SettingsRules.DefaultColumns;
+        GridRows = SettingsRules.DefaultRows;
+        ButtonSize = SettingsRules.DefaultButtonSize;
+        PinModifier = PinModifier.Ctrl;
+        PinModifierUserSet = false;
+        NotifyChanged();
+    }
+
     /// <summary>Recomputes the board capacity from the size settings. Pins beyond it are kept, just not shown.</summary>
     internal void ApplyCapacity() => Board.Capacity = SettingsRules.PinCapacity(Layout, Sizing, Rings, GridColumns, GridRows);
 

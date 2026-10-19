@@ -1,5 +1,4 @@
 using System.Text;
-using LudeonTK;
 using QuickMenu.Core.Input;
 using QuickMenu.Menu;
 using RimWorld;
@@ -10,7 +9,7 @@ namespace QuickMenu.Settings;
 
 /// <summary>
 /// The "Open menu with" row of the settings page (design.md S7): binding button, [Clear], [Use middle mouse instead],
-/// the key-conflict warning and the note. T-31 places it with <see cref="Draw"/>. Labels are cached per binding change.
+/// the key-conflict warning and the note. The settings page places it with <see cref="Draw"/>. Labels are cached per binding change.
 /// </summary>
 internal static class BindingRow
 {
@@ -82,10 +81,6 @@ internal static class BindingRow
         QuickMenuMod.Settings.Trigger = binding;
         QuickMenuMod.SaveSettings();
     }
-
-    // Temporary, until T-31 places the row: lets UC-2 open the capture dialog from dev mode.
-    [DebugAction("Quick Menu", "set menu button", allowedGameStates = AllowedGameStates.Playing)]
-    private static void OpenCaptureDebug() => Find.WindowStack.Add(new BindingCaptureWindow(Set));
 
     private static void Refresh(TriggerBinding binding)
     {

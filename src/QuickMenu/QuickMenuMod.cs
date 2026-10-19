@@ -87,6 +87,10 @@ public sealed class QuickMenuMod : Mod
         PerfStartup.Note(end - started, end - patchStart, settingsTicks);
     }
 
+    public override string SettingsCategory() => "QuickMenu.Settings.Title".Translate();
+
+    public override void DoSettingsWindowContents(UnityEngine.Rect inRect) => SettingsPage.Draw(inRect);
+
     // Isolated and not inlined so a missing 0Harmony assembly fails here, inside the caller's try block.
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ApplyPatches()
