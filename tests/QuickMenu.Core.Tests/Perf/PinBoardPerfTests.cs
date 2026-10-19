@@ -55,4 +55,45 @@ public class PinBoardPerfTests
 
         Assert.True((GC.GetAllocatedBytesForCurrentThread() - before) / Calls <= MaxBytesPerCall);
     }
+
+    private sealed class Marked
+    {
+    }
+
+    private sealed class NoDef
+    {
+    }
+
+    private sealed class Resolver : IPinTargetResolver<Marked, NoDef>
+    {
+        private readonly Marked _shared = new();
+
+        public void Resolve(PinKey key, System.Collections.Generic.List<PinTarget<Marked, NoDef>> into) =>
+            into.Add(new PinTarget<Marked, NoDef>(_shared));
+    }
+
+    [Fact]
+    public void Toggle_followed_by_a_marker_set_rebuild_allocates_at_most_2KB_per_click()
+    {
+        PinBoard board = SyntheticCatalog.Pins(SyntheticCatalog.PinCount - 1);
+        board.Capacity = SyntheticCatalog.PinCount;
+        PinKey key = PinKey.Build(PinKeyKind.BuildThing, "Perf_Toggle_Target");
+        var set = new PinnedSet<Marked, NoDef>();
+        var resolver = new Resolver();
+        for (int i = 0; i < 100; i++)
+        {
+            board.Toggle(key, "Perf label", "author.mod");
+            set.Rebuild(board, resolver);
+        }
+
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        for (int i = 0; i < Calls; i++)
+        {
+            board.Toggle(key, "Perf label", "author.mod");
+            set.Rebuild(board, resolver);
+        }
+
+        long perClick = (GC.GetAllocatedBytesForCurrentThread() - before) / Calls;
+        Assert.True(perClick <= MaxBytesPerCall, $"{perClick} bytes per toggle plus rebuild");
+    }
 }

@@ -83,15 +83,19 @@ internal static class PinClickPatch
             return true;
         }
 
-        using var scope = new MeasureScope(StatId.PinPrefix);
         try
         {
-            FaultInjection.Check(FaultPoint.PinPrefix);
-            PinModifier modifier = QuickMenuMod.EffectiveModifier;
-            if (!TryBuildInput(__0, modifier, out PinClickInput input)
-                || PinClickClassifier.Classify(input, modifier) != PinClickAction.Pin)
+            PinClickInput input;
+            using (new MeasureScope(StatId.PinPrefix))
             {
-                return true;
+                // P-3: classification only. A pin action is measured apart (StatId.PinToggle/PinMessage/PinWrite, P-5).
+                FaultInjection.Check(FaultPoint.PinPrefix);
+                PinModifier modifier = QuickMenuMod.EffectiveModifier;
+                if (!TryBuildInput(__0, modifier, out input)
+                    || PinClickClassifier.Classify(input, modifier) != PinClickAction.Pin)
+                {
+                    return true;
+                }
             }
 
             // Only architect designators pin: a command-bar designator (for example Designator_MechControlGroup) behaves normally.

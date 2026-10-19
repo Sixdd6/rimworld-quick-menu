@@ -212,6 +212,31 @@ internal static class PinService
 
     private static PinResult Toggle(PinKey key, string label, string? packageId, CatalogEntry? known, bool persist)
     {
+        PinResult result;
+        using (new MeasureScope(StatId.PinToggle))
+        {
+            result = ToggleOnBoard(key, label, packageId, known);
+        }
+
+        PinFeedback feedback = PinFeedback.For(result);
+        using (new MeasureScope(StatId.PinMessage))
+        {
+            Announce(feedback, label);
+        }
+
+        if (persist && feedback.Persist)
+        {
+            using (new MeasureScope(StatId.PinWrite))
+            {
+                QuickMenuMod.SaveSettings();
+            }
+        }
+
+        return result;
+    }
+
+    private static PinResult ToggleOnBoard(PinKey key, string label, string? packageId, CatalogEntry? known)
+    {
         EnsureCurrent();
         PinResult result = AutoMenuFull(key) ? PinResult.Full : Board.Toggle(key, label, packageId);
         if (result == PinResult.Unpinned)
@@ -224,13 +249,6 @@ internal static class PinService
         }
 
         PinnedDesignators.Rebuild();
-        PinFeedback feedback = PinFeedback.For(result);
-        Announce(feedback, label);
-        if (persist && feedback.Persist)
-        {
-            QuickMenuMod.SaveSettings();
-        }
-
         return result;
     }
 

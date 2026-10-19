@@ -54,6 +54,15 @@ internal enum StatId
 
     /// <summary>Drawing a pin marker (two <c>GUI.DrawTexture</c> calls in the game's IMGUI backend): only pinned, visible designators. Kept out of <see cref="PinMarker"/> (P-19 budgets the decision).</summary>
     PinMarkerDraw,
+
+    /// <summary>The pin-click action proper (P-5): resolve, toggle on the board, resolved-cache update and marker-set rebuild. Excludes the message and the settings write.</summary>
+    PinToggle,
+
+    /// <summary>The pin-click message and tick sound (<c>Translate</c>, <c>Messages.Message</c>, <c>PlayOneShotOnCamera</c>: game code). Not budgeted.</summary>
+    PinMessage,
+
+    /// <summary>The settings file write after a pin click (<c>WriteSettings</c>: game Scribe/XML code). Excluded from P-5; P-17 covers its frequency.</summary>
+    PinWrite,
 }
 
 /// <summary>
@@ -86,7 +95,7 @@ internal static class PerfCounters
         new("open path (WindowStack.Add of the menu; one sample per open)", 256),
         new("menu window per frame (DoWindowContents + WindowUpdate)", FrameRing),
         new("control window per frame (DoWindowContents)", FrameRing),
-        new("pin click prefix (P-3; one sample per designator ProcessInput call)", 256),
+        new("pin click prefix (P-3 classification only; one sample per designator ProcessInput call, pin actions excluded)", 256),
         new("  of window: hover sound call (PlayOneShotOnCamera; frames where hover changed)", 256),
         new("  of window: TooltipHandler.TipRegion (hovered frames)", FrameRing), // strings-ok: dev-mode perf label
         new("  of window: label plate (DrawAtlas + Widgets.Label; frames with a plate)", FrameRing),
@@ -98,6 +107,9 @@ internal static class PerfCounters
         new("pin marker hook per frame (P-19; calls = hook calls, calls/steadyFrames = calls per frame; every command gizmo, drawn or not)", FrameRing),
         new("pin marker dropdown-entry hooks per frame (P-19; calls = float-menu option draws while a mapped list exists)", FrameRing),
         new("pin marker draw per frame (P-19, not budgeted: IMGUI texture drawing of the pinned buttons; calls = markers drawn)", FrameRing),
+        new("pin click action (P-5: toggle + cache + marker-set rebuild; excludes message and write)", 256),
+        new("  of pin click: message + tick sound (Translate, Messages.Message; game code, not budgeted)", 256),
+        new("  of pin click: settings write (WriteSettings; game code, excluded from P-5)", 256),
     };
 
     internal static MeasureStats Get(StatId id) => EnsureStats()[(int)id];
