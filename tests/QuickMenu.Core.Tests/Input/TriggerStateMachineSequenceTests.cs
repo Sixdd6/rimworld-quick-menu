@@ -20,7 +20,7 @@ public class TriggerStateMachineSequenceTests
         m.Handle(TriggerEvent.MouseDown(_p, h, button));
 
     private static MenuCommand Up(TriggerStateMachine m, Hit h, bool sub = false, int button = 0) =>
-        m.Handle(TriggerEvent.MouseUp(_p, h, sub, button));
+        m.Handle(TriggerEvent.MouseUp(_p, h, sub ? SlotKind.Submenu : SlotKind.Normal, button));
 
     [Fact]
     public void Press_on_slot_A_release_on_slot_B_does_nothing_and_a_later_bare_release_does_nothing()
@@ -101,7 +101,7 @@ public class TriggerStateMachineSequenceTests
     {
         var m = Opened();
         Assert.Equal(MenuCommand.EnterEdit, ClickFull(m, Hit.HubEdit));
-        Assert.Equal(MenuCommand.Close, m.Handle(TriggerEvent.MapLost()));
+        Assert.Equal(MenuCommand.CloseFromEdit, m.Handle(TriggerEvent.MapLost()));
         Assert.Equal(MenuState.Closed, m.State);
         Assert.Equal(MenuCommand.Open, m.Handle(TriggerEvent.TriggerPressed(_p)));
         Assert.Equal(MenuState.Main, m.State);
@@ -163,7 +163,7 @@ public class TriggerStateMachineSequenceTests
     {
         var m = Opened();
         ClickFull(m, Hit.Slot(0), sub: true);
-        Assert.Equal(MenuCommand.Activate(7), ClickFull(m, Hit.Slot(7)));
+        Assert.Equal(MenuCommand.Activate(7, MenuLevel.Satellite), ClickFull(m, Hit.Slot(7)));
         m.Handle(TriggerEvent.TriggerPressed(_p));
         Assert.Equal(MenuState.Main, m.State);
     }

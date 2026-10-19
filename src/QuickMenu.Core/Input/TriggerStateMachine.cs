@@ -79,10 +79,11 @@ public sealed class TriggerStateMachine
             return MenuCommand.None;
         }
 
+        var wasEditing = State == MenuState.Edit;
         State = MenuState.Closed;
         _pressValid = false;
         HoverEnabled = false;
-        return MenuCommand.Close;
+        return wasEditing ? MenuCommand.CloseFromEdit : MenuCommand.Close;
     }
 
     /// <summary>Esc, right-click and outside clicks: one level out (Back, ExitEdit or Close).</summary>
@@ -166,13 +167,19 @@ public sealed class TriggerStateMachine
                     return MenuCommand.None;
                 }
 
-                if (e.SlotIsSubmenu)
+                switch (e.SlotKind)
                 {
-                    State = MenuState.Satellite;
-                    return MenuCommand.OpenSub(e.Hit.Index);
+                    case SlotKind.Empty:
+                        return MenuCommand.None;
+                    case SlotKind.Disabled:
+                        return MenuCommand.Reject(e.Hit.Index);
+                    case SlotKind.Submenu:
+                        State = MenuState.Satellite;
+                        return MenuCommand.OpenSub(e.Hit.Index);
                 }
 
-                var activate = MenuCommand.Activate(e.Hit.Index);
+                var level = State == MenuState.Satellite ? MenuLevel.Satellite : MenuLevel.Main;
+                var activate = MenuCommand.Activate(e.Hit.Index, level);
                 State = MenuState.Closed;
                 HoverEnabled = false;
                 return activate;

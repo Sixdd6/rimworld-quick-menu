@@ -26,10 +26,31 @@ public enum MenuCommandKind
 
     /// <summary>Leave edit mode (the caller writes settings once).</summary>
     ExitEdit,
+
+    /// <summary>
+    /// The slot <see cref="MenuCommand.Index"/> is disabled: play the reject sound and show the reason.
+    /// The menu stays open.
+    /// </summary>
+    Reject,
 }
 
-/// <summary>A command with its optional slot index (-1 when unused).</summary>
-public readonly record struct MenuCommand(MenuCommandKind Kind, int Index = -1)
+/// <summary>The level a slot belongs to.</summary>
+public enum MenuLevel
+{
+    Main = 0,
+    Satellite,
+}
+
+/// <summary>
+/// A command with its optional slot index (-1 when unused). <see cref="Level"/> is set for Activate and
+/// OpenSub: the level the slot was on. <see cref="WasEditing"/> is true when a Close ended edit mode,
+/// so the controller must save the pins (ExitEdit already implies it).
+/// </summary>
+public readonly record struct MenuCommand(
+    MenuCommandKind Kind,
+    int Index = -1,
+    MenuLevel Level = MenuLevel.Main,
+    bool WasEditing = false)
 {
     public static readonly MenuCommand None = new(MenuCommandKind.None);
 
@@ -43,7 +64,13 @@ public readonly record struct MenuCommand(MenuCommandKind Kind, int Index = -1)
 
     public static readonly MenuCommand ExitEdit = new(MenuCommandKind.ExitEdit);
 
-    public static MenuCommand Activate(int slot) => new(MenuCommandKind.Activate, slot);
+    /// <summary>Close that ended edit mode (trigger press or map lost while editing).</summary>
+    public static readonly MenuCommand CloseFromEdit = new(MenuCommandKind.Close, -1, MenuLevel.Main, true);
+
+    public static MenuCommand Activate(int slot, MenuLevel level = MenuLevel.Main) =>
+        new(MenuCommandKind.Activate, slot, level);
 
     public static MenuCommand OpenSub(int slot) => new(MenuCommandKind.OpenSub, slot);
+
+    public static MenuCommand Reject(int slot) => new(MenuCommandKind.Reject, slot);
 }

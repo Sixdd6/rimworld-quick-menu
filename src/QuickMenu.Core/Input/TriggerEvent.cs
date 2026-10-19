@@ -34,28 +34,28 @@ public readonly record struct TriggerEvent(
     Vec2 Position,
     Hit Hit,
     int Button,
-    bool SlotIsSubmenu)
+    SlotKind SlotKind)
 {
     public static TriggerEvent TriggerPressed(Vec2 position) =>
-        new(TriggerEventKind.TriggerPressed, position, Hit.Outside, 0, false);
+        new(TriggerEventKind.TriggerPressed, position, Hit.Outside, 0, SlotKind.Normal);
 
     public static TriggerEvent TriggerReleased(Vec2 position) =>
-        new(TriggerEventKind.TriggerReleased, position, Hit.Outside, 0, false);
+        new(TriggerEventKind.TriggerReleased, position, Hit.Outside, 0, SlotKind.Normal);
 
     /// <param name="button">0 = left, 1 = right.</param>
     public static TriggerEvent MouseDown(Vec2 position, Hit hit, int button) =>
-        new(TriggerEventKind.MouseDown, position, hit, button, false);
+        new(TriggerEventKind.MouseDown, position, hit, button, SlotKind.Normal);
 
-    /// <param name="slotIsSubmenu">When <paramref name="hit"/> is a slot: it opens a sub-menu rather than activating.</param>
-    public static TriggerEvent MouseUp(Vec2 position, Hit hit, bool slotIsSubmenu, int button) =>
-        new(TriggerEventKind.MouseUp, position, hit, button, slotIsSubmenu);
+    /// <param name="slotKind">When <paramref name="hit"/> is a slot: what the slot is (empty, normal, sub-menu, disabled).</param>
+    public static TriggerEvent MouseUp(Vec2 position, Hit hit, SlotKind slotKind, int button) =>
+        new(TriggerEventKind.MouseUp, position, hit, button, slotKind);
 
     public static TriggerEvent MouseMove(Vec2 position) =>
-        new(TriggerEventKind.MouseMove, position, Hit.Outside, 0, false);
+        new(TriggerEventKind.MouseMove, position, Hit.Outside, 0, SlotKind.Normal);
 
     public static TriggerEvent Escape(Vec2 position) =>
-        new(TriggerEventKind.Escape, position, Hit.Outside, 0, false);
+        new(TriggerEventKind.Escape, position, Hit.Outside, 0, SlotKind.Normal);
 
     public static TriggerEvent MapLost() =>
-        new(TriggerEventKind.MapLost, default, Hit.Outside, 0, false);
+        new(TriggerEventKind.MapLost, default, Hit.Outside, 0, SlotKind.Normal);
 }

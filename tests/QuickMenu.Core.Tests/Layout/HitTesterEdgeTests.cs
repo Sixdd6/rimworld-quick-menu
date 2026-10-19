@@ -8,10 +8,10 @@ public class HitTesterEdgeTests
 {
     private static readonly Vec2 _c = new(300f, 300f);
 
-    private static HitLayout Make(float b, int rings, Rect2? plate = null, HitButton[]? buttons = null)
+    private static HitLayout Make(float b, int rings, Rect2? plate = null, HitButton[]? buttons = null, bool hasHubSub = true)
     {
         var slots = WheelLayout.Compute(new WheelParams(b, rings, _c));
-        return new HitLayout(_c, b, LayoutConstants.DiscRadius(b, rings), slots, slots.Length, plate, buttons, buttons?.Length ?? 0);
+        return new HitLayout(_c, b, LayoutConstants.DiscRadius(b, rings), slots, slots.Length, plate, buttons, buttons?.Length ?? 0, hasHubSub);
     }
 
     [Theory]

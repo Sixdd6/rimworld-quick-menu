@@ -30,5 +30,4 @@ public readonly record struct PinClickInput(
     bool RawAlt,
     bool RawShift,
     bool LeftDownThisFrame = false,
-    bool LeftUpThisFrame = false,
-    bool LeftHeld = false);
+    bool LeftUpThisFrame = false);

@@ -96,4 +96,25 @@ public class TriggerBindingTests
         Assert.NotEqual(TriggerBinding.Key(3), TriggerBinding.Mouse(3));
         Assert.False(TriggerBinding.None.Equals("x"));
     }
+
+    [Theory]
+    [InlineData(323)]
+    [InlineData(326)]
+    [InlineData(329)]
+    public void Mouse_key_codes_are_rejected_as_keys(int code)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => TriggerBinding.Key(code));
+        Assert.False(TriggerBinding.TryParse("key:" + code, out var b));
+        Assert.Equal(TriggerBinding.None, b);
+    }
+
+    [Theory]
+    [InlineData(322)]
+    [InlineData(330)]
+    public void Key_codes_next_to_the_mouse_range_are_valid(int code)
+    {
+        Assert.Equal(code, TriggerBinding.Key(code).Code);
+        Assert.True(TriggerBinding.TryParse("key:" + code, out var b));
+        Assert.Equal(TriggerBinding.Key(code), b);
+    }
 }

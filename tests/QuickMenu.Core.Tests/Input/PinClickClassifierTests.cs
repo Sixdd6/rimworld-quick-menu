@@ -18,7 +18,7 @@ public class PinClickClassifierTests
         bool rawShift = false,
         bool down = false,
         bool up = false) =>
-        new(key, type, button, evCtrl, evAlt, evShift, rawCtrl, rawAlt, rawShift, down, up, down);
+        new(key, type, button, evCtrl, evAlt, evShift, rawCtrl, rawAlt, rawShift, down, up);
 
     [Theory]
     [InlineData(RawEventType.MouseDown)]

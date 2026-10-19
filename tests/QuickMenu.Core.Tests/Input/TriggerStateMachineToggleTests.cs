@@ -26,7 +26,7 @@ public class TriggerStateMachineToggleTests
         }
 
         Assert.Equal(MenuCommand.None, down);
-        return m.Handle(TriggerEvent.MouseUp(_origin, hit, sub, button));
+        return m.Handle(TriggerEvent.MouseUp(_origin, hit, sub ? SlotKind.Submenu : SlotKind.Normal, button));
     }
 
     private static TriggerStateMachine Satellite()
@@ -60,7 +60,7 @@ public class TriggerStateMachineToggleTests
         var m = new TriggerStateMachine();
         Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.Escape(_origin)));
         Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseDown(_origin, Hit.Outside, 0)));
-        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseUp(_origin, Hit.Outside, false, 0)));
+        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseUp(_origin, Hit.Outside, SlotKind.Normal, 0)));
         Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseDown(_origin, Hit.Outside, 1)));
         Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.TriggerReleased(_origin)));
         Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MapLost()));
@@ -110,11 +110,11 @@ public class TriggerStateMachineToggleTests
     {
         var m = Opened();
         m.Handle(TriggerEvent.MouseDown(_origin, Hit.HubClose, 0));
-        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseUp(_origin, Hit.HubEdit, false, 0)));
+        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseUp(_origin, Hit.HubEdit, SlotKind.Normal, 0)));
         Assert.Equal(MenuState.Main, m.State);
 
         m.Handle(TriggerEvent.MouseDown(_origin, Hit.HubEdit, 0));
-        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseUp(_origin, Hit.HubClose, false, 0)));
+        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseUp(_origin, Hit.HubClose, SlotKind.Normal, 0)));
         Assert.Equal(MenuState.Main, m.State);
     }
 
@@ -122,8 +122,8 @@ public class TriggerStateMachineToggleTests
     public void Release_without_a_press_in_this_menu_does_nothing()
     {
         var m = Opened();
-        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseUp(_origin, Hit.HubEdit, false, 0)));
-        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseUp(_origin, Hit.Outside, false, 0)));
+        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseUp(_origin, Hit.HubEdit, SlotKind.Normal, 0)));
+        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseUp(_origin, Hit.Outside, SlotKind.Normal, 0)));
         Assert.Equal(MenuState.Main, m.State);
     }
 
@@ -133,7 +133,7 @@ public class TriggerStateMachineToggleTests
         var m = new TriggerStateMachine();
         m.Handle(TriggerEvent.MouseDown(_origin, Hit.Slot(0), 0));
         m.Handle(TriggerEvent.TriggerPressed(_origin));
-        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseUp(_origin, Hit.Slot(0), false, 0)));
+        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseUp(_origin, Hit.Slot(0), SlotKind.Normal, 0)));
     }
 
     [Fact]
@@ -149,7 +149,7 @@ public class TriggerStateMachineToggleTests
     {
         var m = Opened();
         m.Handle(TriggerEvent.MouseDown(_origin, Hit.Slot(3), 0));
-        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseUp(_origin, Hit.Slot(4), false, 0)));
+        Assert.Equal(MenuCommand.None, m.Handle(TriggerEvent.MouseUp(_origin, Hit.Slot(4), SlotKind.Normal, 0)));
         Assert.Equal(MenuState.Main, m.State);
     }
 
@@ -208,7 +208,7 @@ public class TriggerStateMachineToggleTests
     public void Satellite_slot_click_activates_and_closes()
     {
         var m = Satellite();
-        Assert.Equal(MenuCommand.Activate(1), Click(m, Hit.Slot(1)));
+        Assert.Equal(MenuCommand.Activate(1, MenuLevel.Satellite), Click(m, Hit.Slot(1)));
         Assert.Equal(MenuState.Closed, m.State);
     }
 
@@ -260,7 +260,7 @@ public class TriggerStateMachineToggleTests
     public void Edit_trigger_press_closes()
     {
         var m = Edit();
-        Assert.Equal(MenuCommand.Close, m.Handle(TriggerEvent.TriggerPressed(_origin)));
+        Assert.Equal(MenuCommand.CloseFromEdit, m.Handle(TriggerEvent.TriggerPressed(_origin)));
     }
 
     [Fact]
@@ -277,7 +277,8 @@ public class TriggerStateMachineToggleTests
         foreach (var make in new Func<TriggerStateMachine>[] { Opened, Satellite, Edit })
         {
             var m = make();
-            Assert.Equal(MenuCommand.Close, m.Handle(TriggerEvent.MapLost()));
+            var expected = m.State == MenuState.Edit ? MenuCommand.CloseFromEdit : MenuCommand.Close;
+            Assert.Equal(expected, m.Handle(TriggerEvent.MapLost()));
             Assert.Equal(MenuState.Closed, m.State);
         }
     }
@@ -333,9 +334,9 @@ public class TriggerStateMachineToggleTests
             TriggerEvent.TriggerPressed(_origin),
             TriggerEvent.MouseMove(new Vec2(150, 150)),
             TriggerEvent.MouseDown(_origin, Hit.Slot(1), 0),
-            TriggerEvent.MouseUp(_origin, Hit.Slot(1), true, 0),
+            TriggerEvent.MouseUp(_origin, Hit.Slot(1), SlotKind.Submenu, 0),
             TriggerEvent.MouseDown(_origin, Hit.HubEdit, 0),
-            TriggerEvent.MouseUp(_origin, Hit.HubEdit, false, 0),
+            TriggerEvent.MouseUp(_origin, Hit.HubEdit, SlotKind.Normal, 0),
             TriggerEvent.Escape(_origin),
             TriggerEvent.MouseDown(_origin, Hit.Outside, 1),
             TriggerEvent.MapLost(),

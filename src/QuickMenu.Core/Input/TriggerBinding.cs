@@ -12,6 +12,10 @@ public readonly struct TriggerBinding : IEquatable<TriggerBinding>
     public const int MinMouseButton = 2;
     public const int MaxMouseButton = 4;
 
+    /// <summary>Unity KeyCode.Mouse0..Mouse6: mouse buttons are bound with <see cref="Mouse"/>, never as keys.</summary>
+    public const int FirstMouseKeyCode = 323;
+    public const int LastMouseKeyCode = 329;
+
     private const string NoneText = "none";
     private const string KeyPrefix = "key:";
     private const string MousePrefix = "mouse:";
@@ -29,12 +33,12 @@ public readonly struct TriggerBinding : IEquatable<TriggerBinding>
 
     public static TriggerBinding None => default;
 
-    /// <summary>A keyboard key. <paramref name="keyCode"/> must be positive.</summary>
+    /// <summary>A keyboard key. <paramref name="keyCode"/> must be positive and outside 323..329 (mouse key codes).</summary>
     public static TriggerBinding Key(int keyCode)
     {
-        if (keyCode <= 0)
+        if (!IsValidKeyCode(keyCode))
         {
-            throw new ArgumentOutOfRangeException(nameof(keyCode), "Key code must be positive.");
+            throw new ArgumentOutOfRangeException(nameof(keyCode), "Key code must be positive and not a mouse key code (323..329).");
         }
 
         return new TriggerBinding(TriggerBindingKind.Key, keyCode);
@@ -50,6 +54,9 @@ public readonly struct TriggerBinding : IEquatable<TriggerBinding>
 
         return new TriggerBinding(TriggerBindingKind.Mouse, button);
     }
+
+    public static bool IsValidKeyCode(int keyCode) =>
+        keyCode > 0 && (keyCode < FirstMouseKeyCode || keyCode > LastMouseKeyCode);
 
     public static bool IsValidMouseButton(int button) => button >= MinMouseButton && button <= MaxMouseButton;
 
@@ -89,7 +96,7 @@ public readonly struct TriggerBinding : IEquatable<TriggerBinding>
         }
 
         if (text.StartsWith(KeyPrefix, StringComparison.Ordinal)
-            && TryInt(text.AsSpan(KeyPrefix.Length), out int key) && key > 0)
+            && TryInt(text.AsSpan(KeyPrefix.Length), out int key) && IsValidKeyCode(key))
         {
             binding = new TriggerBinding(TriggerBindingKind.Key, key);
             return true;

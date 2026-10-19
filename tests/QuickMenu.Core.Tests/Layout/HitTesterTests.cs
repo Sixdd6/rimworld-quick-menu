@@ -10,10 +10,10 @@ public class HitTesterTests
 {
     private static readonly Vec2 _c = new(500f, 400f);
 
-    private static HitLayout Make(float b, int rings = 2, Rect2? plate = null, HitButton[]? buttons = null)
+    private static HitLayout Make(float b, int rings = 2, Rect2? plate = null, HitButton[]? buttons = null, bool hasHubSub = true)
     {
         var slots = WheelLayout.Compute(new WheelParams(b, rings, _c));
-        return new HitLayout(_c, b, LayoutConstants.DiscRadius(b, rings), slots, slots.Length, plate, buttons, buttons?.Length ?? 0);
+        return new HitLayout(_c, b, LayoutConstants.DiscRadius(b, rings), slots, slots.Length, plate, buttons, buttons?.Length ?? 0, hasHubSub);
     }
 
     [Fact]
@@ -155,5 +155,25 @@ public class HitTesterTests
 
         Assert.Equal(0L, GC.GetAllocatedBytesForCurrentThread() - before);
         Assert.True(sink >= 0);
+    }
+
+    [Fact]
+    public void Without_hub_sub_the_sub_area_is_hub_close()
+    {
+        var l = Make(56f, 2, hasHubSub: false);
+        var ey = LayoutConstants.HubSubOffset(56f);
+        Assert.Equal(Hit.HubClose, HitTester.Hit(new Vec2(_c.X, _c.Y + ey), l));
+    }
+
+    [Fact]
+    public void Satellite_at_min_button_size_keeps_the_six_oclock_slot_area()
+    {
+        const float b = 36f;
+        var slots = new[] { new SlotPlacement(0, 1, new Vec2(_c.X, _c.Y + LayoutConstants.Pitch(b)), LayoutConstants.Pitch(b), 90f, LayoutConstants.Pitch(b) / 2f) };
+        var probe = new Vec2(_c.X, _c.Y + 23f);
+        var sat = new HitLayout(_c, b, 100f, slots, 1, HasHubSub: false);
+        var main = sat with { HasHubSub = true };
+        Assert.Equal(Hit.Slot(0), HitTester.Hit(probe, sat));
+        Assert.Equal(Hit.HubEdit, HitTester.Hit(probe, main));
     }
 }

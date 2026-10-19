@@ -6,7 +6,8 @@ namespace QuickMenu.Core.Layout;
 public readonly record struct HitButton(Rect2 Bounds, int Kind);
 
 /// <summary>
-/// Everything <see cref="HitTester"/> needs. Arrays are owned by the caller and only the first
+/// Everything <see cref="HitTester"/> needs. <see cref="HasHubSub"/> is false for satellites and until edit mode
+/// ships: the hub sub-button area then belongs to HubClose and nothing else. Arrays are owned by the caller and only the first
 /// <see cref="SlotCount"/> / <see cref="ButtonCount"/> entries are used. <see cref="Plate"/> is null when no plate is shown.
 /// </summary>
 public readonly record struct HitLayout(
@@ -17,7 +18,8 @@ public readonly record struct HitLayout(
     int SlotCount,
     Rect2? Plate = null,
     HitButton[]? Buttons = null,
-    int ButtonCount = 0);
+    int ButtonCount = 0,
+    bool HasHubSub = false);
 
 /// <summary>
 /// Point to typed hit. Priority: HubEdit, Button, HubClose, Slot, Plate, Inside, Outside. The hub is never a slot.
@@ -34,7 +36,7 @@ public static class HitTester
 
         var b = layout.ButtonSize;
         var editCentre = new Vec2(layout.Center.X, layout.Center.Y + LayoutConstants.HubSubOffset(b));
-        if (editCentre.Distance(point) <= LayoutConstants.HubSubDiameter(b) / 2f)
+        if (layout.HasHubSub && editCentre.Distance(point) <= LayoutConstants.HubSubDiameter(b) / 2f)
         {
             return QuickMenu.Core.Layout.Hit.HubEdit;
         }
