@@ -92,6 +92,12 @@ internal static class PinClickPatch
                 return true;
             }
 
+            // Only architect designators pin: a command-bar designator (for example Designator_MechControlGroup) behaves normally.
+            if (!IsArchitectDesignator(__instance))
+            {
+                return true;
+            }
+
             // A pin gesture never activates the designator, including the duplicate (suppressed) frame of the same click.
             if (_deduper.Accept(Time.frameCount, LastLeftDownFrame, input))
             {
@@ -105,6 +111,38 @@ internal static class PinClickPatch
             Site.Fail(ex);
             return true;
         }
+    }
+
+    /// <summary>
+    /// True when <paramref name="designator"/> is in the catalog (O(1) lookup) or, for one added after the catalog was built,
+    /// is listed by a <see cref="DesignationCategoryDef"/> (directly or as a dropdown element). Runs only after the
+    /// modifier, click and classifier tests passed, so the allocation-free fast path is untouched.
+    /// </summary>
+    internal static bool IsArchitectDesignator(Designator designator)
+    {
+        DesignatorCatalog.RefreshIdeology();
+        if (DesignatorCatalog.Find(designator) != null)
+        {
+            return true;
+        }
+
+        foreach (DesignationCategoryDef category in DefDatabase<DesignationCategoryDef>.AllDefsListForReading)
+        {
+            foreach (Designator listed in category.AllResolvedDesignators)
+            {
+                if (ReferenceEquals(listed, designator))
+                {
+                    return true;
+                }
+
+                if (listed is Designator_Dropdown dropdown && dropdown.Elements.Contains(designator))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
