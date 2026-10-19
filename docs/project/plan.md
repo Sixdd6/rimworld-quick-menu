@@ -338,7 +338,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Tests**: unit `MaskSetTests`; benchmark entry added to `tests/QuickMenu.Core.Benchmarks/Program.cs` by T-24.
   - **Size**: M
 
-- [ ] **T-23**: `MaskRasterizer` badges and hub icons
+- [x] **T-23**: `MaskRasterizer` badges and hub icons
   - **Owner**: visual-designer
   - **Requirements**: NFR-7, NFR-8 (design.md S4, S4a, §3)
   - **Depends on**: T-22
@@ -349,7 +349,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Tests**: unit `GlyphsTests`.
   - **Size**: M
 
-- [ ] **T-24**: Perf gates v1 and benchmarks for the hot paths
+- [x] **T-24**: Perf gates v1 and benchmarks for the hot paths
   - **Owner**: performance-engineer
   - **Requirements**: NFR-1 (P-2, P-3, P-5, P-9 Core part, P-10, P-16, P-17 pure part)
   - **Depends on**: T-16, T-17, T-18, T-19, T-20, T-21, T-22
@@ -361,7 +361,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **Tests**: `scripts/perf.sh`.
   - **Size**: M
 
-- [ ] **T-25**: Settings model and `PinService`
+- [x] **T-25**: Settings model and `PinService`
   - **Owner**: developer
   - **Requirements**: FR-5, FR-15, FR-17, NFR-4, NFR-6 (architecture §4; ADR 0004)
   - **Depends on**: T-6, T-14, T-18, T-19, T-20
