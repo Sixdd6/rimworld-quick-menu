@@ -3,12 +3,15 @@ using QuickMenu.Catalog;
 using QuickMenu.Core.Geometry;
 using QuickMenu.Core.Input;
 using QuickMenu.Core.Layout;
+using QuickMenu.Core.Materials;
 using QuickMenu.Core.Pins;
 using QuickMenu.Core.Settings;
 using QuickMenu.Diagnostics;
 using QuickMenu.Pinning;
+using RimWorld;
 using UnityEngine;
 using Verse;
+using Verse.Sound;
 
 namespace QuickMenu.Menu;
 
@@ -26,6 +29,7 @@ internal static class MenuController
     private static QuickMenuWindow? _window;
     private static TriggerStateMachine? _machine;
     private static MenuContent? _content;
+    private static SatelliteController? _satellite;
 
     /// <summary>Slot count of the most recently built window; the P-9 control window draws the same number.</summary>
     internal static int LastSlotCount { get; private set; }
@@ -34,6 +38,9 @@ internal static class MenuController
     internal static Designator?[]? LastDesignators { get; private set; }
 
     internal static bool IsOpen => _window != null;
+
+    /// <summary>The satellite ring on screen (sub-ring or material ring), or null at the main level.</summary>
+    internal static RingContent? ActiveRing => _satellite?.Active;
 
     /// <summary>True while the open menu is in edit mode (the hub shows Done).</summary>
     internal static bool IsEditing => _machine?.State == MenuState.Edit;
@@ -129,6 +136,7 @@ internal static class MenuController
         using var scope = new MeasureScope(StatId.Rebuild);
         MenuContent content = BuildContent(mouse);
         _content = content;
+        _satellite = null;
         LastSlotCount = content.Model.SlotCount;
         LastDesignators = content.Designators;
         return content;
@@ -188,20 +196,22 @@ internal static class MenuController
 
                 break;
             case MenuCommandKind.Activate:
-                Designator? target = _content != null && command.Index >= 0 && command.Index < _content.Designators.Length
-                    ? _content.Designators[command.Index]
-                    : null;
-                Close();
-                if (target != null)
-                {
-                    DesignatorActivator.Activate(target, Event.current);
-                }
-
+                ActivateSlot(command);
                 break;
             case MenuCommandKind.Reject:
-                if (_content != null && command.Index >= 0 && command.Index < _content.Designators.Length && _content.Reason(command.Index) is { } reason)
+                RejectSlot(command.Index);
+                break;
+            case MenuCommandKind.OpenSub:
+                OpenSub(command.Index);
+                break;
+            case MenuCommandKind.Back:
+                if (_satellite != null && _satellite.Back())
                 {
-                    DesignatorActivator.Reject(reason);
+                    _machine?.ResumeSatellite();
+                }
+                else
+                {
+                    _satellite = null;
                 }
 
                 break;
@@ -213,8 +223,95 @@ internal static class MenuController
                 QuickMenuMod.SaveSettings();
                 break;
             default:
-                // Back and OpenSub are the satellite's (T-43). EnterEdit changes only the state, which the window reads when it paints.
+                // EnterEdit changes only the state, which the window reads when it paints.
                 break;
+        }
+    }
+
+    /// <summary>Opens the satellite of a main slot (sub-ring or material ring), or the material ring of a sub-ring option.</summary>
+    private static void OpenSub(int slot)
+    {
+        MenuContent? content = _content;
+        if (content == null || slot < 0)
+        {
+            return;
+        }
+
+        try
+        {
+            SatelliteController satellite = _satellite ??= new SatelliteController(content);
+            bool opened = satellite.Active == null ? slot < content.Designators.Length && satellite.OpenFromMain(slot) : satellite.OpenMaterialFromSub(slot);
+            if (!opened)
+            {
+                Close();
+                return;
+            }
+
+            SoundDefOf.Tick_Tiny.PlayOneShotOnCamera();
+        }
+        catch (System.Exception ex)
+        {
+            Diagnostics.Log.LogOnce("Menu.OpenSub", $"Opening a sub-menu failed, the menu is closed: {ex}");
+            Close();
+        }
+    }
+
+    private static void ActivateSlot(MenuCommand command)
+    {
+        SatelliteController? satellite = _satellite;
+        if (command.Level == MenuLevel.Satellite && satellite != null)
+        {
+            bool found = satellite.TryResolve(command.Index, out Designator designator, out ThingDef? stuff, out Designator_Dropdown? dropdown);
+            Close();
+            if (found)
+            {
+                DesignatorActivator.Activate(designator, stuff, dropdown);
+            }
+
+            return;
+        }
+
+        MenuContent? content = _content;
+        int i = command.Index;
+        Designator? target = content != null && i >= 0 && i < content.Designators.Length ? content.Designators[i] : null;
+        Designator? element = content != null && target != null ? content.Targets[i] : null;
+        StuffOptionSet set = content != null && target != null ? content.StuffSets[i] : default;
+        Designator_Dropdown? owner = content != null && target != null ? content.Dropdowns[i] : null;
+        Close();
+        if (target == null)
+        {
+            return;
+        }
+
+        if (set.IsStuffBuild && set.Outcome == StuffRingOutcome.Skip)
+        {
+            DesignatorActivator.Activate(element ?? target, set.Options[0].Def, owner);
+        }
+        else if (element != null)
+        {
+            DesignatorActivator.Activate(element, null, owner);
+        }
+        else
+        {
+            DesignatorActivator.Activate(target, Event.current);
+        }
+    }
+
+    private static void RejectSlot(int slot)
+    {
+        string? reason;
+        if (_satellite?.Active is { } ring)
+        {
+            reason = slot >= 0 && slot < ring.Stuffs.Length ? ring.Reason(slot) : null;
+        }
+        else
+        {
+            reason = _content != null && slot >= 0 && slot < _content.Designators.Length ? _content.Reason(slot) : null;
+        }
+
+        if (reason != null)
+        {
+            DesignatorActivator.Reject(reason);
         }
     }
 
@@ -253,5 +350,6 @@ internal static class MenuController
         _window = null;
         _machine = null;
         _content = null;
+        _satellite = null;
     }
 }

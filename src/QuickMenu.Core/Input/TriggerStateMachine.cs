@@ -61,6 +61,19 @@ public sealed class TriggerStateMachine
         }
     }
 
+    /// <summary>
+    /// Returns to the satellite level after a <see cref="MenuCommandKind.Back"/> that only left the material ring of a
+    /// sub-menu option (the controller shows the sub-menu again). No effect unless the machine is at the main level.
+    /// </summary>
+    public void ResumeSatellite()
+    {
+        if (State == MenuState.Main)
+        {
+            State = MenuState.Satellite;
+            _pressValid = false;
+        }
+    }
+
     private MenuCommand CloseAll()
     {
         if (State == MenuState.Closed)

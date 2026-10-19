@@ -2,8 +2,11 @@ using System;
 using QuickMenu.Catalog;
 using QuickMenu.Core.Input;
 using QuickMenu.Core.Layout;
+using QuickMenu.Core.Materials;
 using QuickMenu.Core.Pins;
+using QuickMenu.Core.Render;
 using QuickMenu.Pinning;
+using RimWorld;
 using Verse;
 using Log = QuickMenu.Diagnostics.Log;
 
@@ -28,9 +31,24 @@ internal sealed class MenuContent
         Model = model;
         Designators = designators;
         Pins = pins;
+        Targets = new Designator?[designators.Length];
+        Dropdowns = new Designator_Dropdown?[designators.Length];
+        StuffSets = new StuffOptionSet[designators.Length];
         _tips = new string?[designators.Length];
         _reasons = new string?[designators.Length];
     }
+
+    /// <summary>
+    /// The designator a slot activates when it is not the pin itself: the only element of a one-element dropdown (FR-12,
+    /// no ring for one option). Null when the pin is activated as it is.
+    /// </summary>
+    internal Designator?[] Targets { get; }
+
+    /// <summary>The dropdown a slot's <see cref="Targets"/> element belongs to (so the architect remembers it); null otherwise.</summary>
+    internal Designator_Dropdown?[] Dropdowns { get; }
+
+    /// <summary>The materials of each stuff build slot, read once at open (<see cref="StuffOptionSet.IsStuffBuild"/> is false for the rest).</summary>
+    internal StuffOptionSet[] StuffSets { get; }
 
     internal WheelModel Model { get; }
 
@@ -50,6 +68,7 @@ internal sealed class MenuContent
         var model = new WheelModel(placed.Center, buttonSize, rings, slots, slots.Length, WheelModel.DefaultPlateHeight);
         var designators = new Designator?[slots.Length];
         var pinsBySlot = new PinEntry?[slots.Length];
+        var materialPending = new System.Collections.Generic.List<(int Slot, Designator Target)>();
         System.Collections.Generic.IReadOnlyList<PinSlot> pins = PinService.Board.VisibleSlots(PinService.Resolver);
         for (int i = 0; i < slots.Length && i < pins.Count; i++)
         {
@@ -73,12 +92,81 @@ internal sealed class MenuContent
 
             Designator d = entry.Designator;
             designators[i] = d;
-            model.SetSlot(i, d, !entry.ForcedUnavailable && IsUsable(d) ? SlotKind.Normal : SlotKind.Disabled, entry.Label);
+            bool usable = !entry.ForcedUnavailable && IsUsable(d);
+            model.SetSlot(i, d, usable ? SlotKind.Normal : SlotKind.Disabled, entry.Label);
+            materialPending.Add((i, d));
         }
 
         model.SetHubLabels("QuickMenu.Menu.Edit".Translate(), "QuickMenu.Menu.Done".Translate());
         model.Prepare();
-        return new MenuContent(model, designators, pinsBySlot);
+        var content = new MenuContent(model, designators, pinsBySlot);
+        foreach ((int slot, Designator d) in materialPending)
+        {
+            content.Classify(slot, d);
+        }
+
+        return content;
+    }
+
+    /// <summary>
+    /// Decides what a click on pin slot <paramref name="slot"/> does (FR-10..13): a dropdown with two or more elements opens
+    /// the sub-ring (badge); a one-element dropdown acts as its element; a stuff build opens the material ring (dot in the
+    /// last-used stuff colour), activates directly with its only material, or is greyed when no material exists.
+    /// </summary>
+    private void Classify(int slot, Designator d)
+    {
+        if (Model.Kinds[slot] == SlotKind.Disabled)
+        {
+            return;
+        }
+
+        Designator target = d;
+        if (d is Designator_Dropdown dropdown)
+        {
+            var elements = new System.Collections.Generic.List<Designator>();
+            foreach (Designator element in dropdown.Elements)
+            {
+                if (element != null)
+                {
+                    elements.Add(element);
+                }
+            }
+
+            switch (SubMenuLayout.Classify(elements.Count))
+            {
+                case SubMenuOutcome.None:
+                    Model.Kinds[slot] = SlotKind.Disabled;
+                    return;
+                case SubMenuOutcome.Open:
+                    Model.Kinds[slot] = SlotKind.Submenu;
+                    Model.SetDecor(slot, SlotDecor.SubMenu);
+                    return;
+                default:
+                    target = elements[0];
+                    Targets[slot] = target;
+                    Dropdowns[slot] = dropdown;
+                    break;
+            }
+        }
+
+        StuffOptionSet set = StuffOptions.For(target);
+        StuffSets[slot] = set;
+        if (!set.IsStuffBuild)
+        {
+            return;
+        }
+
+        bool usable = Model.Kinds[slot] != SlotKind.Disabled && IsUsable(target);
+        SlotKind kind = StuffSlotPolicy.KindFor(set.Outcome, usable);
+        Model.Kinds[slot] = kind;
+        if (set.Outcome == StuffRingOutcome.Ring && usable)
+        {
+            Model.SetDecor(slot, SlotDecor.Material, SatelliteController.LastUsedColor(target, set));
+        }
+        else if (StuffSlotPolicy.IsNoMaterials(set.Outcome, usable))
+        {
+            _reasons[slot] = "NoStuffsToBuildWith".Translate().Resolve();
+        }
     }
 
     /// <summary>
@@ -155,7 +243,7 @@ internal sealed class MenuContent
         return _reasons[slot] ??= UnavailableReasons.For(d);
     }
 
-    private static bool IsUsable(Designator d)
+    internal static bool IsUsable(Designator d)
     {
         try
         {

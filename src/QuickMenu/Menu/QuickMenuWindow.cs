@@ -32,6 +32,7 @@ internal sealed class QuickMenuWindow : Window
     private WheelModel? _model;
     private Hit _pressHit = Hit.Outside;
     private int _hoverSlot = -1;
+    private RingContent? _hoverRing;
     private bool _loggedFirstDraw;
 
     /// <summary>The content is built on the first <see cref="DoWindowContents"/> (inside OnGUI), around <paramref name="openMouse"/>.</summary>
@@ -193,7 +194,9 @@ internal sealed class QuickMenuWindow : Window
     {
         WheelModel model = _model!;
         Vec2 mouse = new(ev.mousePosition.x, ev.mousePosition.y);
-        HitLayout layout = model.HitLayout;
+        RingContent? ring = MenuController.ActiveRing;
+        WheelModel hitModel = ring?.Model ?? model;
+        HitLayout layout = hitModel.HitLayout;
         Hit hit = HitTester.Hit(mouse, in layout);
         switch (ev.type)
         {
@@ -204,7 +207,7 @@ internal sealed class QuickMenuWindow : Window
                 }
 
                 MenuController.Dispatch(TriggerEvent.MouseMove(mouse));
-                Paint(model, hit);
+                Paint(model, ring, hit);
                 break;
             case EventType.MouseDown:
                 if (ev.button == 0)
@@ -217,7 +220,7 @@ internal sealed class QuickMenuWindow : Window
                 break;
             case EventType.MouseUp:
                 _pressHit = Hit.Outside;
-                SlotKind kind = hit.Kind == HitKind.Slot ? model.Kinds[hit.Index] : SlotKind.Normal;
+                SlotKind kind = hit.Kind == HitKind.Slot ? hitModel.Kinds[hit.Index] : SlotKind.Normal;
                 bool modifier = ev.button == 0 && ModifierPolicy.IsHeld(QuickMenuMod.EffectiveModifier, ev.control || ev.command, ev.alt, ev.shift);
                 ev.Use();
                 MenuController.Dispatch(TriggerEvent.MouseUp(mouse, hit, kind, ev.button, modifier));
@@ -249,15 +252,26 @@ internal sealed class QuickMenuWindow : Window
         _hoverSlot = -1;
     }
 
-    private void Paint(WheelModel model, Hit hit)
+    private void Paint(WheelModel main, RingContent? ring, Hit hit)
     {
         bool editing = MenuController.IsEditing;
-        model.Editing = editing;
-        MenuRenderer.Draw(model, hit, _pressHit);
+        main.Editing = editing;
+        WheelModel model = ring?.Model ?? main;
+        if (ring == null)
+        {
+            MenuRenderer.Draw(main, hit, _pressHit);
+        }
+        else
+        {
+            MenuRenderer.DrawDimmed(main, ring.ParentSlot);
+            SatelliteRenderer.Draw(model, ring.HubSource, ring.HubIndex, hit, _pressHit);
+        }
+
         int slot = hit.Kind == HitKind.Slot && model.Kinds[hit.Index] is not (SlotKind.Empty or SlotKind.Reserved) ? hit.Index : -1;
-        if (slot != _hoverSlot)
+        if (slot != _hoverSlot || !ReferenceEquals(ring, _hoverRing))
         {
             _hoverSlot = slot;
+            _hoverRing = ring;
             if (slot >= 0)
             {
                 using var soundScope = new MeasureScope(StatId.WindowSound);
@@ -265,28 +279,31 @@ internal sealed class QuickMenuWindow : Window
             }
         }
 
-        if (hit.Kind == HitKind.HubEdit)
+        if (ring == null && hit.Kind == HitKind.HubEdit)
         {
             float hubHalf = LayoutConstants.Pitch(model.ButtonSize) / 2f;
             using var hubTipScope = new MeasureScope(StatId.WindowTip);
             TooltipHandler.TipRegion(new Rect(model.Center.X - hubHalf, model.Center.Y - hubHalf, 2f * hubHalf, 2f * hubHalf), new TipSignal(_content!.HubTip(editing), TooltipIdBase - 1));
         }
 
-        if (editing && hit.Kind == HitKind.Slot && _content!.ReservedTip(hit.Index) is { } reservedTip)
+        if (ring == null && editing && hit.Kind == HitKind.Slot && _content!.ReservedTip(hit.Index) is { } reservedTip)
         {
-            float half = model.ButtonSize / 2f;
-            Vec2 c = model.Slots[hit.Index].Center;
-            using var tipScope = new MeasureScope(StatId.WindowTip);
-            TooltipHandler.TipRegion(new Rect(c.X - half, c.Y - half, model.ButtonSize, model.ButtonSize), new TipSignal(reservedTip, TooltipIdBase + hit.Index));
+            TipAt(model, hit.Index, reservedTip, TooltipIdBase + hit.Index);
         }
 
-        if (slot >= 0 && _content!.Tip(slot) is { } tip)
+        string? tip = slot < 0 ? null : ring != null ? ring.Tip(slot) : _content!.Tip(slot);
+        if (tip != null)
         {
-            float half = model.ButtonSize / 2f;
-            Vec2 c = model.Slots[slot].Center;
-            using var tipScope = new MeasureScope(StatId.WindowTip);
-            TooltipHandler.TipRegion(new Rect(c.X - half, c.Y - half, model.ButtonSize, model.ButtonSize), new TipSignal(tip, TooltipIdBase + slot));
+            TipAt(model, slot, tip, TooltipIdBase + (ring != null ? 0x1000 : 0) + slot);
         }
+    }
+
+    private static void TipAt(WheelModel model, int slot, string text, int id)
+    {
+        float half = model.ButtonSize / 2f;
+        Vec2 c = model.Slots[slot].Center;
+        using var tipScope = new MeasureScope(StatId.WindowTip);
+        TooltipHandler.TipRegion(new Rect(c.X - half, c.Y - half, model.ButtonSize, model.ButtonSize), new TipSignal(text, id));
     }
 
     private static Vec2 MousePosition()

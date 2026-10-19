@@ -176,6 +176,26 @@ public class TriggerStateMachineToggleTests
     }
 
     [Fact]
+    public void Resume_after_back_returns_to_the_satellite_level_and_a_second_back_reaches_main()
+    {
+        var m = Satellite();
+        Assert.Equal(MenuCommand.Back, m.Handle(TriggerEvent.Escape(_origin)));
+        m.ResumeSatellite();
+        Assert.Equal(MenuState.Satellite, m.State);
+        Assert.Equal(MenuCommand.Back, m.Handle(TriggerEvent.Escape(_origin)));
+        Assert.Equal(MenuState.Main, m.State);
+    }
+
+    [Fact]
+    public void Resume_does_nothing_outside_the_main_level()
+    {
+        var m = Opened();
+        m.Handle(TriggerEvent.TriggerPressed(_origin));
+        m.ResumeSatellite();
+        Assert.Equal(MenuState.Closed, m.State);
+    }
+
+    [Fact]
     public void Satellite_escape_goes_back()
     {
         var m = Satellite();
