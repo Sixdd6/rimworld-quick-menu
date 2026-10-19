@@ -423,7 +423,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **In-game check**: UC-2 (user). Also check (T-28 review): with uploads now `SetPixelData` + `Apply(false, true)` (non-readable), the rim, slot rings and lock/caret glyphs still draw and are upright; the self-test section "textures (T-28)" shows `live` = `expected`, `Color32 size=4 … ok` and the round trip `ok`; record the "Textures rebuilt … (with upload)" time in performance.md.
   - **Size**: S
 
-- [ ] **T-29**: Wheel renderer: disc, base slot states, hub, label plate
+- [x] **T-29**: Wheel renderer: disc, base slot states, hub, label plate
   - **Owner**: visual-designer
   - **Requirements**: FR-4, FR-13 (look), NFR-5 (design.md S1, S4 states 1/2/3/6, S4a)
   - **Depends on**: T-16, T-17, T-28
@@ -466,7 +466,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **In-game check**: UC-2 (user)
   - **Size**: M
 
-- [ ] **T-32**: Production menu: controller, toggle window, plain activation
+- [x] **T-32**: Production menu: controller, toggle window, plain activation
   - **Owner**: developer
   - **Requirements**: FR-2 (toggle), FR-3, FR-5 (Fixed), FR-6, FR-13, FR-17, FR-18, NFR-1, NFR-5 (ADR 0006, 0007)
   - **Depends on**: T-21, T-25, T-29, T-31
