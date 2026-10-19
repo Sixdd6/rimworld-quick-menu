@@ -30,7 +30,7 @@ public class StyleTokensTests
         { nameof(StyleTokens.Plate), 0x000000, 204 },
         { nameof(StyleTokens.WindowBg), 0x15191D, 255 },
         { nameof(StyleTokens.PinMarker), 0x38BDF8, 255 },
-        { nameof(StyleTokens.PinMarkerPartial), 0x2E9ACB, 255 },
+        { nameof(StyleTokens.PinMarkerPartial), 0xFFFFFF, 255 },
         { nameof(StyleTokens.PinMarkerOutline), 0x000000, 217 },
         { nameof(StyleTokens.GizmoBgLight), 0x2F4453, 255 },
         { nameof(StyleTokens.GizmoBgDark), 0x1D2B33, 255 },
@@ -84,9 +84,10 @@ public class StyleTokensTests
     }
 
     [Fact]
-    public void PinMarkerPartial_IsDimmerThanTheFullMarker()
+    public void PinMarkerPartial_IsWhiteAndDistinctFromTheFullMarker()
     {
-        Assert.True(ColorContrast.Luminance(StyleTokens.PinMarkerPartial) < ColorContrast.Luminance(StyleTokens.PinMarker));
+        Assert.Equal(Rgba32.FromHex(0xFFFFFF), StyleTokens.PinMarkerPartial);
+        Assert.NotEqual(StyleTokens.PinMarker, StyleTokens.PinMarkerPartial);
         Assert.Equal(StyleTokens.Accent, StyleTokens.PinMarker);
     }
 

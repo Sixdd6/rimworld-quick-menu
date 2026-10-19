@@ -326,7 +326,7 @@ The game's UI is dark only, so there is one theme. Tokens live in one adapter cl
 | `plate` | — | black α 0.80 | Label, hint and help plates | — |
 | `dimmedMenu` | — | menu α 0.45 | Main menu behind a satellite | — |
 | `pinMarker` | — | `#38BDF8` (= `accent`) | Architect pin marker, full and entry (FR-19) | 4.7:1 vs the lightest pixel of the vanilla button background under it (`#2F4453`), 6.8:1 vs the darkest (`#1D2B33`); 7.1:1 vs its outline over a white icon |
-| `pinMarkerPartial` | — | `#2E9ACB` (opaque, dimmer accent) | Partial pin marker (only single entries of a dropdown pinned) | 3.2:1 vs `#2F4453`, 4.6:1 vs `#1D2B33`; 4.8:1 vs its outline over a white icon |
+| `pinMarkerPartial` | — | `#FFFFFF` (opaque white) | Partial pin marker (only single entries of a dropdown pinned; white = "a pin is inside", user 2026-10-19) | 10.1:1 vs `#2F4453`, 14.5:1 vs `#1D2B33`; the black outline separates it from a white icon |
 | `pinMarkerOutline` | — | black α 0.85, 1 UI px around the marker | Separates the marker from the icon it overlaps | over a white icon `#262626`, 15:1 vs the icon. `rimOutline` (α 0.60) is not enough here: over white the full marker would reach only 2.7:1 |
 | ~~`satelliteUnderlay`~~ | — | — | Declined by the user (2026-10-19, T-86 removed) | — |
 | windows, buttons | — | the game's own (`Widgets.WindowBGFillColor`, vanilla button atlas) | Settings, dialogs | vanilla |
@@ -373,7 +373,7 @@ A small push pin drawn by our code on the game's own architect buttons and dropd
 | Kind | Where | Size | Colour |
 |---|---|---|---|
 | Full | a pinned architect button; a dropdown button whose whole dropdown is pinned; a single entry drawn as its own button (BAM's flattened Floors tab) | 15 (0.2 × the 75 px button) | `pinMarker` |
-| Partial | a dropdown button with no whole-dropdown pin but at least one shown, pinned single entry (user decision 11: smaller and dimmer) | 11 | `pinMarkerPartial` |
+| Partial | a dropdown button with no whole-dropdown pin but at least one shown, pinned single entry (user decision 11: smaller; decision 14: white, meaning "a pin is inside") | 11 | `pinMarkerPartial` |
 | Entry | a pinned single entry in an open dropdown list (row or grid cell) | 10 (at most half the row's icon square: 6 in Tiny rows) | `pinMarker` |
 
 - **Outline**: every marker has a `pinMarkerOutline` mask under it that is the glyph **dilated by 1 UI px** (`Glyphs.RenderOutline`, a uniform grow, on a canvas padded by `ceil(UI scale)` texels), not a scaled copy as for the menu badges: a scaled copy would give the 1.4 px needle almost no outline. It lines up texel for texel with the fill (`PinMarkerSizing.OutlineRect`).

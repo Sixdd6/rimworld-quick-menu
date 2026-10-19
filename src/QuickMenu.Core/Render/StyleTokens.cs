@@ -68,10 +68,10 @@ public static class StyleTokens
     public static readonly Rgba32 PinMarker = Accent;
 
     /// <summary>
-    /// Partial pin marker (a dropdown with only single entries pinned, user decision 11): a dimmer, opaque accent
-    /// <c>#2E9ACB</c>. Opaque so its contrast does not depend on what is under it: 3.2:1 on the lightest button pixel.
+    /// Partial pin marker (a dropdown with only single entries pinned, user decisions 11 and 14): smaller and opaque
+    /// white <c>#FFFFFF</c>, so "a pin is inside" reads apart from the blue full marker. 10.1:1 on the lightest button pixel.
     /// </summary>
-    public static readonly Rgba32 PinMarkerPartial = Rgba32.FromHex(0x2E9ACB);
+    public static readonly Rgba32 PinMarkerPartial = Rgba32.FromHex(0xFFFFFF);
 
     /// <summary>
     /// Outline under the pin marker, 1 UI px on every side: black α 0.85. Stronger than <see cref="RimOutline"/> (α 0.60)

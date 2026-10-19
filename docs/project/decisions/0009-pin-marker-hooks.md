@@ -7,7 +7,8 @@
 
 FR-19 (Should): a small pin marker on every architect button that is currently pinned, on a dropdown button when the whole dropdown is pinned, and on pinned single entries inside an open dropdown list. It must update on the next frame after a pin or unpin and must cost nothing measurable per frame (NFR-1; budget P-19: at most 100 ns and 0 bytes per gizmo draw call). User decisions 11–13 (plan.md, 2026-10-19) and the user rule for this spike:
 
-- **11**: when only single entries of a dropdown are pinned, the dropdown button shows a **smaller, dimmer** marker. A whole-dropdown pin shows the normal marker.
+- **11**: when only single entries of a dropdown are pinned, the dropdown button shows a **smaller** marker. A whole-dropdown pin shows the normal marker.
+- **14** (user, 2026-10-19, after the T-89 preview): the partial marker is **white** instead of dimmer blue, to show that a pin is inside the dropdown.
 - **12**: the marker appears in the **architect menus only**, never on copy/build buttons in the command bar of selected things.
 - **13**: pins hidden beyond the current capacity are **not** marked.
 - **User rule**: the marker must work in **all three** architect menus (vanilla Architect tab, Better Architect Menu (BAM), Dubs Mint Menus' build menu) and **nowhere else**.
@@ -97,7 +98,7 @@ return ModDetection.Mint && w.GetType() == mintArchitectType;                   
   7. `if (!ArchitectDrawContext.IsActive()) return;`
   8. draw the marker (below) with `GUI.DrawTexture`, saving and restoring `GUI.color`.
   9. `} catch (Exception ex) { Site.Fail(ex); }` (logs once, disables the site; the gizmo was already drawn and keeps working).
-- **What gets which mark**: a pinned designator drawn as its own button → `Full`. A dropdown whose whole dropdown is pinned → `Full`. A dropdown with no whole pin but at least one shown, pinned single entry → `Partial` (smaller, dimmer; decision 11). A single entry drawn as its own button (BAM's flattened Floors tab) → `Full`; in that tab the dropdown button itself is not drawn, so a whole-dropdown pin of a flattened floor dropdown shows no marker there.
+- **What gets which mark**: a pinned designator drawn as its own button → `Full`. A dropdown whose whole dropdown is pinned → `Full`. A dropdown with no whole pin but at least one shown, pinned single entry → `Partial` (smaller, white; decisions 11 and 14). A single entry drawn as its own button (BAM's flattened Floors tab) → `Full`; in that tab the dropdown button itself is not drawn, so a whole-dropdown pin of a flattened floor dropdown shows no marker there.
 - **Corner (all three menus, UI scale 1–2)**: the **top-right column, directly under the vanilla "+" slot**. With `k = butRect.height / 75` and marker size `s` (design.md, T-89; about 0.2 × 75 = 15 UI px at full size):
   `markerRect = (butRect.xMax − 1·k − s, butRect.y + 18·k, s, s)`.
   The partial marker uses the same top-right anchor point (same right edge and top) with its smaller size. Why here: top-left holds the hotkey letter, the Steam Deck glyph and Mint's "in wheel" ring; the top 16–17 px on the right hold the "+", BAM's edit buttons and Mint's sort bar; the bottom holds the label strip (up to 20 px into the button for two lines) and BAM's debug overlay. The band `y + 18 … y + 33` on the right edge is free of all of them; it overlaps only the outer corner of the icon, as the "+" does, which the marker's `rimOutline` keeps legible. All values are in UI units, so the game's UI scale is applied by IMGUI; the texture is rasterized at `s × Prefs.UIScale` screen px (T-89). Shrunk gizmos (36 px) scale by `k`.
