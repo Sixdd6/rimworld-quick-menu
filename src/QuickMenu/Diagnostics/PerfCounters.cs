@@ -19,6 +19,15 @@ internal enum StatId
 
     /// <summary>The pin click prefix (P-3).</summary>
     PinPrefix,
+
+    /// <summary>Sub-bucket of <see cref="Window"/>: the hover sound call (game code). One sample per frame it ran.</summary>
+    WindowSound,
+
+    /// <summary>Sub-bucket of <see cref="Window"/>: <c>TooltipHandler.TipRegion</c> (game code). One sample per hovered frame.</summary>
+    WindowTip,
+
+    /// <summary>Sub-bucket of <see cref="Window"/>: the label plate (<c>Widgets.DrawAtlas</c> + <c>Widgets.Label</c>, game code).</summary>
+    WindowPlate,
 }
 
 /// <summary>
@@ -52,6 +61,9 @@ internal static class PerfCounters
         new("menu window per frame (DoWindowContents + WindowUpdate)", FrameRing),
         new("control window per frame (DoWindowContents)", FrameRing),
         new("pin click prefix (P-3; one sample per designator ProcessInput call)", 256),
+        new("  of window: hover sound call (PlayOneShotOnCamera; frames where hover changed)", 256),
+        new("  of window: TooltipHandler.TipRegion (hovered frames)", FrameRing),
+        new("  of window: label plate (DrawAtlas + Widgets.Label; frames with a plate)", FrameRing),
     };
 
     internal static MeasureStats Get(StatId id) => EnsureStats()[(int)id];

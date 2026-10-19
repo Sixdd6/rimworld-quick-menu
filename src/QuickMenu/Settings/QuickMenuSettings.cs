@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using QuickMenu.Core.Input;
 using QuickMenu.Core.Pins;
@@ -86,6 +87,12 @@ internal sealed class QuickMenuSettings : ModSettings
     /// <summary>Recomputes the board capacity from the size settings. Pins beyond it are kept, just not shown.</summary>
     internal void ApplyCapacity() => Board.Capacity = SettingsRules.PinCapacity(Layout, Sizing, Rings, GridColumns, GridRows);
 
+    /// <summary>Ticks spent inside the settings scribe pass over all load phases (our parsing plus the game's Scribe calls), for P-16 attribution.</summary>
+    internal static long ScribeTicks { get; private set; }
+
+    /// <summary>Ticks spent in <see cref="PostLoad"/>: purely our work (normalize, trigger parse, pin lines, capacity).</summary>
+    internal static long PostLoadTicks { get; private set; }
+
     /// <summary>
     /// Numbers, enums and flags are scribed as text and parsed here, so one corrupt value is one repaired setting and
     /// one warning in total, not a red error per field from the game's own parser. The file format is the same XML
@@ -93,6 +100,7 @@ internal sealed class QuickMenuSettings : ModSettings
     /// </summary>
     public override void ExposeData()
     {
+        long start = Stopwatch.GetTimestamp();
         base.ExposeData();
         if (Scribe.mode == LoadSaveMode.LoadingVars)
         {
@@ -104,19 +112,19 @@ internal sealed class QuickMenuSettings : ModSettings
             SchemaVersion = SettingsRules.SchemaVersion;
         }
 
-        Look(ref SchemaVersion, "schemaVersion", SettingsRules.SchemaVersion);
+        SchemaVersion = LookInt(SchemaVersion, "schemaVersion", SettingsRules.SchemaVersion);
         Scribe_Values.Look(ref _triggerText, "trigger", SettingsRules.DefaultTrigger, forceSave: true);
-        LookEnum(ref TriggerMode, "triggerMode", TriggerMode.Toggle);
-        LookEnum(ref Layout, "layout", MenuLayout.Wheel);
-        LookEnum(ref Sizing, "sizing", SizingMode.Fixed);
-        Look(ref Rings, "rings", SettingsRules.DefaultRings);
-        Look(ref GridColumns, "gridColumns", SettingsRules.DefaultColumns);
-        Look(ref GridRows, "gridRows", SettingsRules.DefaultRows);
-        Look(ref ButtonSize, "buttonSize", (float)SettingsRules.DefaultButtonSize);
-        LookEnum(ref PinModifier, "pinModifier", PinModifier.Ctrl);
-        Look(ref PinModifierUserSet, "pinModifierUserSet", false);
-        Look(ref FirstRunNoticeShown, "firstRunNoticeShown", false);
-        Look(ref MintNoticeShown, "mintNoticeShown", false);
+        TriggerMode = (TriggerMode)LookEnum(typeof(TriggerMode), TriggerMode, "triggerMode", TriggerMode.Toggle);
+        Layout = (MenuLayout)LookEnum(typeof(MenuLayout), Layout, "layout", MenuLayout.Wheel);
+        Sizing = (SizingMode)LookEnum(typeof(SizingMode), Sizing, "sizing", SizingMode.Fixed);
+        Rings = LookInt(Rings, "rings", SettingsRules.DefaultRings);
+        GridColumns = LookInt(GridColumns, "gridColumns", SettingsRules.DefaultColumns);
+        GridRows = LookInt(GridRows, "gridRows", SettingsRules.DefaultRows);
+        ButtonSize = LookFloat(ButtonSize, "buttonSize", SettingsRules.DefaultButtonSize);
+        PinModifier = (PinModifier)LookEnum(typeof(PinModifier), PinModifier, "pinModifier", PinModifier.Ctrl);
+        PinModifierUserSet = LookBool(PinModifierUserSet, "pinModifierUserSet");
+        FirstRunNoticeShown = LookBool(FirstRunNoticeShown, "firstRunNoticeShown");
+        MintNoticeShown = LookBool(MintNoticeShown, "mintNoticeShown");
 
         if (Scribe.mode == LoadSaveMode.Saving)
         {
@@ -127,8 +135,12 @@ internal sealed class QuickMenuSettings : ModSettings
 
         if (Scribe.mode == LoadSaveMode.PostLoadInit)
         {
+            long postStart = Stopwatch.GetTimestamp();
             PostLoad();
+            PostLoadTicks += Stopwatch.GetTimestamp() - postStart;
         }
+
+        ScribeTicks += Stopwatch.GetTimestamp() - start;
     }
 
     private void PostLoad()
@@ -151,65 +163,133 @@ internal sealed class QuickMenuSettings : ModSettings
     }
 
     /// <summary>Resets invalid values to valid ones. Returns true when anything changed.</summary>
+    /// <remarks>Plain statements, no generic helper: each value-type instantiation of a generic would be JIT-compiled separately at startup (P-16).</remarks>
     internal bool Normalize()
     {
         bool changed = false;
-        changed |= Reset(ref SchemaVersion, SettingsRules.SchemaVersion, SchemaVersion >= 1);
-        changed |= Reset(ref _triggerText, SettingsRules.DefaultTrigger, TriggerBinding.TryParse(_triggerText, out _));
-        changed |= Reset(ref TriggerMode, TriggerMode.Toggle, SettingsRules.IsDefined(TriggerMode));
-        changed |= Reset(ref Layout, MenuLayout.Wheel, SettingsRules.IsDefined(Layout));
-        changed |= Reset(ref Sizing, SizingMode.Fixed, SettingsRules.IsDefined(Sizing));
-        changed |= Reset(ref PinModifier, PinModifier.Ctrl, SettingsRules.IsDefined(PinModifier));
-        changed |= Reset(ref Rings, SettingsRules.ClampRings(Rings), Rings == SettingsRules.ClampRings(Rings));
-        changed |= Reset(ref GridColumns, SettingsRules.ClampColumns(GridColumns), GridColumns == SettingsRules.ClampColumns(GridColumns));
-        changed |= Reset(ref GridRows, SettingsRules.ClampRows(GridRows), GridRows == SettingsRules.ClampRows(GridRows));
-        changed |= Reset(ref ButtonSize, SettingsRules.ClampButtonSize(ButtonSize), ButtonSize == SettingsRules.ClampButtonSize(ButtonSize));
+        if (SchemaVersion < 1)
+        {
+            SchemaVersion = SettingsRules.SchemaVersion;
+            changed = true;
+        }
+
+        if (!TriggerBinding.TryParse(_triggerText, out _))
+        {
+            _triggerText = SettingsRules.DefaultTrigger;
+            changed = true;
+        }
+
+        if (!IsDefined(typeof(TriggerMode), TriggerMode))
+        {
+            TriggerMode = TriggerMode.Toggle;
+            changed = true;
+        }
+
+        if (!IsDefined(typeof(MenuLayout), Layout))
+        {
+            Layout = MenuLayout.Wheel;
+            changed = true;
+        }
+
+        if (!IsDefined(typeof(SizingMode), Sizing))
+        {
+            Sizing = SizingMode.Fixed;
+            changed = true;
+        }
+
+        if (!IsDefined(typeof(PinModifier), PinModifier))
+        {
+            PinModifier = PinModifier.Ctrl;
+            changed = true;
+        }
+
+        int rings = SettingsRules.ClampRings(Rings);
+        int columns = SettingsRules.ClampColumns(GridColumns);
+        int rows = SettingsRules.ClampRows(GridRows);
+        float size = SettingsRules.ClampButtonSize(ButtonSize);
+        changed |= Rings != rings || GridColumns != columns || GridRows != rows || ButtonSize != size;
+        Rings = rings;
+        GridColumns = columns;
+        GridRows = rows;
+        ButtonSize = size;
         return changed;
     }
 
-    private void Look(ref int value, string label, int fallback) =>
-        LookText(ref value, label, fallback, static v => v.ToString(CultureInfo.InvariantCulture), static (string t, out int v) => int.TryParse(t, NumberStyles.Integer, CultureInfo.InvariantCulture, out v));
+    private static bool IsDefined(Type enumType, object value) => Enum.IsDefined(enumType, value);
 
-    private void Look(ref float value, string label, float fallback) =>
-        LookText(ref value, label, fallback, static v => v.ToString("R", CultureInfo.InvariantCulture), static (string t, out float v) => float.TryParse(t, NumberStyles.Float, CultureInfo.InvariantCulture, out v));
-
-    private void Look(ref bool value, string label, bool fallback) =>
-        LookText(ref value, label, fallback, static v => v ? "true" : "false", static (string t, out bool v) => bool.TryParse(t, out v));
-
-    private void LookEnum<T>(ref T value, string label, T fallback)
-        where T : struct, Enum =>
-        LookText(ref value, label, fallback, static v => v.ToString(), static (string t, out T v) => Enum.TryParse(t, ignoreCase: false, out v) && SettingsRules.IsDefined(v));
-
-    private delegate bool TryParseText<T>(string text, out T value);
-
-    // Called a few times per settings load or save, never per frame: the delegates are static and do not capture.
-    private void LookText<T>(ref T value, string label, T fallback, Func<T, string> format, TryParseText<T> tryParse)
+    // The Look helpers are non-generic on purpose: one compiled body each instead of one JIT compilation per value type (P-16).
+    private int LookInt(int value, string label, int fallback)
     {
-        string? text = Scribe.mode == LoadSaveMode.Saving ? format(value) : null;
-        Scribe_Values.Look(ref text, label, format(fallback), forceSave: true);
+        string? text = LookText(label, Scribe.mode == LoadSaveMode.Saving ? value.ToString(CultureInfo.InvariantCulture) : null, fallback.ToString(CultureInfo.InvariantCulture));
         if (Scribe.mode != LoadSaveMode.LoadingVars)
         {
-            return;
+            return value;
         }
 
-        if (text != null && tryParse(text.Trim(), out T parsed))
+        if (text != null && int.TryParse(text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed))
         {
-            value = parsed;
-            return;
+            return parsed;
         }
 
-        value = fallback;
         _unreadable = true;
+        return fallback;
     }
 
-    private static bool Reset<T>(ref T field, T replacement, bool valid)
+    private float LookFloat(float value, string label, float fallback)
     {
-        if (valid)
+        string? text = LookText(label, Scribe.mode == LoadSaveMode.Saving ? value.ToString("R", CultureInfo.InvariantCulture) : null, fallback.ToString("R", CultureInfo.InvariantCulture));
+        if (Scribe.mode != LoadSaveMode.LoadingVars)
         {
-            return false;
+            return value;
         }
 
-        field = replacement;
-        return true;
+        if (text != null && float.TryParse(text.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float parsed))
+        {
+            return parsed;
+        }
+
+        _unreadable = true;
+        return fallback;
+    }
+
+    private bool LookBool(bool value, string label)
+    {
+        string? text = LookText(label, Scribe.mode == LoadSaveMode.Saving ? (value ? "true" : "false") : null, "false");
+        if (Scribe.mode != LoadSaveMode.LoadingVars)
+        {
+            return value;
+        }
+
+        if (text != null && bool.TryParse(text.Trim(), out bool parsed))
+        {
+            return parsed;
+        }
+
+        _unreadable = true;
+        return false;
+    }
+
+    private object LookEnum(Type enumType, object value, string label, object fallback)
+    {
+        string? text = LookText(label, Scribe.mode == LoadSaveMode.Saving ? value.ToString() : null, fallback.ToString()!);
+        if (Scribe.mode != LoadSaveMode.LoadingVars)
+        {
+            return value;
+        }
+
+        if (text != null && Enum.TryParse(enumType, text.Trim(), ignoreCase: false, out object? parsed) && Enum.IsDefined(enumType, parsed))
+        {
+            return parsed;
+        }
+
+        _unreadable = true;
+        return fallback;
+    }
+
+    private static string? LookText(string label, string? current, string fallbackText)
+    {
+        string? text = current;
+        Scribe_Values.Look(ref text, label, fallbackText, forceSave: true);
+        return text;
     }
 }

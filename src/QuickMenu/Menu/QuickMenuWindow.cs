@@ -234,6 +234,7 @@ internal sealed class QuickMenuWindow : Window
             _hoverSlot = slot;
             if (slot >= 0)
             {
+                using var soundScope = new MeasureScope(StatId.WindowSound);
                 SoundDefOf.Mouseover_Command.PlayOneShotOnCamera();
             }
         }
@@ -242,6 +243,7 @@ internal sealed class QuickMenuWindow : Window
         {
             float half = model.ButtonSize / 2f;
             Vec2 c = model.Slots[slot].Center;
+            using var tipScope = new MeasureScope(StatId.WindowTip);
             TooltipHandler.TipRegion(new Rect(c.X - half, c.Y - half, model.ButtonSize, model.ButtonSize), new TipSignal(tip, TooltipIdBase + slot));
         }
     }

@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using QuickMenu.Core.Render;
+using QuickMenu.Core.Settings;
 using QuickMenu.Diagnostics;
 using UnityEngine;
 using Verse;
@@ -83,6 +84,7 @@ internal static class Textures
     private static byte[] _rgba = new byte[MaskSet.MaxByteCount * 4];
     private static TextureSizing? _sizing;
     private static int _live;
+    private static long _uploadTicks;
     private static SizedTexture _slotRing1;
     private static SizedTexture _slotRing2;
     private static SizedTexture _slotRing3;
@@ -115,6 +117,8 @@ internal static class Textures
         {
             Site.Fail(ex);
         }
+
+        Prewarm();
     }
 
     /// <summary>False when building the static masks failed; drawing code then skips the shapes that need them.</summary>
@@ -160,6 +164,31 @@ internal static class Textures
     internal static SizedTexture Glyph(MaskId id) => _glyphs[(int)id];
 
     /// <summary>
+    /// Builds the sized textures for the sizes the saved settings will open with, during the loading screen, so the first
+    /// open pays nothing (UC-2: 6.46 ms on the first open, over the 5 ms budget). A wrong guess (Auto sizing, a grid
+    /// layout, another UI scale later) only costs the rebuild it would have cost anyway. Never throws.
+    /// </summary>
+    private static void Prewarm()
+    {
+        try
+        {
+            QuickMenu.Settings.QuickMenuSettings settings = QuickMenuMod.Settings;
+            if (settings.Layout != MenuLayout.Wheel)
+            {
+                return;
+            }
+
+            EnsureSized(
+                SettingsRules.ClampButtonSize(settings.ButtonSize),
+                SettingsRules.ClampRings(settings.Rings));
+        }
+        catch (Exception ex)
+        {
+            SizedSite.Fail(ex);
+        }
+    }
+
+    /// <summary>
     /// Makes the sized textures match the button size, the rings in use and the current UI scale. Call once per open
     /// (or when the layout cache is rebuilt), never per frame. Rebuilds only what changed.
     /// </summary>
@@ -182,6 +211,7 @@ internal static class Textures
             }
 
             long start = Stopwatch.GetTimestamp();
+            _uploadTicks = 0;
             if ((groups & SizedGroups.SlotRings) != 0)
             {
                 RoundTextureGeometry g = next.SlotRing;
@@ -217,7 +247,7 @@ internal static class Textures
             ReleaseLargeBuffer();
             if (Prefs.DevMode)
             {
-                Log.Info($"Textures rebuilt ({groups}) B={buttonSize} rings={ringsInUse} UI scale={next.UiScale} rim={next.Rim.TextureSize}px in {Stopwatch.GetElapsedTime(start).TotalMilliseconds:F2} ms (with upload)");
+                Log.Info($"Textures rebuilt ({groups}) B={buttonSize} rings={ringsInUse} UI scale={next.UiScale} rim={next.Rim.TextureSize}px in {Stopwatch.GetElapsedTime(start).TotalMilliseconds:F2} ms (with upload; texture create + SetPixelData + Apply = {_uploadTicks * 1000.0 / Stopwatch.Frequency:F2} ms)");
             }
         }
         catch (Exception ex)
@@ -377,6 +407,7 @@ internal static class Textures
     /// <summary>Uploads the first <c>width × height × 4</c> bytes of the RGBA buffer (bottom row first).</summary>
     private static Texture2D Upload(int width, int height, string name)
     {
+        long uploadStart = Stopwatch.GetTimestamp();
         var texture = new Texture2D(width, height, TextureFormat.RGBA32, false)
         {
             name = "QuickMenu." + name,
@@ -390,6 +421,7 @@ internal static class Textures
 
         // No mipmaps; makeNoLongerReadable drops the CPU copy (unverified on Waylith: checked at UC-2).
         texture.Apply(false, true);
+        _uploadTicks += Stopwatch.GetTimestamp() - uploadStart;
         return texture;
     }
 

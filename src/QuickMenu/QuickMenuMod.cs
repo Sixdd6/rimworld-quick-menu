@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using HarmonyLib;
 using QuickMenu.Core.Input;
@@ -59,11 +60,19 @@ public sealed class QuickMenuMod : Mod
         : base(content)
     {
         long started = Stopwatch.GetTimestamp();
+        TimeSpan jitStart = JitInfo.GetCompilationTime(currentThread: true);
+        long jitMethodsStart = JitInfo.GetCompiledMethodCount(currentThread: true);
         _instance = this;
-        long settingsStart = Stopwatch.GetTimestamp();
+
+        // The game's own work (settings file read, Scribe, our ExposeData) is timed apart from ours, so P-16 can be attributed.
+        long getStart = Stopwatch.GetTimestamp();
         // LoadedModManager.ReadModSettings catches load failures itself and returns fresh settings, so no catch is needed here.
         _settings = GetSettings<QuickMenuSettings>();
+        long getTicks = Stopwatch.GetTimestamp() - getStart;
+        TimeSpan jitAfterGet = JitInfo.GetCompilationTime(currentThread: true);
+        long jitMethodsAfterGet = JitInfo.GetCompiledMethodCount(currentThread: true);
 
+        long ownStart = Stopwatch.GetTimestamp();
         _settings.ApplyCapacity();
         try
         {
@@ -75,7 +84,15 @@ public sealed class QuickMenuMod : Mod
         }
 
         RefreshEffectiveModifier();
-        long settingsTicks = Stopwatch.GetTimestamp() - settingsStart;
+        long ownTicks = Stopwatch.GetTimestamp() - ownStart;
+        long settingsTicks = getTicks + ownTicks;
+        PerfStartup.NoteSettings(
+            getTicks,
+            QuickMenuSettings.ScribeTicks,
+            QuickMenuSettings.PostLoadTicks,
+            ownTicks,
+            jitAfterGet - jitStart,
+            jitMethodsAfterGet - jitMethodsStart);
         long patchStart = Stopwatch.GetTimestamp();
         try
         {

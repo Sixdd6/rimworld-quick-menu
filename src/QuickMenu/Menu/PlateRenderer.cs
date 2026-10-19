@@ -1,4 +1,5 @@
 using QuickMenu.Core.Render;
+using QuickMenu.Diagnostics;
 using UnityEngine;
 using Verse;
 
@@ -38,6 +39,7 @@ internal static class PlateRenderer
             return;
         }
 
+        using var scope = new MeasureScope(StatId.WindowPlate);
         Rect rect = MenuRenderer.ToRect(transform.Rect(WheelVisuals.PlateRect(model.Center, model.DiscRadius, width, model.PlateHeight)));
         if (Textures.Ready)
         {
