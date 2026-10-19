@@ -53,7 +53,12 @@ internal static class LayoutPreview
         try
         {
             Refresh(settings);
-            float frameHeight = Math.Min(SettingsPreview.Height, rect.height - NotesHeight);
+            float frameHeight = Math.Max(0f, Math.Min(SettingsPreview.Height, rect.height - NotesHeight));
+            if (frameHeight <= 0f)
+            {
+                return;
+            }
+
             DrawFrame(new Rect(rect.x, rect.y, Math.Min(SettingsPreview.Width, rect.width), frameHeight));
             DrawNotes(new Rect(rect.x, rect.y + frameHeight + 4f, rect.width, LineHeight), settings);
         }

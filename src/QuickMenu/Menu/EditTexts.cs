@@ -1,3 +1,4 @@
+using System;
 using QuickMenu.Core.Input;
 using Verse;
 
@@ -24,6 +25,7 @@ internal static class EditTexts
     /// <summary>The player-facing name of <paramref name="modifier"/> ("Ctrl", "Alt", "Shift").</summary>
     internal static string ModifierName(PinModifier modifier)
     {
+        DropIfLanguageChanged();
         int i = Index(modifier);
         return _modifierNames[i] ??= KeyOf(modifier).Translate().Resolve();
     }
@@ -40,9 +42,28 @@ internal static class EditTexts
 
     private static string Cached(string?[] cache, string key)
     {
+        DropIfLanguageChanged();
         PinModifier modifier = QuickMenuMod.EffectiveModifier;
         int i = Index(modifier);
         return cache[i] ??= key.Translate(ModifierName(modifier)).Resolve();
+    }
+
+    private static object? _language;
+
+    private static void DropIfLanguageChanged()
+    {
+        object? active = LanguageDatabase.activeLanguage;
+        if (ReferenceEquals(active, _language))
+        {
+            return;
+        }
+
+        _language = active;
+        Array.Clear(_modifierNames);
+        Array.Clear(_slotTips);
+        Array.Clear(_hints);
+        Array.Clear(_helpFixed);
+        Array.Clear(_helpAuto);
     }
 
     private static int Index(PinModifier modifier) => modifier switch

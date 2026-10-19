@@ -203,4 +203,15 @@ public class PinSerializerEdgeTests
         b.Capacity = 2;
         Assert.Single(PinSerializer.ToLines(b));
     }
+
+    [Fact]
+    public void Angle_brackets_are_stripped_from_labels_and_package_ids()
+    {
+        var board = new PinBoard(4);
+        board.SetSlot(0, new PinEntry(Thing("Wall"), "<i>x</i>", "p<q>"));
+        PinEntry loaded = PinSerializer.FromLines(PinSerializer.ToLines(board)).Board.Entries[0]!;
+
+        Assert.Equal("ix/i", loaded.Label);
+        Assert.Equal("pq", loaded.PackageId);
+    }
 }

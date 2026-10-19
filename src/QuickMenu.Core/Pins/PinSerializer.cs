@@ -311,7 +311,7 @@ public static class PinSerializer
     }
 
     /// <summary>
-    /// Drops characters XML 1.0 cannot store (control characters, unpaired surrogates, U+FFFE/U+FFFF), so a pin label or
+    /// Drops '<' and '>' (so a label can never read as rich text or markup) and characters XML 1.0 cannot store (control characters, unpaired surrogates, U+FFFE/U+FFFF), so a pin label or
     /// package id can never make the settings file unreadable. Returns the same instance when nothing needs dropping.
     /// </summary>
     internal static string Sanitize(string text)
@@ -329,7 +329,7 @@ public static class PinSerializer
             }
             else
             {
-                ok = !char.IsLowSurrogate(c) && System.Xml.XmlConvert.IsXmlChar(c);
+                ok = c is not ('<' or '>') && !char.IsLowSurrogate(c) && System.Xml.XmlConvert.IsXmlChar(c);
             }
 
             if (ok)

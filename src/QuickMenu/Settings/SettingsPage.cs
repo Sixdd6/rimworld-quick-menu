@@ -64,18 +64,36 @@ internal static class SettingsPage
     private static int _slotsFor = -1;
     private static string _slotsText = string.Empty;
 
-    /// <summary>Draws the page in the settings window's content rect.</summary>
+    private static readonly Diagnostics.PatchSite _site = new("Settings.Page");
+    private static readonly Listing_Standard _leftListing = new();
+    private static readonly Listing_Standard _rightListing = new();
+
+    /// <summary>Draws the page in the settings window's content rect. After one failure it only shows the error label.</summary>
     internal static void Draw(Rect inRect)
     {
         try
         {
-            DrawPage(inRect);
+            if (!_site.Disabled)
+            {
+                DrawPage(inRect);
+                return;
+            }
         }
         catch (Exception ex)
         {
-            Diagnostics.Log.LogOnce("Settings.Page", $"The settings page failed to draw: {ex.GetType().Name}");
+            _site.Fail(ex);
+        }
+
+        try
+        {
+            GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
             Text.Font = GameFont.Small;
             Widgets.Label(inRect, "QuickMenu.Settings.PageError".Translate());
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Log.LogOnce("Settings.PageError", $"The settings page error label failed: {ex.GetType().Name}");
         }
     }
 
@@ -87,33 +105,47 @@ internal static class SettingsPage
         var left = new Rect(inRect.x, inRect.y, columnWidth, inRect.height - RowHeight - 12f);
         var right = new Rect(inRect.x + columnWidth + ColumnGap, inRect.y, columnWidth, left.height);
 
-        var listing = new Listing_Standard();
+        Listing_Standard listing = _leftListing;
         listing.Begin(left);
-        Heading(listing, _headOpening!);
-        BindingRow.Draw(listing);
-        listing.Gap(18f);
-        Heading(listing, _headPinning!);
-        DrawPinModifier(listing, settings);
-        listing.Gap(6f);
-        if (Widgets.ButtonText(listing.GetRect(RowHeight).LeftPartPixels(200f), _clearAll))
+        try
         {
-            Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation(_clearConfirm, ClearAllPins, destructive: true));
+            Heading(listing, _headOpening!);
+            BindingRow.Draw(listing);
+            listing.Gap(18f);
+            Heading(listing, _headPinning!);
+            DrawPinModifier(listing, settings);
+            listing.Gap(6f);
+            if (Widgets.ButtonText(listing.GetRect(RowHeight).LeftPartPixels(200f), _clearAll))
+            {
+                Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation(_clearConfirm, ClearAllPins, destructive: true));
+            }
+
+            DrawMissingPins(listing);
+        }
+        finally
+        {
+            listing.End();
         }
 
-        DrawMissingPins(listing);
-        listing.End();
-
-        listing = new Listing_Standard();
+        listing = _rightListing;
         listing.Begin(right);
-        Heading(listing, _headLayout!);
-        DrawShape(listing, settings);
-        DrawSizing(listing, settings);
-        DrawSizeSteppers(listing, settings);
-        listing.Gap(4f);
-        DrawButtonSize(listing, settings);
-        listing.Gap(6f);
-        float used = listing.CurHeight;
-        listing.End();
+        float used;
+        try
+        {
+            Heading(listing, _headLayout!);
+            DrawShape(listing, settings);
+            DrawSizing(listing, settings);
+            DrawSizeSteppers(listing, settings);
+            listing.Gap(4f);
+            DrawButtonSize(listing, settings);
+            listing.Gap(6f);
+            used = listing.CurHeight;
+        }
+        finally
+        {
+            listing.End();
+        }
+
         LayoutPreview.Draw(new Rect(right.x, right.y + used, right.width, right.height - used), settings);
 
         var resetRect = new Rect(inRect.x, inRect.yMax - RowHeight, 200f, RowHeight);

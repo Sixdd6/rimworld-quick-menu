@@ -80,8 +80,8 @@ internal static class PinService
     }
 
     /// <summary>
-    /// True when a stored pin is really gone: unresolved, and (for a build pin) its def is not in the DefDatabase, or its
-    /// stored packageId is not an active mod. An unresolved pin that fails both tests is only unavailable right now
+    /// True when a stored pin is really gone: unresolved, and a build pin is decided on its def alone (not in the
+    /// DefDatabase); other kinds on their stored packageId (case-insensitive, ignoring a trailing "_steam"). An unresolved pin that fails both tests is only unavailable right now
     /// (no game loaded, hidden by research or a mode) and is never forgotten. Opaque pins are never missing.
     /// </summary>
     internal static bool IsMissing(PinEntry entry)
@@ -95,19 +95,7 @@ internal static class PinService
 
         try
         {
-            if (key.Kind == PinKeyKind.BuildThing)
-            {
-                if (DefDatabase<ThingDef>.GetNamedSilentFail(key.Name) == null)
-                {
-                    return true;
-                }
-            }
-            else if (key.Kind == PinKeyKind.BuildTerrain && DefDatabase<TerrainDef>.GetNamedSilentFail(key.Name) == null)
-            {
-                return true;
-            }
-
-            return !string.IsNullOrEmpty(entry.PackageId) && !ModsConfig.IsActive(entry.PackageId);
+            return PinMissingRule.IsMissing(key, entry.PackageId, DefExists, ModIsActive);
         }
         catch (Exception ex)
         {
@@ -116,9 +104,16 @@ internal static class PinService
         }
     }
 
+    private static bool DefExists(PinKey key) => key.Kind == PinKeyKind.BuildTerrain
+        ? DefDatabase<TerrainDef>.GetNamedSilentFail(key.Name) != null
+        : DefDatabase<ThingDef>.GetNamedSilentFail(key.Name) != null;
+
+    private static bool ModIsActive(string normalizedPackageId) => ModsConfig.IsActive(normalizedPackageId) || ModsConfig.IsActive(normalizedPackageId + "_steam");
+
     /// <summary>How many stored pins are missing (see <see cref="IsMissing"/>); 0 while not ready.</summary>
     internal static int CountMissing()
     {
+        EnsureCurrent();
         int n = 0;
         foreach (PinEntry? entry in Board.Entries)
         {
