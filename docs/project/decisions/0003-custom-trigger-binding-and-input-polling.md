@@ -35,3 +35,11 @@ Polling site:
 - Our trigger does not appear in the game's Controls menu. Conflicts are only warned about.
 - Spike S-2 confirms in-game which physical side button is index 3 vs 4. Capture-by-press makes the mapping irrelevant to correctness; it matters only for the default's label.
 - Middle mouse as trigger also starts vanilla camera drag. This is accepted, and documented in the settings tooltip.
+
+## Spike result (2026-10-19)
+
+UC-1 session on RimWorld 1.7.4982, Harmony mod v3.0.1.0 (library 3.0.0-rc.3). Full table: `docs/project/spikes/uc-1-results.md`.
+
+- **S-2 PASS.** Polling `Input.GetMouseButtonDown/Up` saw indices 0-4, both down and up, so hold mode is viable. A keyboard key was seen too.
+- IMGUI delivered no events for the side buttons, so polling is required (as decided).
+- Mapping on the user's mouse: back side button = index 3 = "Mouse 4"; front side button = index 4 = "Mouse 5". The default stays `Mouse(3)` labelled "Mouse 4". Capture-by-press still makes the mapping irrelevant to correctness.

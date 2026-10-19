@@ -35,3 +35,13 @@ Findings (1.7.4982 binaries and BAM 1.6 assembly, which is what loads on 1.7):
 - The patch count grows with mods that override `ProcessInput`. The self-test reports it.
 - If a mod's designator UI never calls `ProcessInput`, pin-by-click will not work for it. The picker (FR-7) still does.
 - The JIT inlining risk (`JitPatchableAssemblies` lists only Assembly-CSharp) is low for virtual methods. Spike S-1 confirms that a mod-assembly override can be patched.
+
+## Spike result (2026-10-19)
+
+UC-1 session on RimWorld 1.7.4982, Harmony mod v3.0.1.0 (library 3.0.0-rc.3). Full table: `docs/project/spikes/uc-1-results.md`.
+
+- **S-1:** 8 overrides patched, 0 failed; all in `Assembly-CSharp`; BAM adds none.
+- **S-3, idle cost:** 0 prefix calls over 4,042 frames of hovering the architect (P-4 met). The prefix runs on clicks and hotkeys only.
+- **S-3, event fields (changes prefix steps 1 and 2):** when the prefix runs, the `Event` is already `used` (`type=used`, `isMouse=False`, `isKey=False`) for clicks **and** hotkeys. Click vs hotkey therefore cannot be read from the event. Read `UnityEngine.Input` instead: the left mouse button state (`GetMouseButton(0)`/`GetMouseButtonDown(0)`) for click, and `Input.GetKey(Left/Right Ctrl|Alt|Shift)` for modifiers. `ev.control`/`ev.alt` are reliable only for direct clicks, so do not depend on them. A hotkey press also reaches the prefix (`Designator_Cancel` was seen) with a used event and no mouse button down, so it is not intercepted.
+- **S-3, dropdown entries:** a Ctrl+click on an entry in an open dropdown list reaches `Designator_Dropdown.ProcessInput` with the **dropdown** as `__instance`, `ev.control=False` and `Input.GetKey(LeftControl)=True`. The entry's own `ProcessInput` is not called. **The conditional third patch site is therefore needed:** a postfix on `RimWorld.Designator_Dropdown.GetDesignatorSelectAction` (T-27, now unconditional). Without it the prefix would pin the whole dropdown for an entry click.
+- **S-3, BAM:** BAM calls `ProcessInput` through its `ProcessGizmoInteractions`, so the prefix sees BAM clicks with Ctrl held and FR-8 works under BAM.

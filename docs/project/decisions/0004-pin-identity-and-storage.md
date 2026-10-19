@@ -50,3 +50,10 @@ Storage:
 - Mod dropdowns may be matched fuzzily. In the worst case a pin shows as missing, but it is never lost.
 - Spike S-4 runs the round-trip self-test on the user's large mod list to measure uniqueness and the resolve rate.
 - The line format is unit-tested independently of Scribe.
+
+## Spike result (2026-10-19)
+
+UC-1 session on RimWorld 1.7.4982, Harmony mod v3.0.1.0 (library 3.0.0-rc.3). Full table: `docs/project/spikes/uc-1-results.md`.
+
+- **S-4 PASS.** The `Format -> TryParse -> Resolve` round trip returned the same designator for every entry: 454 entries (Harmony + 5 DLC + Quick Menu) and 718 entries (plus BAM). 0 failures, 0 duplicate keys, `complete=True`, 0 skipped.
+- No key-scheme change is needed, and no follow-up task is added.

@@ -48,3 +48,12 @@ Catalog:
 - The placement experience after selection is the vanilla one (or the one changed by other mods).
 - When BAM's material-menu changes apply to `Designator_Build.ProcessInput`, our ring bypasses them by design (the ring is a spec feature).
 - If Multiplayer turns out to sync `SetStuffDef` or `Select` differently on 1.7, FR-18 needs a revisit. It is verified when Multiplayer supports 1.7 (A-2).
+
+## Spike result (2026-10-19)
+
+UC-1 session on RimWorld 1.7.4982, Harmony mod v3.0.1.0 (library 3.0.0-rc.3). Full table: `docs/project/spikes/uc-1-results.md`.
+
+- **S-4:** 100 % round trip, 0 duplicate keys, 454 entries (Harmony + 5 DLC) and 718 (plus BAM). No key fixes needed.
+- **S-5, dev-only rule:** no designator in either list is dev-only by type name (`DevNameHint`). `Designator_Build.Visible` returns true under god mode before its research/tech/prerequisite checks, so "visible only in god mode" does not mean dev-only: 243 god-only entries are explained by research, research prerequisites, place workers or tech level. Six god-only entries have no known cause (`build:terrain/Substructure`, `build:thing/HoldingSpot`, `dropdown:Floor_Tile_Metal`, `dropdown:Floor_Carpet`, `dropdown:Floor_Carpet_Fine`, `order:RimWorld.Designator_ZoneAdd_Fishing`); they are probably DLC or other gates, not dev tools. **Rule:** hide an entry from the picker (FR-7) as dev-only only when its designator type is clearly a debug type (type-name hint); every other god-only entry is "unavailable" and gets a composed reason.
+- **S-5, reasons:** `disabledReason` was never set on any entry, so `AvailabilityResolver` must compose every reason itself. Sources: `researchPrerequisites` / `IsResearchFinished` (research project labels), `buildingPrerequisites`, `PlaceWorkers`, and `minTechLevelToBuild`/`maxTechLevelToBuild`. Anything else falls back to the keyed "Not available right now" (U-4).
+- Catalog build 5.2 ms (718 entries: 5.3 ms), one build per session (P-11c, P-12 met).

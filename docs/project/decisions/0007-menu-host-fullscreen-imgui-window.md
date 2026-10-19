@@ -22,3 +22,11 @@ The menu opens centred on the mouse, does not pause, closes on Esc, on an outsid
 - While the menu is open, other UI under it does not get hover tooltips. This is acceptable for a transient menu.
 - Spike S-6 confirms window layering, map-click absorption and same-frame opening on 1.7.
 - Generated masks have no external asset licensing and scale cleanly with button size and UI scale. The fallback PNGs must stay in sync with the rasterizer (they can be produced by it).
+
+## Spike result (2026-10-19)
+
+UC-1 session on RimWorld 1.7.4982, Harmony mod v3.0.1.0 (library 3.0.0-rc.3). Full table: `docs/project/spikes/uc-1-results.md`.
+
+- **S-6 PASS.** Layer `WindowLayer.GameUI` works (Super is not needed). Flags as decided: no background or shadow, `forcePause=false`, `closeOnCancel=true`, `absorbInputAroundWindow=false`. 21 of 21 opens drew in the trigger frame. The game kept running. Outside clicks close the menu and reach neither the map nor other UI (a click on the World button only closed the menu). Esc closes the menu without opening the pause menu. The wheel works with BAM loaded.
+- **S-7 PASS, texture level chosen: runtime `Texture2D` (RGBA32) masks stay the primary path.** A loose PNG loaded with `ContentFinder` also works (the game bakes it to BC7 with mipmaps), so the shipped-PNG fallback is confirmed and the asset baker is not needed. `Widgets.DrawAtlas` 9-slice keeps round corners at two sizes provided the corner radius is at most a quarter of the atlas size (64 px atlas, 14 px radius). Circles were smooth at 36, 56 and 96 px. Verified at UI scale 1.0 and 1.5; the game refused UI scale 2.0 at 2560x1440, so 2.0 is still unchecked (UC-4).
+- Screenshots: `docs/project/design/spikes/uc1-texture-probe-scale1.0.png` and `uc1-texture-probe-scale1.5.png`. The spike PNG and probe window were removed in T-14.

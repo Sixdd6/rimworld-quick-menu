@@ -389,14 +389,13 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
   - **In-game check**: UC-2 (user)
   - **Size**: M
 
-- [ ] **T-27**: Pin a single entry inside an open dropdown list (only if S-3 needs it)
+- [ ] **T-27**: Pin a single entry inside an open dropdown list (needed: S-3 confirmed)
   - **Owner**: developer
   - **Requirements**: FR-8, FR-10 (user decision U-3; ADR 0005)
   - **Depends on**: T-26
   - **Files**: `src/QuickMenu/Pinning/DropdownEntryPatch.cs`, `docs/project/architecture.md` §6 (third patch site)
   - **Acceptance criteria**:
-    - [ ] Given T-14 recorded that entry clicks already reach the element's `ProcessInput`, then this task is closed as "not needed" with a note, and no code is added.
-    - [ ] Otherwise: given a postfix on `RimWorld.Designator_Dropdown.GetDesignatorSelectAction`, when the user holds the modifier and clicks an entry, then the entry's own key is toggled and the original action does not run; without the modifier, the action is unchanged.
+    - [ ] S-3 (2026-10-19) showed that entry clicks reach `Designator_Dropdown.ProcessInput` with the dropdown as instance and `ev.control=False`, so this patch is required. Given a postfix on `RimWorld.Designator_Dropdown.GetDesignatorSelectAction`, when the user holds the modifier and clicks an entry, then the entry's own key is toggled and the original action does not run; without the modifier, the action is unchanged. The modifier is read from `UnityEngine.Input.GetKey`, not from the event.
     - [ ] Given a quick-menu activation with a modifier held, then the pin prefix does not intercept it (`MenuActivation.Depth > 0`).
     - [ ] *(UC-2)* Ctrl+click on an entry in an open dropdown pins only that entry; Ctrl+click on the dropdown button pins the whole dropdown.
   - **Tests**: in-game UC-2.

@@ -397,6 +397,13 @@ N/A, because the game's UI volume applies.
   3. Draw `Widgets.DrawAtlas` with a generated 9-slice.
   4. Save screenshots in `docs/project/design/spikes/`. Record the result in ADR-0007 and here.
 
+**Spike S-7 result (2026-10-19, UC-1): runtime masks chosen as primary; the PNG fallback is confirmed.**
+- Runtime `Texture2D` (RGBA32, `SetPixels32` + `Apply`) draws correctly under `GUI.color` tint. Circles are smooth at 36, 56 and 96 px.
+- A loose PNG loaded with `ContentFinder` also works; the game bakes it to BC7 with 9 mipmaps.
+- `Widgets.DrawAtlas` 9-slice keeps round corners at two sizes (64 px atlas, 14 px radius) when the corner radius is at most a quarter of the atlas size. Use that limit for `Panel` and `Plate`.
+- Checked at UI scale 1.0 and 1.5 (`design/spikes/uc1-texture-probe-scale1.0.png`, `...scale1.5.png`). The game refused UI scale 2.0 at 2560x1440, so 2.0 is still unchecked (UC-4).
+- The asset baker is not needed. The spike PNG and probe window were deleted in T-14; no PNG is shipped for now.
+
 ### Technical needs (summary for the architecture; all satisfied by ADR-0002/0003/0006/0007 except S-7)
 1. Per-frame drawing only while a menu, picker or notice window is open (ADR-0007).
 2. Startup-time texture creation on the main thread (S-7).

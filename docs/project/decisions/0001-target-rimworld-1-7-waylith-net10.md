@@ -34,3 +34,11 @@ For Harmony:
 - We depend on prerelease software (1.7 unstable branch, Harmony 3 rc). Each game update needs a version bump of the reference package, a rebuild, and the in-game self-test.
 - Visual Studio 2022 and older Rider cannot build net10. The `dotnet` CLI (or VS2026 / Rider 2026) is required.
 - No `Source/` folder ships in the mod; sources live in `src/`.
+
+## Spike result (2026-10-19)
+
+UC-1 session on RimWorld 1.7.4982, Harmony mod v3.0.1.0 (library 3.0.0-rc.3). Full table: `docs/project/spikes/uc-1-results.md`.
+
+- **S-1 PASS.** The shared `ProcessInput` prefix patched 8 overrides with 0 failures, in 19-24 ms, both with only the DLCs and with Better Architect Menu (BAM) loaded. All 8 overrides are declared in `Assembly-CSharp`; BAM adds none.
+- Harmony 3.0.0-rc.3 compile-only against the `brrainz.harmony` mod (v3.0.1.0) works on the patched CoreCLR. No change to this decision.
+- Not yet shown: patching an override declared in a third-party mod assembly (no such override exists on the tested mod list). The per-method try/catch stays.
