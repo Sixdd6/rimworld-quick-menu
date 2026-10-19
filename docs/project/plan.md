@@ -589,7 +589,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: read-through; `scripts/perf.sh` still passes (no gate depended on the index).
   - **Size**: S
 
-- [ ] **T-85**: Align architecture.md and the ADRs with the picker removal · `parallel-ok`
+- [x] **T-85**: Align architecture.md and the ADRs with the picker removal · `parallel-ok`
   - **Owner**: architect
   - **Requirements**: FR-7 (Won't), FR-9, FR-14, NFR-1, NFR-8
   - **Depends on**: —
