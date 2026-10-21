@@ -8,9 +8,11 @@
     <li>1.7</li>
   </supportedVersions>
   <url>https://github.com/sixdd6/rimworld-quick-menu</url>
-  <description>A radial wheel or grid of pinned architect designators that opens around the mouse.
+  <description>Quick Menu is a radial wheel or grid of your favourite build and order buttons. It opens around the mouse.
 
-Requires Harmony.</description>
+Ctrl+click any button in the architect menu to pin it (Alt with Dubs Mint Menus). Press Mouse 4 (or middle mouse, or any key you set) to open the menu. Includes a material ring, dropdown sub-rings, and an edit mode to rearrange pins.
+
+Requires Harmony. Load it before this mod. Nothing is saved in your save files.</description>
   <modDependencies>
     <li>
       <packageId>brrainz.harmony</packageId>

@@ -1,133 +1,94 @@
-# Claude Agents Template
+# Quick Menu
 
-A GitHub template repository with a **full software team of Claude Code agents**. You give it an idea. The team interviews you until the requirements are clear, then designs the system, sets up the environment (toolchain, MCP servers, CI), plans the work, builds it test-first, verifies it, and publishes it. It stops for your approval at each important decision.
+A radial wheel (or grid) of your favourite build and order buttons that opens around the mouse in RimWorld 1.7.
 
-## Quick start
+Pin the things you place most. Press one button, pick, and place. No more digging through architect tabs.
 
-1. Click **Use this template** on GitHub (or copy this repo), then clone your new repository.
-2. Open it in Claude Code (CLI, desktop, IDE, or claude.ai/code).
-3. Approve the project MCP servers (`context7`, `playwright`) when prompted. They need Node.js (`npx`).
-4. Run:
+## Features
 
-```
-/kickoff "A CLI that turns my markdown notes into a searchable static site, published to GitHub Pages"
-```
+- **Wheel or grid.** Rings around the mouse, or rows and columns.
+- **Pin from the architect menu.** Ctrl+click any build or order button to pin it. Ctrl+click again to unpin.
+- **Material ring.** Pick a stuff-made building and a ring of materials opens. Choose one and the designator is ready to place.
+- **Dropdown sub-rings.** Pinned dropdowns (floors, zones, and so on) fan out into a sub-ring (wheel) or sub-grid (grid).
+- **Edit mode.** The centre button is Edit. Drag a slot onto another to swap, or onto an empty slot to move it. It becomes Done.
+- **Unavailable pins stay.** A pin you cannot use yet is greyed out, and its tooltip says why (missing research, building, tech level, and so on).
+- **Pin markers.** Pinned buttons in the architect menu show a marker: a blue marker on a pinned button, a small white marker on a dropdown that has only single entries pinned, and a small marker on pinned entries inside an open dropdown list.
+- **Fixed or auto size.** Fixed keeps every slot in place and shows empty ones. Auto grows with your pins.
+- **Configurable.** Open with a mouse button or any key. Change rings, columns, rows and button size.
+- **Safe to add or remove mid-save.** Quick Menu writes nothing into save files. Your pins live in the mod settings.
 
-Add `--autonomous` if you want the team to stop only at the Design, Architecture, and Publish gates.
+## Install
 
-You can stop at any time. All state is kept in `docs/project/`, so a new session resumes where the last one stopped. Run `/kickoff` again, or `/project-status`.
+Quick Menu needs [Harmony](https://steamcommunity.com/sharedfiles/filedetails/?id=2009463077).
 
-## How it works
+1. Subscribe to Harmony and to Quick Menu on the Steam Workshop. Or download the zip from [Releases](https://github.com/Sixdd6/rimworld-quick-menu/releases) and unpack the `QuickMenu` folder into your RimWorld `Mods` folder.
+2. Enable both in the mod list. Put Harmony first, then Quick Menu below it.
 
-```mermaid
-flowchart LR
-  idea([Your idea]) --> D[1 Design<br/>interview + gap analysis]
-  D -->|you approve spec| A[2 Architecture + Direction<br/>stack, ADRs, specialists' plans]
-  A -->|you approve| E[3 Environment<br/>toolchain, MCP, CI]
-  E --> P[4 Plan<br/>milestones + tasks]
-  P -->|you approve| B[5 Build<br/>TDD per task]
-  B --> V[6 Verify<br/>tests, review, security, docs]
-  V -->|fix loop| B
-  V -->|you confirm| R[7 Publish]
-```
+## How to use
 
-Each build task goes to its owner (**developer** or a specialist) → **test-engineer** + **code-reviewer** (in parallel) → fix loop → commit. At the end of each milestone, the **security-auditor**, **docs-writer** and every specialist on the project review the work, and you get a demo.
+1. Open a colony map and press **Mouse 4** (the default). No side button? Press **middle mouse**, or set any key in the mod settings. A first-run message offers a one-click switch to middle mouse.
+2. Open the architect menu. **Ctrl+click** a build or order button to pin it. It goes into the first empty slot (Fixed) or the end of the menu (Auto). If Dubs Mint Menus is loaded, use **Alt+click** instead.
+3. Press your menu button and click a pin. Materials and dropdown entries open as a ring beside it.
+4. **Right-click**, click outside the menu, press Esc, or press the trigger again to close it.
 
-### The team
+To unpin: Ctrl+click the button again in the architect menu, or Ctrl+click the slot in the wheel (Alt with Mint). In edit mode you can also drag slots to rearrange them.
 
-The **core team** works on every project. **Specialists** join when the spec calls for them (for example, `mobile-developer` only for iOS/Android targets). The kickoff proposes the list and you can change it. See `CLAUDE.md` → "When each specialist joins".
+The pin modifier (Ctrl, Alt or Shift) is a setting.
 
-| Agent | Model | Does |
-|---|---|---|
-| **Core** | | |
-| `requirements-analyst` | opus | Finds gaps in the spec and proposes the next interview questions |
-| `architect` | opus | Stack selection, system design, ADRs |
-| `environment-engineer` | sonnet | Scaffold, toolchain, lint/test tooling, MCP servers, dev container, CI |
-| `planner` | opus | Milestones and small, traceable tasks, each with an owner |
-| `developer` | sonnet | Implements one task with TDD and commits |
-| `test-engineer` | sonnet | Acceptance verification, integration/e2e tests, coverage, bug reproduction |
-| `code-reviewer` | opus | Read-only correctness and design review |
-| `security-auditor` | opus | Threat model, OWASP review, dependency and secret audit |
-| `docs-writer` | sonnet | README, guides, API docs, CHANGELOG |
-| `release-engineer` | sonnet | Versioning, artifacts, release CI, publishing |
-| **Specialists** | | |
-| `visual-designer` | opus | UX, design system, accessibility, icons/SVG, graphics code, image assets, visual review |
-| `audio-designer` | sonnet | Audio direction, synthesized/sourced/generated sound, audio pipeline, loudness QA |
-| `game-designer` | opus | Core loop, mechanics, controls and feel, progression and balance, simulations, playtest bots |
-| `data-engineer` | opus | Data model, migrations, pipelines, search/analytics, ML models, LLM features and evals |
-| `mobile-developer` | sonnet | iOS/Android/cross-platform apps, device testing, store readiness |
-| `sre` | sonnet | Hosting, infrastructure as code, deploys, observability, SLOs, backups, runbooks, cost |
-| `performance-engineer` | sonnet | Budgets, benchmarks, load tests, profiling, optimisation, CI perf gates |
+## Settings
 
-### Commands (skills)
+Open **Options > Mod settings > Quick Menu**.
 
-| Command | Purpose |
+| Setting | Notes |
 |---|---|
-| `/kickoff "<idea>" [--autonomous]` | Run or resume the full pipeline |
-| `/design-session [revise]` | The design interview, producing `spec.md` |
-| `/env-setup [change]` | Set up or change the environment and MCP servers |
-| `/plan-project [revise …]` | Create or revise `plan.md` |
-| `/build-next [T-n \| milestone \| M<n>]` | Implement, verify, review, and commit tasks |
-| `/test-suite [T-n \| M<n> \| full \| bug: …]` | Test and strengthen the tests. Reproduce bugs |
-| `/review-changes [scope] [--fix]` | Code review + security audit in parallel |
-| `/publish [version]` | Prepare and publish a release (always asks first) |
-| `/project-status` | Where things stand, and the next step |
+| Open menu with | Mouse 4, Mouse 5, middle mouse, or any key. Default: Mouse 4. "Use middle mouse instead" is one click. Left and right click are not allowed. |
+| Pin with | Ctrl, Alt or Shift, plus click. Default: Ctrl (Alt when Dubs Mint Menus is loaded). |
+| Clear all pins... | Removes every pin, after confirmation. |
+| Shape | Wheel or Grid. Default: Wheel. |
+| Size | Fixed or Auto. Default: Fixed. |
+| Rings | Wheel size. Default: 2. |
+| Columns, Rows | Grid size. Default: 5 x 3. |
+| Button size | Default: 56. |
+| Forget missing pins | Removes pins from mods that are not loaded. Without it, those pins come back when you add the mod back. |
+| Reset to defaults | Restores the options. Your pins are kept. |
 
-## What is in the repo
+## Compatibility
 
+- **Vanilla architect menu**: pinning, markers.
+- **Better Architect Menu**: pinning and markers, in the menu it draws inside the Architect tab.
+- **Dubs Mint Menus**: pinning from its build menu and from its wheel, with Alt+click. See the known limits.
+- **Harmony**: required, loaded before Quick Menu.
+
+Pinning works only in architect menus. It never applies to the command buttons of selected things.
+
+## Known limits
+
+- Dubs Mint Menus: the list view shows no pin markers. The wheel shows no markers either. Mint's designator bars are not supported.
+- Better Architect Menu logs its own error, "InitializeDubsMintMenusReflection: toggleDesMethod is null". That message comes from Better Architect Menu, not from Quick Menu.
+- Multiplayer is not supported yet. There is no Multiplayer build for RimWorld 1.7.
+- Pins are stored in the mod settings, not in the save. They are shared by all your games.
+
+## Build from source
+
+You need git and a Linux, macOS or Windows shell. The setup script installs the .NET 10 SDK to `~/.dotnet` if it is missing.
+
+```sh
+scripts/setup.sh                          # install SDK if needed, restore
+dotnet build QuickMenu.slnx -c Release    # output goes to mod/1.7/Assemblies/
+scripts/test.sh                           # unit tests plus the 90 % Core coverage gate
+scripts/perf.sh                           # performance gates
+scripts/link-mod.sh                       # symlink mod/ into the game's Mods folder
+scripts/package.sh                        # writes dist/QuickMenu-<version>.zip
 ```
-CLAUDE.md                     Team rules and workflow. Claude reads this every session
-.mcp.json                     Project MCP servers (the environment-engineer extends it)
-.claude/
-  agents/                     The 17 agent definitions (10 core + 7 specialists)
-  skills/                     The workflow commands above
-  templates/                  Spec, architecture, ADR, plan, status, environment, release checklist, MCP catalog,
-                              and specialist docs: design, assets, game-design, data-ml, operations, performance
-  hooks/session-start.sh      Shows project status at session start. Runs scripts/setup.sh in cloud sessions
-  hooks/guard-bash.sh         Blocks force-push to main, rm -rf /, and publish/deploy without approval
-  settings.json               Permissions and hook wiring
-docs/project/                 Project artifacts (filled in by the team)
-.github/pull_request_template.md
-```
 
-## Safety rails
+Details are in [docs/project/environment.md](docs/project/environment.md), and the design is in [docs/project/architecture.md](docs/project/architecture.md). Game references come from the `Krafs.Rimworld.Ref` package, so you do not need RimWorld installed to build.
 
-- **Approval gates** for the spec, architecture, plan, new credentialed MCP servers, and publishing. The publish gate always applies, even in autonomous mode.
-- **Guard hook**: publish, deploy, and tag-push commands (`npm publish`, `twine upload`, `cargo publish`, `docker push`, `gh release create`, `git push --tags`, and others) are blocked unless `.claude/.publish-approved` exists. The `/publish` skill creates that file only after you confirm, and deletes it afterwards. The hook matches command text, so it can also block a harmless command that only mentions one of these words (for example, in a heredoc). Write such content with a file tool instead.
-- **Secrets** stay out of git. `.env*` is gitignored, `Read` of `.env` files is denied, and MCP configs use `${VAR}` expansion. The team asks you to set secrets as environment variables. It never asks you to paste them into the chat.
-- **Read-only reviewers**: `code-reviewer` and `security-auditor` have no file-edit tools.
+To test in game, launch RimWorld with `-mod=brrainz.harmony,sixdd.QuickMenu -quicktest`.
 
-## Graphics and sound
+## License
 
-The design session asks about visual style, graphics, audio, and where assets come from. The designers then produce the design direction with the architect.
+[MIT](LICENSE). The release changelog is in [CHANGELOG.md](CHANGELOG.md).
 
-- **Made directly by the team**: UI and design systems, SVG icons and illustrations, Canvas/WebGL/shader graphics, and synthesized audio (Web Audio, sox/ffmpeg).
-- **Needs a source**: raster art, sprites, photos, music, voice. Options: free-licensed libraries (Kenney, Poly Haven and others, with licenses checked per file), AI generation through an MCP server (paid, needs an API key, and your approval), or your own files. Placeholders keep the build moving until the real assets arrive.
-- **Checked**: screenshot-based visual review and regression tests, measured audio (format, loudness, clipping, loops), and license checks of every asset in `docs/project/assets.md` before release.
-- **Limits**: the agents cannot hear, and their taste needs your eye. Each milestone demo lists the sounds and visuals you should check yourself.
+## Credits
 
-## Specialist notes
-
-- **Mobile**: iOS apps can only be built on macOS. In a Linux or cloud session, the team builds and tests Android and cross-platform code locally, and sets up macOS CI (or EAS Build) for iOS. Store submission is treated as publishing and needs your confirmation.
-- **Hosted services**: the `sre` proposes hosting with a monthly cost estimate, practises staging deploys from the first milestone, and runs a readiness review (rollback, alerts, backups) before production. Creating paid resources or deploying always needs your confirmation.
-- **AI features**: the `data-engineer` builds an evaluation set and pass thresholds for every LLM or ML feature, and reports the cost per request.
-- **Games**: the `game-designer` keeps all tuning values in data files and backs balance with simulations and playtest bots. Each milestone demo tells you which parts to play and what to judge.
-- **Performance**: budgets come from your NFRs and are checked with real measurements. Numbers from a cloud container are not your production numbers, and the reports say so.
-
-## Claude Code on the web
-
-In a cloud session, the SessionStart hook runs `scripts/setup.sh` (which the environment-engineer creates), so dependencies are installed automatically. Set any required secrets as environment variables in the cloud environment's settings, and allow the network hosts your stack needs (package registries and so on).
-
-## Customizing
-
-- **Models**: change `model:` in any `.claude/agents/*.md` (`opus`, `sonnet`, `haiku`, or `inherit`).
-- **Add a specialist**: add a new agent file (for example `ux-designer.md`, `data-engineer.md`, `mobile-developer.md`), then reference it in `CLAUDE.md` and in the skill where it should run.
-- **Gates**: edit the gate lines in `.claude/skills/kickoff/SKILL.md`, or set the default autonomy in `.claude/templates/status.md`.
-- **Default MCP servers**: edit `.mcp.json`. See `.claude/templates/mcp-catalog.md` for common servers and selection rules.
-- **Permissions**: the environment-engineer adds your stack's build/test commands to `.claude/settings.json`. Put personal overrides in `.claude/settings.local.json` (gitignored).
-
-## Design notes
-
-- Subagents in Claude Code cannot talk to the user or start other subagents. So the **main conversation orchestrates**: the skills tell it when to interview you, which agents to launch (in parallel where possible), and what to verify itself.
-- Every artifact is a markdown file in `docs/project/` with stable IDs (`FR-n`, `NFR-n`, `T-n`, ADR numbers). This gives traceability from requirement to task, test, and commit, and lets any session resume the work.
-- When the first milestone ships, the docs-writer replaces this README with the project's own README and moves these instructions to `docs/agent-team.md`.
+Inspired by the quick menu of Dubs Mint Menus. Quick Menu is a clean-room implementation: no code, art or text was reused. Thanks to Andreas Pardeike for Harmony.
