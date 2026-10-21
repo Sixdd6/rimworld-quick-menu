@@ -22,11 +22,16 @@ Every non-code asset in the repository gets a row: images, icons, fonts, audio, 
 | `docs/project/design/mockup-wheel-states.png` | PNG mockup | Exported from the SVG with `magick` (librsvg) | MIT (project) | No | Yes: docs only | Direction phase |
 | `docs/project/design/mockup-subring-grid-edit.png` | PNG mockup | Exported from the SVG | MIT (project) | No | Yes: docs only | Direction phase |
 | `docs/project/design/mockup-settings-picker.png` | PNG mockup | Exported from the SVG | MIT (project) | No | Yes: docs only | Direction phase |
+| `mod/About/Preview.png` | Workshop / mod-list preview, PNG 1280 × 720 (16:9), 256-colour palette (libimagequant), 475 KB; **shipped** | Composed by the project (visual-designer) with Python + Pillow from screenshots of RimWorld by Ludeon Studios taken by the mod author (2026-10-19, UC-6 build): `Screenshot_20261019_163031.png` (our wheel at UI scale 1.75, hero crop at 66 %; the game's hover readout at bottom-left covered with sand from the same shot) and `Screenshot_20261019_163057.png` (vanilla architect buttons with our pin marker, inset). Title and tagline rendered in Noto Sans Bold/SemiBold (font not shipped). Colours: `accent` #38BDF8, `text` #FFFFFF, `textMuted` #A7B0B8, `slotBg` #1E2328. No Mint Menus or BAM imagery | Our UI and composition: MIT (project). Contains RimWorld game imagery © Ludeon Studios (screenshots, as normal for mod previews) | Credit line: "Screenshots of RimWorld by Ludeon Studios taken by the mod author." | No | T-77 |
+
+### Tools used to make assets (not in the repository, not shipped)
+| What | Source | License | Used for |
+|---|---|---|---|
+| Noto Sans 2.015 (`NotoSans-Bold.ttf`, `NotoSans-SemiBold.ttf`), Fedora package `google-noto-sans-fonts` 20251201 | The Noto Project Authors / Google (https://github.com/notofonts/latin-greek-cyrillic) | SIL Open Font License 1.1 (from the font's name table; package licence tag `OFL-1.1`). Rendered text in an image is not a font redistribution; OFL 1.1 allows it | Title, tagline and caption text in `mod/About/Preview.png` (T-77) |
 
 ### Planned assets (rows move to the main table when a build task creates them)
 | Planned path | Type | Source | License | Notes |
 |---|---|---|---|---|
-| `mod/About/Preview.png` | Workshop preview, 2.468:1 | In-game screenshot of our menu + title text, made by the project | MIT for our part. It shows RimWorld game imagery, as normal for Workshop previews. | Spec A-3: must be original |
 | `mod/Textures/QuickMenu/UI/{Circle,Disc,Ring1,Ring2,Ring3,RingDashed,Panel,PanelRim,Plate,SubMenuBadge,Lock,IconEdit,IconDone,PinMarker}.png` | Grayscale alpha masks (256 px; rings 128 px; icons 64 px) | Exported by our own `Core.Render.MaskSet` (shapes: `MaskRasterizer`; badges and icons: `Glyphs`) (design.md §6) | MIT | **Fallback only.** Committed only if spike S-7 shows that runtime `Texture2D` generation fails on 1.7. Otherwise these files do not exist. |
 
 ### Runtime-only assets (not in the repository)
@@ -39,8 +44,9 @@ Every non-code asset in the repository gets a row: images, icons, fonts, audio, 
 | Fonts | RimWorld `Text.Font` | Not redistributed |
 
 ## License summary
-- **MIT (this project)**: all files in the repository: the LICENSE file, mockups, the preview image, and (fallback only) the exported mask PNGs.
+- **MIT (this project)**: all files in the repository: the LICENSE file, mockups, the preview image (our part; it shows RimWorld game imagery © Ludeon Studios), and (fallback only) the exported mask PNGs.
 - **No third-party assets** are in the repository. Game textures, sounds and fonts are used at runtime from the player's own RimWorld install and are not distributed.
+- The preview text is rendered with Noto Sans (OFL 1.1); the font file is not in the repository or the package.
 - No attribution or share-alike obligations.
 
 ## Generated assets
