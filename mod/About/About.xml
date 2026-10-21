@@ -3,7 +3,7 @@
   <name>Quick Menu</name>
   <author>Sixdd6</author>
   <packageId>sixdd.QuickMenu</packageId>
-  <modVersion>0.1.0</modVersion>
+  <modVersion>1.0.0</modVersion>
   <supportedVersions>
     <li>1.7</li>
   </supportedVersions>
