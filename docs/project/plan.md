@@ -13,7 +13,7 @@
 - **`parallel-ok`** on a task means it has no file overlap with the other `parallel-ok` tasks of the same milestone, and it can start as soon as its listed dependencies are done.
 - **Gated mode**: each milestone ends with its user session and the user's approval before the next milestone starts.
 - **Scope change (user, 2026-10-19, after UC-2)**: pins are added only by modifier+click in the architect menu (vanilla or BAM, FR-8). There is no picker window, no search index or search UI, no "+"/Add slot and no insert cursor; empty slots stay empty. New pins go into the first free slot (Fixed) or at the end (Auto); the user rearranges by dragging in edit mode. Edit mode stays (centre button = Edit/Done; drag to swap; modifier+click on a slot unpins, also in use mode; right-click and click-outside close). The designator catalog stays (it resolves pins), including its Ideology part (T-40). Removed tasks keep their IDs and are marked `[-]`; nothing was renumbered.
-- **Release fast-track (user, 2026-10-21)**: release as **1.0.0** instead of 0.9.0 (T-80). UC-6 (T-75) stopped after Part 9; Parts 10–16 (Mint with/without BAM, 8,000-def stress run, preview/T-70 screenshots, Frame Profiler, NFR-3 Harmony-only load test, Forget missing pins, removing the mod from a save) are waived by the user as an accepted exception. Fixed during UC-6: pin-message ellipsis capitalisation; P-19 and P-5 measurement scopes.
+- **Release fast-track (user, 2026-10-21)**: no GitHub releases or tags; the user publishes on the Steam Workshop only (T-80's draft GitHub release criterion is dropped). T-75 closed with Parts 10–16 waived; T-76 closed with the UC-6 P-19/P-5 numbers in performance.md. release as **1.0.0** instead of 0.9.0 (T-80). UC-6 (T-75) stopped after Part 9; Parts 10–16 (Mint with/without BAM, 8,000-def stress run, preview/T-70 screenshots, Frame Profiler, NFR-3 Harmony-only load test, Forget missing pins, removing the mod from a save) are waived by the user as an accepted exception. Fixed during UC-6: pin-message ellipsis capitalisation; P-19 and P-5 measurement scopes.
 - **Scope change (user, 2026-10-19, FR-19)**: a small pin marker is drawn on every pinned architect button (a dropdown button when the whole dropdown is pinned) and on pinned single entries inside an open dropdown list, in any architect UI that pinning works in (vanilla, BAM, …), updating on the next frame after a pin or unpin. It is the last feature of M6, before release prep: an offline hook spike and ADR 0009 (T-87), the P-19 budget (T-88), the marker glyph (T-89), a Core pinned-set cache with a zero-allocation O(1) lookup (T-90), then the two adapter hooks (T-91 buttons, T-92 dropdown entries). UC-6 (T-75) checks it in game. Existing tasks keep their IDs; only T-75 (dependencies, scope), T-78 (README line) and the M4 count (T-86 is removed) changed.
 - **Scope change (user, 2026-10-19, after UC-4)**: hold-and-release mode is dropped (spec FR-2: press-to-toggle only, no trigger-mode setting). T-63 (Core hold mode) and T-64 (hold mode in the window, trigger-mode setting) are removed and marked `[-]`. The partial hold-mode code already in Core (`TriggerStateMachine.HoldMode`, the `TriggerReleased` event, the release-over-hub rule), the `TriggerMode` enum and setting, their tests and the hold wording in design.md and architecture.md are removed by T-94; old settings files that contain `triggerMode` still load (the value is ignored). The UC-4 settings-slider texture rebuild FAIL (performance.md UC-4 record) becomes T-95. Finished tasks (`[x]`) that mention hold mode (T-11, T-44, T-81) are history and are not edited.
 
@@ -1203,7 +1203,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-6 (user)
   - **Size**: M
 
-- [ ] **T-75**: UC-6 final regression session
+- [x] **T-75**: UC-6 final regression session
   - **Owner**: test-engineer
   - **Requirements**: all FR-1 … FR-19, NFR-1, NFR-2, NFR-3, NFR-5, NFR-6
   - **Depends on**: T-72, T-73, T-74, T-88, T-91, T-92
@@ -1217,7 +1217,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **In-game check**: UC-6 (user)
   - **Size**: S
 
-- [ ] **T-76**: Final performance pass and hardware-margin report · `parallel-ok`
+- [x] **T-76**: Final performance pass and hardware-margin report · `parallel-ok`
   - **Owner**: performance-engineer
   - **Requirements**: NFR-1
   - **Depends on**: T-75
@@ -1227,7 +1227,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: `scripts/perf.sh` green; in-game numbers from UC-6.
   - **Size**: S
 
-- [ ] **T-77**: Workshop preview image · `parallel-ok`
+- [x] **T-77**: Workshop preview image · `parallel-ok`
   - **Owner**: visual-designer
   - **Requirements**: A-3 (spec §12), NFR-7
   - **Depends on**: T-75
@@ -1238,7 +1238,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: `identify mod/About/Preview.png` size check.
   - **Size**: S
 
-- [ ] **T-78**: README and Workshop description · `parallel-ok`
+- [x] **T-78**: README and Workshop description · `parallel-ok`
   - **Owner**: docs-writer
   - **Requirements**: spec §12, NFR-2, NFR-3, NFR-7
   - **Depends on**: T-75
@@ -1249,7 +1249,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: link check and a read-through by the user.
   - **Size**: S
 
-- [ ] **T-79**: CHANGELOG · `parallel-ok`
+- [x] **T-79**: CHANGELOG · `parallel-ok`
   - **Owner**: docs-writer
   - **Requirements**: spec §12
   - **Depends on**: T-75
@@ -1259,7 +1259,7 @@ Task states: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `
   - **Tests**: read-through.
   - **Size**: S
 
-- [ ] **T-80**: Version bump, package and draft release
+- [x] **T-80**: Version bump, package and draft release
   - **Owner**: release-engineer
   - **Requirements**: spec §12, NFR-3
   - **Depends on**: T-76, T-77, T-78, T-79

@@ -3,8 +3,8 @@
 - **Project**: rimworld-quick-menu
 - **Autonomy**: gated   <!-- gated | autonomous -->
 - **Specialists**: visual-designer (all-UI product), performance-engineer (NFR-1 per-frame budget)
-- **Current phase**: 5 Build
-- **Current milestone / task**: 1.0.0 release files ready (T-77 preview, T-78 README/Workshop text, T-79 CHANGELOG, T-80 package dist/QuickMenu-1.0.0.zip + dist/workshop/QuickMenu; security audit PASS, follow-ups fixed in 0c605bb). Next: user uploads to the Workshop manually (docs/release/workshop-upload.md), then commit About/PublishedFileId.txt. Open, need user confirmation: merge PR #1 to main, tag v1.0.0, GitHub release. UC-6 Parts 10–16 waived by the user.
+- **Current phase**: 7 Publish (manual Workshop upload by the user)
+- **Current milestone / task**: 1.0.0 merged to main (PR #1). Release files in dist/ (QuickMenu-1.0.0.zip, workshop/QuickMenu). The user publishes on the Steam Workshop manually (docs/release/workshop-upload.md) and decided **no GitHub releases or tags** (2026-10-21). After the first upload: commit About/PublishedFileId.txt. UC-6 Parts 10–16 waived by the user.
 - **Last updated**: 2026-10-21
 
 ## Phases
@@ -16,9 +16,9 @@
 | 2 | Architecture + Direction | done | architecture.md, decisions/, specialist docs | ☑ 2026-10-19 |
 | 3 | Environment | done | environment.md, .mcp.json, CI | ☐ |
 | 4 | Plan | done | plan.md | ☑ 2026-10-19 |
-| 5 | Build | in progress | source, tests | — |
-| 6 | Verify | not started | test/review/security reports | — |
-| 7 | Publish | not started | release | ☐ |
+| 5 | Build | done | source, tests | — |
+| 6 | Verify | done (fast-tracked) | security audit PASS 2026-10-21; UC-6 Parts 1–9 | — |
+| 7 | Publish | in progress (user, Workshop) | dist/, docs/release/ | ☑ 2026-10-21 (user: release files for Workshop; no GitHub release) |
 
 States: `not started` → `in progress` → `awaiting approval` → `done` (or `blocked`).
 
