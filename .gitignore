@@ -23,3 +23,21 @@ Thumbs.db
 
 # Third-party reference material (Dubs Mint Menus) — not ours to redistribute
 /reference/
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+TestResults/
+coverage*.xml
+BenchmarkDotNet.Artifacts/
+dist/
+# Build output lands in the shipped mod folder; keep the folder, not the binaries
+/mod/1.7/Assemblies/*
+!/mod/1.7/Assemblies/.gitkeep
+# Local-only dev files
+.dotnet/
+
+# Raw in-game logs (contain local paths); kept local only
+/docs/project/spikes/raw/

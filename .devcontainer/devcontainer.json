@@ -1,0 +1,10 @@
+{
+  "name": "rimworld-quick-menu",
+  "image": "mcr.microsoft.com/devcontainers/dotnet:1-10.0",
+  "postCreateCommand": "scripts/setup.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-dotnettools.csdevkit", "ms-dotnettools.csharp", "editorconfig.editorconfig"]
+    }
+  }
+}

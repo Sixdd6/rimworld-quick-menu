@@ -1,0 +1,138 @@
+using System.Text;
+using QuickMenu.Core.Input;
+using QuickMenu.Menu;
+using RimWorld;
+using UnityEngine;
+using Verse;
+
+namespace QuickMenu.Settings;
+
+/// <summary>
+/// The "Open menu with" row of the settings page (design.md S7): binding button, [Clear], [Use middle mouse instead],
+/// the key-conflict warning and the note. The settings page places it with <see cref="Draw"/>. Labels are cached per binding change.
+/// </summary>
+internal static class BindingRow
+{
+    private const float RowHeight = 30f;
+
+    private static TriggerBinding _cachedFor;
+    private static PinModifier _cachedModifier;
+    private static bool _cacheValid;
+    private static string _label = string.Empty;
+    private static string? _conflict;
+    private static string? _openWith;
+    private static string? _clear;
+    private static string? _useMiddle;
+    private static string? _note;
+
+    /// <summary>The row label ("Open menu with"); the settings page measures it for the left column's label width.</summary>
+    internal static string Label => _openWith ??= "QuickMenu.Settings.OpenWith".Translate();
+
+    /// <summary>Draws the row and note in the listing's column; the binding button starts <paramref name="labelWidth"/> after the column's left edge.</summary>
+    internal static void Draw(Listing_Standard listing, float labelWidth)
+    {
+        _clear ??= "QuickMenu.Settings.Clear".Translate();
+        _useMiddle ??= "QuickMenu.Settings.UseMiddleMouse".Translate();
+        _note ??= "QuickMenu.Settings.BindingNote".Translate();
+
+        QuickMenuSettings settings = QuickMenuMod.Settings;
+        Refresh(settings.Trigger, QuickMenuMod.EffectiveModifier);
+
+        Rect row = listing.GetRect(RowHeight);
+        SettingsPage.RowLabel(row, labelWidth, Label);
+        var buttonRect = new Rect(row.x + labelWidth, row.y, 150f, row.height);
+        if (settings.Trigger.Kind == TriggerBindingKind.None)
+        {
+            GUI.color = QMStyle.TextMuted;
+        }
+
+        bool open = Widgets.ButtonText(buttonRect, _label);
+        GUI.color = Color.white;
+        if (open)
+        {
+            Find.WindowStack.Add(new BindingCaptureWindow(Set));
+        }
+
+        if (Widgets.ButtonText(new Rect(buttonRect.xMax + 8f, row.y, 80f, row.height), _clear))
+        {
+            Set(TriggerBinding.None);
+        }
+
+        if (settings.Trigger != TriggerBinding.Mouse(2) && Widgets.ButtonText(listing.GetRect(RowHeight).LeftPartPixels(260f), _useMiddle))
+        {
+            Set(TriggerBinding.Mouse(2));
+        }
+
+        if (_conflict != null)
+        {
+            GUI.color = QMStyle.Danger;
+            listing.Label(_conflict);
+            GUI.color = Color.white;
+        }
+
+        Text.Font = GameFont.Tiny;
+        GUI.color = QMStyle.TextMuted;
+        listing.Label(_note);
+        GUI.color = Color.white;
+        Text.Font = GameFont.Small;
+    }
+
+    /// <summary>Stores the binding and writes the settings (once, on the user's action).</summary>
+    internal static void Set(TriggerBinding binding)
+    {
+        QuickMenuMod.Settings.Trigger = binding;
+        QuickMenuMod.SaveSettings();
+    }
+
+    private static void Refresh(TriggerBinding binding, PinModifier modifier)
+    {
+        if (_cacheValid && _cachedFor == binding && _cachedModifier == modifier)
+        {
+            return;
+        }
+
+        _cachedFor = binding;
+        _cachedModifier = modifier;
+        _cacheValid = true;
+        _conflict = null;
+        string? key = binding.LabelKey;
+        if (key != null)
+        {
+            _label = key.Translate();
+            return;
+        }
+
+        var code = (KeyCode)binding.Code;
+        _label = code.ToStringReadable();
+        _conflict = IsPinModifierKey(code, modifier)
+            ? "QuickMenu.Settings.KeyIsPinModifier".Translate(_label)
+            : FindConflict(code, _label);
+    }
+
+    private static bool IsPinModifierKey(KeyCode code, PinModifier modifier) => modifier switch
+    {
+        PinModifier.Ctrl => code is KeyCode.LeftControl or KeyCode.RightControl,
+        PinModifier.Alt => code is KeyCode.LeftAlt or KeyCode.RightAlt,
+        _ => code is KeyCode.LeftShift or KeyCode.RightShift,
+    };
+
+    private static string? FindConflict(KeyCode code, string keyName)
+    {
+        StringBuilder? names = null;
+        foreach (KeyBindingDef def in DefDatabase<KeyBindingDef>.AllDefsListForReading)
+        {
+            if (def.MainKey == code || KeyPrefs.KeyPrefsData.GetBoundKeyCode(def, KeyPrefs.BindingSlot.B) == code)
+            {
+                names ??= new StringBuilder();
+                if (names.Length > 0)
+                {
+                    names.Append(", ");
+                }
+
+                names.Append(def.LabelCap.ToString());
+            }
+        }
+
+        return names == null ? null : "QuickMenu.Settings.KeyConflict".Translate(keyName, names.ToString());
+    }
+}

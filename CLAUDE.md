@@ -104,4 +104,46 @@ Templates are in `.claude/templates/`. Copy a template, then fill it in. Never l
 <!-- The architect and environment-engineer fill this section in during phases 2–3:
      language/framework, how to build/run/test/lint, directory layout, conventions. -->
 
-_Not started yet. Run `/kickoff <idea>`._
+### Stack (see docs/project/architecture.md and decisions/)
+- **Mod**: "Quick Menu", packageId `sixdd.QuickMenu`, MIT.
+- **Game**: RimWorld **1.7** (build 1.7.4982) runs on Ludeon's **Waylith** engine on a patched **CoreCLR .NET 10**. It is **not Unity/Mono and not net472**. Unity APIs come from `UnityStubs.dll` (`using UnityEngine;` still works).
+- **Language / target**: C# (default for net10.0), SDK-style projects, `net10.0`, .NET SDK 10.0.1xx (pinned in `global.json`).
+- **Game references**: `Krafs.Rimworld.Ref` `1.7.4982-unstable` (compile-only). Fallback `-p:UseLocalGameRefs=true` uses `$(RIMWORLD_DIR)/{Assembly-CSharp,UnityStubs,Waylith}.dll`.
+- **Patching**: Harmony 3, `Lib.Harmony` `3.0.0-rc.3` compile-only (`ExcludeAssets=runtime`). At runtime it comes from the `brrainz.harmony` mod. Never ship `0Harmony.dll`.
+- **Tests**: xUnit v3 (`xunit.v3` 4.0.x) on `src/QuickMenu.Core` only. Coverage gate is at least 90 % lines.
+
+### Layout
+- `mod/`: exactly the shipped mod (About, LoadFolders.xml, `1.7/Assemblies` = build output, Languages, Textures). Symlinked into the game's `Mods/` for development.
+- `src/QuickMenu.Core/`: pure logic (layout, edge dodge, sizing, PinKey/PinBoard/serializer, trigger state machine). **Must not reference any game or Unity assembly.**
+- `src/QuickMenu/`: thin game adapter (Mod + settings, Harmony patches, catalog, activation, IMGUI windows, diagnostics).
+- `tests/QuickMenu.Core.Tests/`: unit tests and Perf-trait gates. `tests/QuickMenu.Core.Benchmarks/`: BenchmarkDotNet. `tests/Shared/SyntheticCatalog.cs`: shared seeded test data, linked into both projects.
+- `scripts/`: setup, test, perf, link-mod, package (the ADR/architecture name `link-mod.sh` is `link-mod.sh` in practice).
+- `reference/`: Dubs Mint Menus, gitignored. **Clean-room: study behaviour only. Never copy its code, textures or strings.**
+
+### Commands (verified; see docs/project/environment.md)
+| Purpose | Command |
+|---|---|
+| Setup (idempotent; installs .NET 10 SDK to `~/.dotnet` if missing, restores) | `scripts/setup.sh` |
+| Build (outputs to `mod/1.7/Assemblies/`) | `dotnet build QuickMenu.slnx -c Release` |
+| Format check / fix | `dotnet format QuickMenu.slnx --verify-no-changes` / `dotnet format QuickMenu.slnx` |
+| Functional tests + coverage gate (Core >= 90 %) | `scripts/test.sh` |
+| Perf gates (Release, no coverage) | `scripts/perf.sh` |
+| Benchmarks (manual) | `scripts/perf.sh --bench` |
+| Dev install (once per machine, symlink) | `scripts/link-mod.sh` |
+| Package | `scripts/package.sh` -> `dist/QuickMenu-<version>.zip` |
+| Run in game | launch RimWorld with `-mod=brrainz.harmony,sixdd.QuickMenu -quicktest`; in dev mode run the debug action "Quick Menu: self-test" |
+- Perf tests carry `[Trait("Category", "Perf")]`; xUnit v3 filter is `--filter-trait "Category=Perf"` / `--filter-not-trait`.
+- If `dotnet` is not on PATH, `. scripts/_env.sh` adds `~/.dotnet`.
+- Local game DLLs instead of Krafs: `dotnet build -p:UseLocalGameRefs=true` (rewrites `packages.lock.json`; run `git checkout -- '**/packages.lock.json'` afterwards). CI uses `restore --locked-mode`.
+- Test names may use underscores (CA1707 is off under `tests/`). Warnings are errors.
+
+### Conventions
+- Namespaces `QuickMenu.Core.*` and `QuickMenu.*`. Keyed string keys are prefixed `QuickMenu.`, and every player-facing string is Keyed.
+- Harmony patches exist only at the sites listed in architecture.md §6 (five: the trigger poller, the `ProcessInput` prefixes, the `GetDesignatorSelectAction` postfix, the `Command.GizmoOnGUIInt` marker postfix, and the dropdown-entry marker postfixes on `Designator_Dropdown.ProcessInput`, `FloatMenuOption.DoGUI` and `FloatMenuGridOption.OnGUI`). No transpilers. Every patch body has try/catch → `LogOnce` → disable that patch and run the original.
+- Patch parameters use exact types (`Designator __instance`, `Event __0`), because Harmony 3 type-checks injections. Bind by index (`__0`), not by name: overrides name the parameter differently (`ev`, `e`), and a named parameter that does not match fails to bind.
+- In the `Designator.ProcessInput` prefix the `Event` is already `used` (UC-1 S-3): read click-vs-hotkey and modifiers from `UnityEngine.Input` (mouse button state, `GetKey`), not from the `Event`. `ev.control`/`ev.alt` are reliable only for direct clicks.
+- No GameComponent, WorldComponent or MapComponent, and nothing written into save files. All state lives in `QuickMenuSettings : ModSettings`.
+- No per-frame allocations in the trigger poller or in OnGUI drawing: no LINQ, no string building, no closures in hot paths. Cache labels and layout per open.
+- IMGUI only (no native Waylith UI, no custom shaders, no rotated GUI drawing). Use designator icons through `Command.DrawIcon`.
+- Logic that can be pure goes in Core, test-first. Adapter code stays thin.
+- Pinning and the pin marker apply only in architect menus: the vanilla Architect tab, Better Architect Menu (drawn inside that tab) and Dubs Mint Menus' build menu (`MainTabWindow_MintArchitect`; pin gestures also in its wheel `MainTabWindow_MayaMenu`). Never on selected things' command bars.

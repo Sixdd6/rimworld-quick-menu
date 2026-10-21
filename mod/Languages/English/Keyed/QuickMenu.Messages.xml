@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <QuickMenu.Pin.Pinned>Pinned {0} to the quick menu.</QuickMenu.Pin.Pinned>
+  <QuickMenu.Pin.Unpinned>Removed {0} from the quick menu.</QuickMenu.Pin.Unpinned>
+  <QuickMenu.Pin.Full>The quick menu is full. Make it bigger in the mod settings or switch to Auto size.</QuickMenu.Pin.Full>
+  <QuickMenu.Pin.Rejected>{0} can't be pinned: its pin entry is too large to save.</QuickMenu.Pin.Rejected>
+  <QuickMenu.Pin.Unavailable>{0} can't be pinned.</QuickMenu.Pin.Unavailable>
+</LanguageData>

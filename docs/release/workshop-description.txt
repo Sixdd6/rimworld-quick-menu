@@ -1,0 +1,50 @@
+[h1]Quick Menu[/h1]
+A wheel (or grid) of your favourite build and order buttons that opens around your mouse. Pin the things you place most, press one button, pick, and place.
+
+[h2]Requires[/h2]
+[list]
+[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=2009463077]Harmony[/url]. Load it before Quick Menu.
+[/list]
+For RimWorld 1.7. Safe to add or remove mid-save: nothing is written to your saves.
+
+[h2]Features[/h2]
+[list]
+[*][b]Wheel or grid[/b], fixed or auto size. Set rings, columns, rows and button size.
+[*][b]Pin from the architect menu[/b] with Ctrl+click on any build or order button.
+[*][b]Material ring[/b] for buildings made from stuff.
+[*][b]Dropdown sub-rings[/b] for pinned dropdowns such as floors and zones.
+[*][b]Edit mode[/b]: click the centre button, drag slots to swap or move them, then click Done.
+[*][b]Greyed-out pins[/b] when something is not available yet. The tooltip tells you why.
+[*][b]Pin markers[/b] in the architect menu show what is already pinned.
+[*][b]Missing mods[/b]: pins from mods you removed come back when you add the mod again. "Forget missing pins" clears them.
+[/list]
+
+[h2]How to use[/h2]
+[list]
+[*]Press [b]Mouse 4[/b] on the map to open the menu. No side button? Use [b]middle mouse[/b], or bind any key in the mod settings.
+[*][b]Ctrl+click[/b] a button in the architect menu to pin it. Ctrl+click again to unpin. With Dubs Mint Menus loaded, use [b]Alt+click[/b].
+[*]Click a pin to select it. Right-click or click outside the menu to close.
+[*]Settings: Options > Mod settings > Quick Menu.
+[/list]
+
+[h2]Compatibility[/h2]
+[list]
+[*]Vanilla architect menu
+[*]Better Architect Menu
+[*]Dubs Mint Menus: pinning from its build menu and wheel
+[/list]
+
+[h2]Known limits[/h2]
+[list]
+[*]Dubs Mint Menus: no pin markers in its list view or wheel, and its designator bars are not supported.
+[*]Better Architect Menu logs its own error "InitializeDubsMintMenusReflection: toggleDesMethod is null". That message is not from Quick Menu.
+[*]Multiplayer is not supported yet. There is no Multiplayer build for RimWorld 1.7.
+[/list]
+
+[h2]Links[/h2]
+[list]
+[*][url=https://github.com/Sixdd6/rimworld-quick-menu]Source and bug reports[/url] (MIT license)
+[/list]
+
+Inspired by the quick menu of Dubs Mint Menus. Clean-room: no code or art reused.
+Preview image: screenshots of RimWorld by Ludeon Studios taken by the mod author.

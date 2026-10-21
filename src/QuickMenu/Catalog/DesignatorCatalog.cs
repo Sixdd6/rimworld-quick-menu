@@ -1,0 +1,638 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
+using QuickMenu.Core.Catalog;
+using QuickMenu.Core.Pins;
+using QuickMenu.Diagnostics;
+using RimWorld;
+using Verse;
+using FaultPoint = QuickMenu.Core.Diagnostics.FaultPoint;
+using Log = QuickMenu.Diagnostics.Log;
+
+namespace QuickMenu.Catalog;
+
+/// <summary>
+/// Every architect designator, independent of the architect UI (ADR 0006). The static part is built once at
+/// startup, after defs are resolved, from <see cref="DesignationCategoryDef.AllResolvedDesignators"/>, dropdown elements
+/// flattened after their dropdown. The Ideology part (<see cref="DesignationCategoryDef.AllIdeoDesignators"/>) needs a loaded
+/// game and is appended after the static part by <see cref="RefreshIdeology"/> whenever its signature changes (T-40).
+/// </summary>
+[StaticConstructorOnStartup]
+internal static class DesignatorCatalog
+{
+    internal static readonly PatchSite BuildSite = new("Catalog.Build");
+    internal static readonly PatchSite IdeoSite = new("Catalog.Ideology");
+
+    private static readonly List<CatalogEntry> _entries = new();
+    private static readonly Dictionary<PinKey, CatalogEntry> _byKey = new();
+    private static readonly Dictionary<Designator, CatalogEntry> _byDesignator = new();
+    private static readonly List<PinKey> _duplicateKeys = new();
+    private static readonly HashSet<Type> _designatorTypes = new();
+    private static readonly HashSet<BuildableDef> _placingDefs = new();
+    private static readonly IdeoSignature _ideoSignature = new();
+    private static readonly List<PinKey> _ideoKeys = new();
+    private static readonly List<Designator> _ideoDesignators = new();
+    private static List<PinKey>? _modDropdownKeys;
+    private static int _staticCount;
+    private static int _staticSkipped;
+
+    static DesignatorCatalog()
+    {
+        try
+        {
+            Rebuild();
+        }
+        catch (Exception ex)
+        {
+            BuildSite.Fail(ex);
+        }
+    }
+
+    /// <summary>All entries in pre-order; empty when the build failed.</summary>
+    internal static IReadOnlyList<CatalogEntry> Entries => _entries;
+
+    /// <summary>Wall-clock time of the last build, for the self-test (budget P-11c: at most 200 ms).</summary>
+    internal static TimeSpan BuildTime { get; private set; }
+
+    /// <summary>How many times <see cref="Rebuild"/> has run this session (budget P-12: expected 1).</summary>
+    internal static int BuildCount { get; private set; }
+
+    /// <summary>How many times the Ideology part was rebuilt this session (once per game load or ideoligion change).</summary>
+    internal static int IdeoRebuildCount { get; private set; }
+
+    /// <summary>Wall-clock time of the last Ideology rebuild.</summary>
+    internal static TimeSpan IdeoBuildTime { get; private set; }
+
+    /// <summary>Number of Ideology entries currently in <see cref="Entries"/> (after the static part).</summary>
+    internal static int IdeoEntryCount => _entries.Count - _staticCount;
+
+    /// <summary>Ideology entries whose key was already taken by another entry (the first one keeps the key).</summary>
+    internal static int IdeoDuplicateKeyCount { get; private set; }
+
+    /// <summary>Number of entries dropped from the key lookup because their key was already taken.</summary>
+    internal static int DuplicateKeyCount => _duplicateKeys.Count;
+
+    /// <summary>The keys that were produced more than once (one item per dropped entry).</summary>
+    internal static IReadOnlyList<PinKey> DuplicateKeys => _duplicateKeys;
+
+    /// <summary>Count of <see cref="DesignationCategoryDef.AllResolvedDesignators"/> over all categories at build time.</summary>
+    internal static int ResolvedDesignatorCount { get; private set; }
+
+    /// <summary>Number of top-level entries (entries without a dropdown parent) in the catalog.</summary>
+    internal static int TopLevelCount { get; private set; }
+
+    /// <summary>True when every resolved designator became a top-level entry (nothing was skipped or dropped).</summary>
+    internal static bool IsComplete => ResolvedDesignatorCount == TopLevelCount;
+
+    /// <summary>Entries whose designator or mod information could not be read and were left out.</summary>
+    internal static int SkippedCount { get; private set; }
+
+    /// <summary>
+    /// Changes whenever the entries change (a rebuild, or the Ideology part being added). Pin resolution compares it to
+    /// the value it resolved against, an O(1) check, and resolves again when it differs.
+    /// </summary>
+    internal static int Version { get; private set; }
+
+    /// <summary>Call after the entries were changed outside <see cref="Rebuild"/> (the Ideology refresh), so pins resolve again.</summary>
+    internal static void NotifyChanged() => Version++;
+
+    /// <summary>
+    /// Finds the entry for a key: exact match, then (for builds, and only while a game is loaded) the architect's own
+    /// lookup (needs game state), which also finds designators that are hidden or not in the catalog, as ad-hoc entries. Never throws, never logs the key.
+    /// </summary>
+    /// <returns>The entry, or null when the key is unresolved.</returns>
+    internal static CatalogEntry? Resolve(PinKey? key)
+    {
+        if (key == null)
+        {
+            return null;
+        }
+
+        if (_byKey.TryGetValue(key, out CatalogEntry? exact))
+        {
+            return exact;
+        }
+
+        if (key.Kind == PinKeyKind.ModDropdown)
+        {
+            return ResolveModDropdown(key);
+        }
+
+        if (key.Kind is not (PinKeyKind.BuildThing or PinKeyKind.BuildTerrain) || Current.Game == null)
+        {
+            return null;
+        }
+
+        try
+        {
+            BuildableDef? def = key.Kind == PinKeyKind.BuildThing
+                ? DefDatabase<ThingDef>.GetNamedSilentFail(key.Name)
+                : DefDatabase<TerrainDef>.GetNamedSilentFail(key.Name);
+            if (def == null)
+            {
+                return null;
+            }
+
+            // mustBeVisible: false, so a building that is hidden or unavailable right now still resolves (FR-14).
+            Designator? found = BuildCopyCommandUtility.FindAllowedDesignator(def, mustBeVisible: false);
+            if (found != null)
+            {
+                return _byDesignator.TryGetValue(found, out CatalogEntry? entry) ? entry : AdHoc(key, found, def, forcedUnavailable: false);
+            }
+
+            // The game offers no designator at all (Ideology building without its precept, say): a lightweight one shows the def's icon, greyed.
+            return AdHoc(key, new Designator_Build(def), def, forcedUnavailable: true);
+        }
+        catch (Exception ex)
+        {
+            // The key holds a def name that can identify a mod, so only its kind and the exception type are logged.
+            Log.LogOnce("Catalog.Resolve", $"Resolving a {key.Kind} pin through the architect lookup failed ({ex.GetType().Name}); it stays unresolved.");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// A mod dropdown whose stored key has no exact match: the loosest candidate by <see cref="ModDropdownMatcher"/> (the mod
+    /// added or removed a few elements). The stored key is not rewritten.
+    /// </summary>
+    private static CatalogEntry? ResolveModDropdown(PinKey stored)
+    {
+        List<PinKey> candidates = _modDropdownKeys ??= CollectModDropdownKeys();
+        PinKey? match = ModDropdownMatcher.Match(stored, candidates);
+        return match != null && _byKey.TryGetValue(match, out CatalogEntry? entry) ? entry : null;
+    }
+
+    private static List<PinKey> CollectModDropdownKeys()
+    {
+        var keys = new List<PinKey>();
+        foreach (CatalogEntry entry in _entries)
+        {
+            if (entry.Key.Kind == PinKeyKind.ModDropdown)
+            {
+                keys.Add(entry.Key);
+            }
+        }
+
+        return keys;
+    }
+
+    /// <summary>An entry for a designator the catalog does not hold (Ideology, hidden right now). Not added to <see cref="Entries"/>.</summary>
+    private static CatalogEntry AdHoc(PinKey key, Designator designator, BuildableDef def, bool forcedUnavailable)
+    {
+        string label = designator.Label;
+        if (string.IsNullOrEmpty(label))
+        {
+            label = def.label ?? def.defName;
+        }
+
+        ModContentPack? pack = def.modContentPack;
+        return new CatalogEntry(-1, -1, designator, key, label, string.Empty, pack?.Name ?? string.Empty, pack?.PackageId ?? string.Empty, isDropdown: false, forcedUnavailable);
+    }
+
+    /// <summary>The catalog entry of a live designator, or null (for example an Ideology-only designator).</summary>
+    internal static CatalogEntry? Find(Designator designator) =>
+        designator != null && _byDesignator.TryGetValue(designator, out CatalogEntry? e) ? e : null;
+
+    /// <summary>True when the catalog holds a designator of exactly this type (read only on the pin-click fallback path).</summary>
+    internal static bool KnowsType(Type type) => _designatorTypes.Contains(type);
+
+    /// <summary>True when the catalog holds a build designator placing <paramref name="def"/> (read only on the pin-click fallback path).</summary>
+    internal static bool KnowsPlacingDef(BuildableDef def) => _placingDefs.Contains(def);
+
+    internal static void Rebuild()
+    {
+        BuildCount++;
+        var stopwatch = Stopwatch.StartNew();
+        try
+        {
+            _entries.Clear();
+            _byKey.Clear();
+            _byDesignator.Clear();
+            _designatorTypes.Clear();
+            _placingDefs.Clear();
+            _duplicateKeys.Clear();
+            _ideoKeys.Clear();
+            _ideoDesignators.Clear();
+            _modDropdownKeys = null;
+            IdeoDuplicateKeyCount = 0;
+            _ideoSignature.Update(null, null, 0); // the next RefreshIdeology rebuilds when a game is loaded
+            SkippedCount = 0;
+            ResolvedDesignatorCount = 0;
+            TopLevelCount = 0;
+
+            var nodes = new List<Node>();
+            var categories = new List<DesignationCategoryDef>(DefDatabase<DesignationCategoryDef>.AllDefsListForReading);
+            categories.Sort(static (a, b) => a.order != b.order ? a.order.CompareTo(b.order) : string.CompareOrdinal(a.defName, b.defName));
+            var mods = new ModLookup();
+            foreach (DesignationCategoryDef category in categories)
+            {
+                foreach (Designator designator in category.AllResolvedDesignators)
+                {
+                    ResolvedDesignatorCount++;
+                    Node? node = MakeNode(designator, category, mods, depth: 0);
+                    if (node != null)
+                    {
+                        nodes.Add(node);
+                    }
+                }
+            }
+
+            IReadOnlyList<PinKey> keys = AssignKeys(nodes);
+            int index = 0;
+            foreach (Node node in nodes)
+            {
+                AddEntries(node, -1, keys, ref index, ideo: false);
+            }
+
+            TopLevelCount = nodes.Count;
+            _staticCount = _entries.Count;
+            _staticSkipped = SkippedCount;
+        }
+        finally
+        {
+            Version++;
+            stopwatch.Stop();
+            BuildTime = stopwatch.Elapsed;
+        }
+    }
+
+    /// <summary>
+    /// Adds, replaces or removes the Ideology part when the (game, primary ideoligion, precept count) signature differs from
+    /// the last one seen. The unchanged case is a few reference reads and compares, with no allocation, so it is safe on every
+    /// menu open. A change calls <see cref="NotifyChanged"/>, so pins resolve again (a greyed Ideology pin becomes live without
+    /// reloading the save). Main thread only: game defs are not thread-safe.
+    /// </summary>
+    internal static void RefreshIdeology()
+    {
+        if (IdeoSite.Disabled || BuildSite.Disabled)
+        {
+            return;
+        }
+
+        try
+        {
+            FaultInjection.Check(FaultPoint.CatalogIdeology);
+            Game? game = Current.Game;
+            if (game == null)
+            {
+                // Quit to the main menu: drop the old game's designators now so nothing here keeps it alive.
+                if (_ideoSignature.Update(null, null, 0))
+                {
+                    RebuildIdeology(false);
+                }
+
+                return;
+            }
+
+            Ideo? ideo = null;
+            int precepts = 0;
+            long fingerprint = 0;
+            if (game != null && ModsConfig.IdeologyActive)
+            {
+                FactionIdeosTracker? ideos = Faction.OfPlayerSilentFail?.ideos;
+                ideo = ideos?.PrimaryIdeo;
+                precepts = ideo?.PreceptsListForReading?.Count ?? 0;
+                if (ideo != null && ideos != null)
+                {
+                    // Vanilla AllIdeoDesignators walks every ideo of the player faction (primary and minor): fold in the
+                    // minor ideos' identity and size and every reform generation, all O(ideo count), no allocation.
+                    fingerprint = Fingerprint(ideo);
+                    List<Ideo>? minor = ideos.IdeosMinorListForReading;
+                    if (minor != null)
+                    {
+                        for (int i = 0; i < minor.Count; i++)
+                        {
+                            fingerprint = IdeoFingerprint.Combine(fingerprint, Fingerprint(minor[i]));
+                        }
+                    }
+                }
+            }
+
+            if (_ideoSignature.Update(game, ideo, precepts, fingerprint))
+            {
+                RebuildIdeology(_ideoSignature.HasIdeo);
+            }
+        }
+        catch (Exception ex)
+        {
+            IdeoSite.Fail(ex);
+        }
+    }
+
+    /// <summary>
+    /// Never throws: any member may be null (non-fluid ideoligions have no <c>development</c>), and a fault degrades to the
+    /// identity hash alone, so a fingerprint problem can never disable the Ideology site.
+    /// </summary>
+    private static long Fingerprint(Ideo? ideo)
+    {
+        if (ideo == null)
+        {
+            return 0;
+        }
+
+        int hash = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(ideo);
+        try
+        {
+            return IdeoFingerprint.Of(hash, ideo.PreceptsListForReading?.Count, ideo.development?.reformCount);
+        }
+        catch (Exception)
+        {
+            return IdeoFingerprint.Of(hash, null, null);
+        }
+    }
+
+    private static void RebuildIdeology(bool build)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        try
+        {
+            foreach (PinKey key in _ideoKeys)
+            {
+                _byKey.Remove(key);
+            }
+
+            foreach (Designator designator in _ideoDesignators)
+            {
+                _byDesignator.Remove(designator);
+            }
+
+            _ideoKeys.Clear();
+            _ideoDesignators.Clear();
+            _entries.RemoveRange(_staticCount, _entries.Count - _staticCount);
+            IdeoDuplicateKeyCount = 0;
+            SkippedCount = _staticSkipped;
+            if (!build)
+            {
+                return;
+            }
+
+            var nodes = new List<Node>();
+            var categories = new List<DesignationCategoryDef>(DefDatabase<DesignationCategoryDef>.AllDefsListForReading);
+            categories.Sort(static (a, b) => a.order != b.order ? a.order.CompareTo(b.order) : string.CompareOrdinal(a.defName, b.defName));
+            var mods = new ModLookup();
+            foreach (DesignationCategoryDef category in categories)
+            {
+                try
+                {
+                    foreach (Designator designator in category.AllIdeoDesignators)
+                    {
+                        Node? node = MakeNode(designator, category, mods, depth: 0);
+                        if (node != null)
+                        {
+                            nodes.Add(node);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.LogOnce($"Catalog.Ideo.{category.defName}", $"Reading the Ideology designators of category {category.defName} failed; the rest of it is skipped: {ex}");
+                }
+            }
+
+            IReadOnlyList<PinKey> keys = AssignKeys(nodes);
+            int index = 0;
+            foreach (Node node in nodes)
+            {
+                AddEntries(node, -1, keys, ref index, ideo: true);
+            }
+        }
+        finally
+        {
+            _modDropdownKeys = null;
+            IdeoRebuildCount++;
+            NotifyChanged();
+            Pinning.PinService.Refresh(); // resolves the pins again and rebuilds the pin marker set against the new designator instances
+            stopwatch.Stop();
+            IdeoBuildTime = stopwatch.Elapsed;
+        }
+    }
+
+    // Key assignment should never throw, but one root must not be able to empty the catalog if it does.
+    private static IReadOnlyList<PinKey> AssignKeys(List<Node> nodes)
+    {
+        try
+        {
+            return PinKeyFactory.Assign(Descriptors(nodes));
+        }
+        catch (Exception ex)
+        {
+            Log.LogOnce("Catalog.Keys", $"Assigning pin keys failed, isolating the bad designators: {ex}");
+        }
+
+        for (int i = nodes.Count - 1; i >= 0; i--)
+        {
+            try
+            {
+                PinKeyFactory.Assign(new[] { nodes[i].Descriptor });
+            }
+            catch (Exception ex)
+            {
+                SkippedCount++;
+                Log.LogOnce("Catalog.Keys." + nodes[i].Descriptor.TypeFullName, $"A designator of type {nodes[i].Descriptor.TypeFullName} was left out of the catalog: {ex.Message}");
+                nodes.RemoveAt(i);
+            }
+        }
+
+        return PinKeyFactory.Assign(Descriptors(nodes));
+    }
+
+    private static List<DesignatorDescriptor> Descriptors(List<Node> nodes)
+    {
+        var descriptors = new List<DesignatorDescriptor>(nodes.Count);
+        foreach (Node node in nodes)
+        {
+            descriptors.Add(node.Descriptor);
+        }
+
+        return descriptors;
+    }
+
+    private static void AddEntries(Node node, int parentId, IReadOnlyList<PinKey> keys, ref int index, bool ideo)
+    {
+        int id = _entries.Count;
+        PinKey key = keys[index++];
+        var entry = new CatalogEntry(id, parentId, node.Designator, key, node.Label, node.CategoryLabel, node.ModName, node.PackageId, node.Descriptor.Kind == DescriptorKind.Dropdown);
+        _entries.Add(entry);
+        _designatorTypes.Add(node.Designator.GetType());
+        if (node.Designator is Designator_Build { PlacingDef: { } placingDef })
+        {
+            _placingDefs.Add(placingDef);
+        }
+
+        if (_byKey.TryAdd(key, entry))
+        {
+            if (ideo)
+            {
+                _ideoKeys.Add(key);
+            }
+        }
+        else if (ideo)
+        {
+            IdeoDuplicateKeyCount++;
+        }
+        else
+        {
+            _duplicateKeys.Add(key);
+        }
+
+        if (_byDesignator.TryAdd(node.Designator, entry) && ideo)
+        {
+            _ideoDesignators.Add(node.Designator);
+        }
+
+        foreach (Node child in node.Children)
+        {
+            AddEntries(child, id, keys, ref index, ideo);
+        }
+    }
+
+    /// <summary>
+    /// The one place a designator becomes a descriptor (kind, empty def name downgraded to Other, dropdown group, children,
+    /// category). The catalog and the pin click's uncatalogued fallback both use it, so their keys always agree.
+    /// </summary>
+    internal static DesignatorDescriptor BuildDescriptor(Designator designator, string categoryDefName, IReadOnlyList<DesignatorDescriptor> children, out BuildableDef? placing)
+    {
+        placing = (designator as Designator_Build)?.PlacingDef;
+        DescriptorKind kind = designator switch
+        {
+            Designator_Dropdown => DescriptorKind.Dropdown,
+            Designator_Build when placing is TerrainDef => DescriptorKind.BuildTerrain,
+            Designator_Build when placing is ThingDef => DescriptorKind.BuildThing,
+            _ => DescriptorKind.Other,
+        };
+        string? group = placing switch
+        {
+            ThingDef t => t.designatorDropdown?.defName,
+            TerrainDef t => t.designatorDropdown?.defName,
+            _ => null,
+        };
+        string? defName = kind is DescriptorKind.BuildThing or DescriptorKind.BuildTerrain ? placing?.defName : null;
+        if (kind is DescriptorKind.BuildThing or DescriptorKind.BuildTerrain && string.IsNullOrEmpty(defName))
+        {
+            kind = DescriptorKind.Other;
+        }
+
+        Type type = designator.GetType();
+        return new DesignatorDescriptor(kind, type.FullName ?? type.Name, defName, categoryDefName, group, children);
+    }
+
+    /// <summary>Descriptor of a designator that is not in the catalog, with its dropdown elements, built by <see cref="BuildDescriptor"/>.</summary>
+    internal static DesignatorDescriptor DescribeTree(Designator designator, string categoryDefName, int depth = 0)
+    {
+        var children = new List<DesignatorDescriptor>();
+        if (designator is Designator_Dropdown dropdown && depth < PinKeyFactory.MaxDepth)
+        {
+            foreach (Designator element in dropdown.Elements)
+            {
+                if (element != null)
+                {
+                    children.Add(DescribeTree(element, categoryDefName, depth + 1));
+                }
+            }
+        }
+
+        return BuildDescriptor(designator, categoryDefName, children, out _);
+    }
+
+    // One bad third-party designator must not take the whole catalog down (NFR-6).
+    private static Node? MakeNode(Designator designator, DesignationCategoryDef category, ModLookup mods, int depth)
+    {
+        try
+        {
+            if (designator == null)
+            {
+                return null;
+            }
+
+            var children = new List<Node>();
+            var childDescriptors = new List<DesignatorDescriptor>();
+            if (designator is Designator_Dropdown dropdown && depth < PinKeyFactory.MaxDepth)
+            {
+                foreach (Designator element in dropdown.Elements)
+                {
+                    Node? child = MakeNode(element, category, mods, depth + 1);
+                    if (child != null)
+                    {
+                        children.Add(child);
+                        childDescriptors.Add(child.Descriptor);
+                    }
+                }
+            }
+
+            DesignatorDescriptor descriptor = BuildDescriptor(designator, category.defName, childDescriptors, out BuildableDef? placing);
+            DescriptorKind kind = descriptor.Kind;
+            Type type = designator.GetType();
+            ModContentPack? pack = placing?.modContentPack ?? mods.Of(type);
+            string modName = pack?.Name ?? string.Empty;
+            string packageId = pack?.PackageId ?? string.Empty;
+            if (kind == DescriptorKind.Dropdown && pack is { IsCoreMod: true } && children.Count > 0)
+            {
+                // Def dropdowns from mods are plain Designator_Dropdown, which the type lookup credits to Core.
+                modName = children[0].ModName;
+                packageId = children[0].PackageId;
+            }
+
+            return new Node(designator, descriptor, designator.Label ?? string.Empty, category.LabelCap.ToString(), modName, packageId, children);
+        }
+        catch (Exception ex)
+        {
+            SkippedCount++;
+            Log.LogOnce("Catalog.Designator." + designator?.GetType().FullName, $"A designator was left out of the catalog: {ex}");
+            return null;
+        }
+    }
+
+    private sealed class Node
+    {
+        internal Node(Designator designator, DesignatorDescriptor descriptor, string label, string categoryLabel, string modName, string packageId, List<Node> children)
+        {
+            Designator = designator;
+            Descriptor = descriptor;
+            Label = label;
+            CategoryLabel = categoryLabel;
+            ModName = modName;
+            PackageId = packageId;
+            Children = children;
+        }
+
+        internal Designator Designator { get; }
+
+        internal DesignatorDescriptor Descriptor { get; }
+
+        internal string Label { get; }
+
+        internal string CategoryLabel { get; }
+
+        internal string ModName { get; }
+
+        internal string PackageId { get; }
+
+        internal List<Node> Children { get; }
+    }
+
+    /// <summary>Maps a type to the mod whose assembly defines it; types of the base game map to the core mod.</summary>
+    private sealed class ModLookup
+    {
+        private readonly Dictionary<Assembly, ModContentPack> _byAssembly = new();
+        private readonly ModContentPack? _core;
+
+        internal ModLookup()
+        {
+            foreach (ModContentPack pack in LoadedModManager.RunningModsListForReading)
+            {
+                if (pack.IsCoreMod)
+                {
+                    _core = pack;
+                }
+
+                foreach (Assembly assembly in pack.assemblies.loadedAssemblies)
+                {
+                    _byAssembly.TryAdd(assembly, pack);
+                }
+            }
+        }
+
+        internal ModContentPack? Of(Type type) => _byAssembly.TryGetValue(type.Assembly, out ModContentPack? pack) ? pack : _core;
+    }
+}

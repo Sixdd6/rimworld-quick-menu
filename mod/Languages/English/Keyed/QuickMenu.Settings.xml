@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <QuickMenu.Binding.Unbound>Unbound</QuickMenu.Binding.Unbound>
+  <QuickMenu.Binding.MiddleMouse>Middle mouse</QuickMenu.Binding.MiddleMouse>
+  <QuickMenu.Binding.Mouse4>Mouse 4</QuickMenu.Binding.Mouse4>
+  <QuickMenu.Binding.Mouse5>Mouse 5</QuickMenu.Binding.Mouse5>
+  <QuickMenu.Settings.OpenWith>Open menu with</QuickMenu.Settings.OpenWith>
+  <QuickMenu.Settings.Clear>Clear</QuickMenu.Settings.Clear>
+  <QuickMenu.Settings.UseMiddleMouse>Use middle mouse instead</QuickMenu.Settings.UseMiddleMouse>
+  <QuickMenu.Settings.BindingNote>Mice do not report their side buttons. If Mouse 4 does nothing, use the middle mouse button or bind a key. Middle mouse also drags the camera while held.</QuickMenu.Settings.BindingNote>
+  <QuickMenu.Settings.KeyConflict>{0} is also used for: {1}.</QuickMenu.Settings.KeyConflict>
+  <QuickMenu.Settings.KeyIsPinModifier>{0} is also the key you hold to pin, so pinning will open the menu. Pick another key or another pin key.</QuickMenu.Settings.KeyIsPinModifier>
+  <QuickMenu.Settings.Title>Quick Menu</QuickMenu.Settings.Title>
+  <QuickMenu.Settings.PageError>The Quick Menu settings page could not be drawn. See the log for details.</QuickMenu.Settings.PageError>
+  <QuickMenu.Settings.HeadOpening>Opening the menu</QuickMenu.Settings.HeadOpening>
+  <QuickMenu.Settings.HeadPinning>Pinning</QuickMenu.Settings.HeadPinning>
+  <QuickMenu.Settings.HeadLayout>Layout</QuickMenu.Settings.HeadLayout>
+  <QuickMenu.Settings.PinWith>Pin with</QuickMenu.Settings.PinWith>
+  <QuickMenu.Settings.PinWithSuffix>+ click on a build or order</QuickMenu.Settings.PinWithSuffix>
+  <QuickMenu.Settings.Modifier.Ctrl>Ctrl</QuickMenu.Settings.Modifier.Ctrl>
+  <QuickMenu.Settings.Modifier.Alt>Alt</QuickMenu.Settings.Modifier.Alt>
+  <QuickMenu.Settings.Modifier.Shift>Shift</QuickMenu.Settings.Modifier.Shift>
+  <QuickMenu.Settings.MintActive>Dubs Mint Menus is active, so Alt is used and Ctrl+click stays with Mint.</QuickMenu.Settings.MintActive>
+  <QuickMenu.Settings.ClearAllPins>Clear all pins...</QuickMenu.Settings.ClearAllPins>
+  <QuickMenu.Settings.ClearAllPinsConfirm>Remove every pin from the quick menu? This cannot be undone.</QuickMenu.Settings.ClearAllPinsConfirm>
+  <QuickMenu.Settings.Rings>Rings</QuickMenu.Settings.Rings>
+  <QuickMenu.Settings.Columns>Columns</QuickMenu.Settings.Columns>
+  <QuickMenu.Settings.Rows>Rows</QuickMenu.Settings.Rows>
+  <QuickMenu.Settings.Shape>Shape</QuickMenu.Settings.Shape>
+  <QuickMenu.Settings.ShapeWheel>Wheel</QuickMenu.Settings.ShapeWheel>
+  <QuickMenu.Settings.ShapeGrid>Grid</QuickMenu.Settings.ShapeGrid>
+  <QuickMenu.Settings.Size>Size</QuickMenu.Settings.Size>
+  <QuickMenu.Settings.SizeFixed>Fixed</QuickMenu.Settings.SizeFixed>
+  <QuickMenu.Settings.SizeAuto>Auto</QuickMenu.Settings.SizeAuto>
+  <QuickMenu.Settings.SizeFixedTip>The menu always has the rings, or the columns and rows, set here. Empty slots are drawn, and a pin keeps its place.</QuickMenu.Settings.SizeFixedTip>
+  <QuickMenu.Settings.SizeAutoTip>The menu grows with your pins: one ring or row more when the last is full, up to what fits the screen.</QuickMenu.Settings.SizeAutoTip>
+  <QuickMenu.Settings.PreviewTooBig>At this UI scale the menu is bigger than the screen and will be centred.</QuickMenu.Settings.PreviewTooBig>
+  <QuickMenu.Settings.PreviewHidden>{0} pins are outside the menu and stay hidden until you make it bigger again.</QuickMenu.Settings.PreviewHidden>
+  <QuickMenu.Settings.MissingPins>{0} pins are from mods that are not loaded. They come back when the mods are added back.</QuickMenu.Settings.MissingPins>
+  <QuickMenu.Settings.MissingUnknown>Pins from mods that are not loaded can be checked once the game has finished loading its build menu.</QuickMenu.Settings.MissingUnknown>
+  <QuickMenu.Settings.ForgetMissing>Forget missing pins</QuickMenu.Settings.ForgetMissing>
+  <QuickMenu.Settings.ForgetMissingConfirm>Remove the pins from mods that are not loaded? They will not come back when you add the mods again.</QuickMenu.Settings.ForgetMissingConfirm>
+  <QuickMenu.Settings.Slots>{0} slots</QuickMenu.Settings.Slots>
+  <QuickMenu.Settings.ButtonSize>Button size</QuickMenu.Settings.ButtonSize>
+  <QuickMenu.Settings.ResetDefaults>Reset to defaults</QuickMenu.Settings.ResetDefaults>
+  <QuickMenu.Settings.ResetDefaultsTip>Restores every option above to its default. Your pins are kept.</QuickMenu.Settings.ResetDefaultsTip>
+  <QuickMenu.Capture.Title>Set the menu button</QuickMenu.Capture.Title>
+  <QuickMenu.Capture.Body>Press a key or a middle or side mouse button.\nEsc cancels.</QuickMenu.Capture.Body>
+  <QuickMenu.Capture.Rejected>Left and right click can't open the menu.</QuickMenu.Capture.Rejected>
+  <QuickMenu.Capture.Cancel>Cancel</QuickMenu.Capture.Cancel>
+</LanguageData>

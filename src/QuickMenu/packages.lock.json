@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "dependencies": {
+    "net10.0": {
+      "Krafs.Rimworld.Ref": {
+        "type": "Direct",
+        "requested": "[1.7.4982-unstable, )",
+        "resolved": "1.7.4982-unstable",
+        "contentHash": "63BPBf2Rl+rmQx+0kgX7wvUpshQ6XoF+moGczOJW3/ZKm6cFMv0hZ3mM3cQY1GCoQ3hu3pLnYqsC5pLNe33zxg=="
+      },
+      "Lib.Harmony": {
+        "type": "Direct",
+        "requested": "[3.0.0-rc.3, )",
+        "resolved": "3.0.0-rc.3",
+        "contentHash": "bW1UU49jqW9w5NxdTs7G+h7Nyi9FGs4cX4lHN3rP7+q62zwLk+cO4ypD/cRboAeq5jtgACt7u37o2KAE+O0RNg=="
+      },
+      "quickmenu.core": {
+        "type": "Project"
+      }
+    }
+  }
+}

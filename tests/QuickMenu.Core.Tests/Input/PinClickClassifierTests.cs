@@ -1,0 +1,123 @@
+using System;
+using QuickMenu.Core.Input;
+using Xunit;
+
+namespace QuickMenu.Core.Tests.Input;
+
+public class PinClickClassifierTests
+{
+    private static PinClickInput Click(
+        RawEventType type = RawEventType.MouseUp,
+        int button = 0,
+        bool key = false,
+        bool evCtrl = false,
+        bool evAlt = false,
+        bool evShift = false,
+        bool rawCtrl = false,
+        bool rawAlt = false,
+        bool rawShift = false,
+        bool down = false,
+        bool up = false) =>
+        new(key, type, button, evCtrl, evAlt, evShift, rawCtrl, rawAlt, rawShift, down, up);
+
+    [Theory]
+    [InlineData(RawEventType.MouseDown)]
+    [InlineData(RawEventType.MouseUp)]
+    public void Left_click_with_event_flag_pins(RawEventType type)
+    {
+        Assert.Equal(PinClickAction.Pin, PinClickClassifier.Classify(Click(type, evCtrl: true), PinModifier.Ctrl));
+    }
+
+    [Fact]
+    public void Raw_key_alone_pins_dropdown_entry_case()
+    {
+        Assert.Equal(PinClickAction.Pin, PinClickClassifier.Classify(Click(rawCtrl: true), PinModifier.Ctrl));
+        Assert.Equal(PinClickAction.Pin, PinClickClassifier.Classify(Click(rawAlt: true), PinModifier.Alt));
+        Assert.Equal(PinClickAction.Pin, PinClickClassifier.Classify(Click(rawShift: true), PinModifier.Shift));
+        Assert.Equal(PinClickAction.Pin, PinClickClassifier.Classify(Click(evAlt: true), PinModifier.Alt));
+        Assert.Equal(PinClickAction.Pin, PinClickClassifier.Classify(Click(evShift: true), PinModifier.Shift));
+    }
+
+    [Fact]
+    public void Wrong_modifier_passes_through()
+    {
+        Assert.Equal(PinClickAction.PassThrough, PinClickClassifier.Classify(Click(rawCtrl: true), PinModifier.Alt));
+        Assert.Equal(PinClickAction.PassThrough, PinClickClassifier.Classify(Click(evAlt: true, rawAlt: true), PinModifier.Ctrl));
+        Assert.Equal(PinClickAction.PassThrough, PinClickClassifier.Classify(Click(evCtrl: true), PinModifier.Shift));
+    }
+
+    [Fact]
+    public void No_modifier_passes_through()
+    {
+        Assert.Equal(PinClickAction.PassThrough, PinClickClassifier.Classify(Click(), PinModifier.Ctrl));
+    }
+
+    [Fact]
+    public void Key_events_pass_through_even_with_modifier()
+    {
+        var i = Click(RawEventType.KeyDown, key: true, evCtrl: true, rawCtrl: true);
+        Assert.Equal(PinClickAction.PassThrough, PinClickClassifier.Classify(i, PinModifier.Ctrl));
+        var j = Click(RawEventType.MouseUp, key: true, rawCtrl: true);
+        Assert.Equal(PinClickAction.PassThrough, PinClickClassifier.Classify(j, PinModifier.Ctrl));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void Non_left_buttons_pass_through(int button)
+    {
+        Assert.Equal(
+            PinClickAction.PassThrough,
+            PinClickClassifier.Classify(Click(button: button, evCtrl: true, rawCtrl: true), PinModifier.Ctrl));
+    }
+
+    [Theory]
+    [InlineData(RawEventType.Other)]
+    [InlineData(RawEventType.Used)]
+    [InlineData(RawEventType.KeyDown)]
+    [InlineData(RawEventType.KeyUp)]
+    public void Non_mouse_raw_types_pass_through(RawEventType type)
+    {
+        Assert.Equal(PinClickAction.PassThrough, PinClickClassifier.Classify(Click(type, rawCtrl: true), PinModifier.Ctrl));
+    }
+
+    private const RawEventType U = RawEventType.Used;
+
+    [Fact]
+    public void Spike_plain_click_without_modifier_passes()
+    {
+        Assert.Equal(PinClickAction.PassThrough, PinClickClassifier.Classify(Click(U, down: true), PinModifier.Ctrl));
+    }
+
+    [Fact]
+    public void Spike_ctrl_click_pins()
+    {
+        Assert.Equal(PinClickAction.Pin, PinClickClassifier.Classify(Click(U, evCtrl: true, rawCtrl: true, down: true), PinModifier.Ctrl));
+    }
+
+    [Fact]
+    public void Spike_dropdown_entry_ctrl_pins_from_raw_only()
+    {
+        Assert.Equal(PinClickAction.Pin, PinClickClassifier.Classify(Click(U, rawCtrl: true, down: true), PinModifier.Ctrl));
+    }
+
+    [Fact]
+    public void Spike_hotkey_with_ctrl_held_passes()
+    {
+        Assert.Equal(PinClickAction.PassThrough, PinClickClassifier.Classify(Click(U, rawCtrl: true), PinModifier.Ctrl));
+    }
+
+    [Fact]
+    public void Spike_alt_click_with_alt_policy_pins()
+    {
+        var m = ModifierPolicy.Effective(false, PinModifier.Ctrl, true);
+        Assert.Equal(PinClickAction.Pin, PinClickClassifier.Classify(Click(U, rawAlt: true, down: true), m));
+    }
+
+    [Fact]
+    public void Up_frame_alone_counts_as_click()
+    {
+        Assert.Equal(PinClickAction.Pin, PinClickClassifier.Classify(Click(U, rawCtrl: true, up: true), PinModifier.Ctrl));
+    }
+}

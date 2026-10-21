@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>QuickMenu.Benchmarks</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <!-- BenchmarkDotNet ships analyzers/APIs that are noisy under warnings-as-errors for a tools project. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\QuickMenu.Core\QuickMenu.Core.csproj" />
+    <Compile Include="..\Shared\SyntheticCatalog.cs" Link="Shared\SyntheticCatalog.cs" />
+  </ItemGroup>
+</Project>

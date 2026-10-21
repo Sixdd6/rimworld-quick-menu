@@ -1,0 +1,34 @@
+# 0007. Host the menu in a full-screen transparent Verse.Window drawn with IMGUI
+
+- **Status**: accepted (2026-10-19)
+- **Date**: 2026-10-19
+
+> **Update (2026-10-19).** User decisions after UC-2/UC-2b: there is no `PickerWindow` (spec FR-7 Won't), so that line below is historical. The hub (centre) is **one Edit button** that shows Done in edit mode; there is no Close target and a click on the centre never closes the menu (FR-9). The menu closes with Esc, a click outside, right-click or the trigger; edit mode uses drag and pin-modifier+click (right-click closes, it does not unpin). Hover reacts immediately, with no movement threshold or hover delay. The host decision (full-screen transparent `Verse.Window`, IMGUI, runtime masks) stands. See architecture.md sections 3 and 3.1.
+
+## Context
+The menu opens centred on the mouse, does not pause, closes on Esc, on an outside click, after a selection, or when leaving the map. Sub-rings and the material ring can extend beyond the main wheel. Edit mode needs drag and right-click. NFR-1 asks for zero cost while closed and opening within one frame. On 1.7, UI is IMGUI implemented by Ludeon's host (`RimWorldWaylith.Imgui`). Ludeon advises against migrating Imgui to native Waylith. Both BAM and Mint patch `GUIUtility.RotateAroundPivot`, which suggests rotation is fragile under the shim.
+
+## Options considered
+1. **Draw from a Harmony postfix on an OnGUI root (for example `MapInterfaceOnGUI_AfterMainTabs`)**: no window object, but we would have to handle input absorption, layering, Esc and outside-click ourselves, and the hook runs every frame even when closed (an early return, but still a call).
+2. **A `Verse.Window` sized to the wheel's bounding box**: the window stack handles Esc and click-outside. But sub-rings outside the rect need resizing, and "outside" clicks on sub-rings would close the menu.
+3. **A full-screen, transparent `Verse.Window`** (`doWindowBackground=false`, `drawShadow=false`, `forcePause=false`, `closeOnCancel=true`, `absorbInputAroundWindow=false`, no title or close button, `layer = WindowLayer.GameUI` or Super, decided in S-6): one rect covers every ring. Our Core hit test decides between slot and outside, and an outside click closes. Map clicks are absorbed while open, so they do not designate. It exists only while open.
+
+## Decision
+- Option 3. `QuickMenuWindow` is added to `Find.WindowStack` in the same frame as the trigger. `DoWindowContents` draws from a cached `SlotPlacement[]`. `WindowUpdate` handles the hold-mode release poll and closes when `Find.CurrentMap` changes or the world view opens.
+- All drawing uses vanilla IMGUI helpers (`Widgets`, `GUI.DrawTexture`, `TooltipHandler.TipRegion`, `Command.DrawIcon` for designator icons so icon proportions and stuff colour match the architect). No custom shaders. No rotated IMGUI drawing (`GUI.matrix` / `RotateAroundPivot`).
+- Round shapes (slot discs, rings, highlights, rounded panels, badges) are **grayscale masks generated at runtime by a Core rasterizer** (`QuickMenu.Core.Render.MaskRasterizer`, pure and unit-tested). The adapter creates `Texture2D`s from them at the needed size and tints them with `GUI.color`. Fallback: **shipped PNG masks under `mod/Textures/QuickMenu/UI/`**, loaded via `ContentFinder<Texture2D>` and listed in `assets.md`. Last resort: the game's **asset baker**. Spike **S-7** checks runtime texture creation, loose PNG loading and 9-slice drawing on 1.7, and decides which level is used.
+- `PickerWindow` is a normal vanilla-style dialog with the vanilla `QuickSearchWidget`.
+
+## Consequences
+- Simple, robust input handling with no per-frame cost while closed.
+- While the menu is open, other UI under it does not get hover tooltips. This is acceptable for a transient menu.
+- Spike S-6 confirms window layering, map-click absorption and same-frame opening on 1.7.
+- Generated masks have no external asset licensing and scale cleanly with button size and UI scale. The fallback PNGs must stay in sync with the rasterizer (they can be produced by it).
+
+## Spike result (2026-10-19)
+
+UC-1 session on RimWorld 1.7.4982, Harmony mod v3.0.1.0 (library 3.0.0-rc.3). Full table: `docs/project/spikes/uc-1-results.md`.
+
+- **S-6 PASS.** Layer `WindowLayer.GameUI` works (Super is not needed). Flags as decided: no background or shadow, `forcePause=false`, `closeOnCancel=true`, `absorbInputAroundWindow=false`. 21 of 21 opens drew in the trigger frame. The game kept running. Outside clicks close the menu and reach neither the map nor other UI (a click on the World button only closed the menu). Esc closes the menu without opening the pause menu. The wheel works with BAM loaded.
+- **S-7 PASS, texture level chosen: runtime `Texture2D` (RGBA32) masks stay the primary path.** A loose PNG loaded with `ContentFinder` also works (the game bakes it to BC7 with mipmaps), so the shipped-PNG fallback is confirmed and the asset baker is not needed. `Widgets.DrawAtlas` 9-slice keeps round corners at two sizes provided the corner radius is at most a quarter of the atlas size (64 px atlas, 14 px radius). Circles were smooth at 36, 56 and 96 px. Verified at UI scale 1.0 and 1.5; the game refused UI scale 2.0 at 2560x1440, so 2.0 is still unchecked (UC-4).
+- Screenshots: `docs/project/design/spikes/uc1-texture-probe-scale1.0.png` and `uc1-texture-probe-scale1.5.png`. The spike PNG and probe window were removed in T-14.
