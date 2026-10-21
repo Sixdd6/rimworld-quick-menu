@@ -47,7 +47,7 @@ Every non-code asset in the repository gets a row: images, icons, fonts, audio, 
 - **MIT (this project)**: all files in the repository: the LICENSE file, mockups, the preview image (our part; it shows RimWorld game imagery © Ludeon Studios), and (fallback only) the exported mask PNGs.
 - **No third-party assets** are in the repository. Game textures, sounds and fonts are used at runtime from the player's own RimWorld install and are not distributed.
 - The preview text is rendered with Noto Sans (OFL 1.1); the font file is not in the repository or the package.
-- No attribution or share-alike obligations.
+- No share-alike obligations. One attribution line, for the preview image ("Screenshots of RimWorld by Ludeon Studios taken by the mod author."), is in README.md Credits and the Workshop description.
 
 ## Generated assets
 None. No AI image generation is used. Mockups and runtime textures are made by deterministic code in this repository.

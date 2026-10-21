@@ -146,7 +146,7 @@ public static class PinSerializer
 
         if (PinKey.TryParse(keyText, out PinKey? key))
         {
-            board.SetSlot(slot, new PinEntry(key, f[3], f[2].Length == 0 ? null : f[2]));
+            board.SetSlot(slot, new PinEntry(key, Sanitize(f[3]), f[2].Length == 0 ? null : Sanitize(f[2])));
             usedSlots.Add(slot);
             return null;
         }
@@ -155,7 +155,7 @@ public static class PinSerializer
         {
             // Written by a newer version (or a key form this one cannot read): keep the slot and the text.
             string raw = line[(line.IndexOf(Sep, StringComparison.Ordinal) + 1)..];
-            board.SetSlot(slot, new PinEntry(PinKey.Opaque(raw), f[3], f[2].Length == 0 ? null : f[2]));
+            board.SetSlot(slot, new PinEntry(PinKey.Opaque(raw), Sanitize(f[3]), f[2].Length == 0 ? null : Sanitize(f[2])));
             usedSlots.Add(slot);
             return null;
         }

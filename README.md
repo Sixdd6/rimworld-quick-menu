@@ -91,4 +91,4 @@ To test in game, launch RimWorld with `-mod=brrainz.harmony,sixdd.QuickMenu -qui
 
 ## Credits
 
-Inspired by the quick menu of Dubs Mint Menus. Quick Menu is a clean-room implementation: no code, art or text was reused. Thanks to Andreas Pardeike for Harmony.
+Inspired by the quick menu of Dubs Mint Menus. Quick Menu is a clean-room implementation: no code, art or text was reused. Thanks to Andreas Pardeike for Harmony. Preview image: screenshots of RimWorld by Ludeon Studios taken by the mod author.

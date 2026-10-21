@@ -181,4 +181,18 @@ public class PinSerializerTests
         Assert.Equal("l", e.Label);
         Assert.Equal("x", e.PackageId);
     }
+
+    // Release audit 2026-10-21: a hand-edited settings file must not put rich-text tags into labels shown in tooltips.
+    [Theory]
+    [InlineData("0|build:thing/Wall|my<b>mod</b>|<color=red>wall</color>")]
+    [InlineData("0|future:thing/Wall|my<b>mod</b>|<color=red>wall</color>")]
+    public void FromLines_DropsAngleBracketsFromLoadedLabelAndPackage(string line)
+    {
+        PinLoadResult r = PinSerializer.FromLines(new[] { line });
+
+        PinEntry? e = r.Board.Entries[0];
+        Assert.NotNull(e);
+        Assert.Equal("color=redwall/color", e!.Label);
+        Assert.Equal("mybmod/b", e.PackageId);
+    }
 }

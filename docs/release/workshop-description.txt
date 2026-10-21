@@ -47,3 +47,4 @@ For RimWorld 1.7. Safe to add or remove mid-save: nothing is written to your sav
 [/list]
 
 Inspired by the quick menu of Dubs Mint Menus. Clean-room: no code or art reused.
+Preview image: screenshots of RimWorld by Ludeon Studios taken by the mod author.
