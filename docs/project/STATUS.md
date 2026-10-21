@@ -4,7 +4,7 @@
 - **Autonomy**: gated   <!-- gated | autonomous -->
 - **Specialists**: visual-designer (all-UI product), performance-engineer (NFR-1 per-frame budget)
 - **Current phase**: 5 Build
-- **Current milestone / task**: M6 release fast-track (user, 2026-10-21): version **1.0.0** (was 0.9.0); UC-6 Parts 10–16 waived by the user after Parts 1–9 passed ("the mod works well and performs well"). In progress: T-77 preview, T-78 README/Workshop text, T-79 CHANGELOG; then T-80 package + security audit. Workshop upload is manual by the user. GitHub release/tag still needs explicit confirmation.
+- **Current milestone / task**: 1.0.0 release files ready (T-77 preview, T-78 README/Workshop text, T-79 CHANGELOG, T-80 package dist/QuickMenu-1.0.0.zip + dist/workshop/QuickMenu; security audit PASS, follow-ups fixed in 0c605bb). Next: user uploads to the Workshop manually (docs/release/workshop-upload.md), then commit About/PublishedFileId.txt. Open, need user confirmation: merge PR #1 to main, tag v1.0.0, GitHub release. UC-6 Parts 10–16 waived by the user.
 - **Last updated**: 2026-10-21
 
 ## Phases
