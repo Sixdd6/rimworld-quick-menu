@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using QuickMenu.Core.Pins;
 using Xunit;
 
@@ -129,10 +130,15 @@ public class PinnedSetPerfTests
             targets.Add(new PinTarget<Item, Def>(new Item(), null, new Def()));
         }
 
-        for (int i = 0; i < 20; i++)
+        // Warm past tiered JIT promotion (30 calls plus the background tier-1 compile): with only 20 warm-up rebuilds CI
+        // occasionally counted ~7 KB of runtime allocations inside the measured loop.
+        for (int i = 0; i < 300; i++)
         {
             set.Rebuild(targets);
         }
+
+        Thread.Sleep(200);
+        set.Rebuild(targets);
 
         long before = GC.GetAllocatedBytesForCurrentThread();
         for (int i = 0; i < 100; i++)
