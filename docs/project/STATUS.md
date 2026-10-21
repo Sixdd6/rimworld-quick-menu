@@ -4,8 +4,8 @@
 - **Autonomy**: gated   <!-- gated | autonomous -->
 - **Specialists**: visual-designer (all-UI product), performance-engineer (NFR-1 per-frame budget)
 - **Current phase**: 5 Build
-- **Current milestone / task**: M6 — T-75 UC-6 paused after Part 9 (Parts 1–9 done; resume at Part 10, BAM + Mint, Alt pin key; retest DropdownMarkerPatch.Draw fault there). Fixed while paused: "..." pin-message capitalisation (2a47b62); P-5 measurement split (fb0aa89) — re-measure pin click action / message / settings write in Part 11. Settings backup: Config/Mod_QuickMenu_QuickMenuMod.xml.bak (restore at session end if wanted).
-- **Last updated**: 2026-10-19
+- **Current milestone / task**: M6 release fast-track (user, 2026-10-21): version **1.0.0** (was 0.9.0); UC-6 Parts 10–16 waived by the user after Parts 1–9 passed ("the mod works well and performs well"). In progress: T-77 preview, T-78 README/Workshop text, T-79 CHANGELOG; then T-80 package + security audit. Workshop upload is manual by the user. GitHub release/tag still needs explicit confirmation.
+- **Last updated**: 2026-10-21
 
 ## Phases
 
