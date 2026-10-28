@@ -4,8 +4,8 @@
 - **Autonomy**: gated   <!-- gated | autonomous -->
 - **Specialists**: visual-designer (all-UI product), performance-engineer (NFR-1 per-frame budget)
 - **Current phase**: 7 Publish (manual Workshop upload by the user)
-- **Current milestone / task**: 1.0.0 merged to main (PR #1). Release files in dist/ (QuickMenu-1.0.0.zip, workshop/QuickMenu). The user publishes on the Steam Workshop manually (docs/release/workshop-upload.md) and decided **no GitHub releases or tags** (2026-10-21). After the first upload: commit About/PublishedFileId.txt. UC-6 Parts 10–16 waived by the user.
-- **Last updated**: 2026-10-21
+- **Current milestone / task**: 1.0.0 published on the Steam Workshop (item 3824091158). Post-release full-mod-list debugging (859 mods) on branch `fix/order-pin-copies`, not merged or pushed yet: BAM copies of order designators and def dropdowns (pin, resolve, marker), marker on mod `GizmoOnGUIInt` overrides (ADR 0009 amendment), More Planning icons and unpinnable colour squares, live slot labels, catalog rebuild when RIMMSqol re-resolves categories (ADR 0006 amendment, no cap), self-test written to `QuickMenu-selftest.txt`. Verified in game by the user. Known and left as is (user, 2026-10-27): More Planning's Planning Visibility has no icon after a RIMMSqol apply until toggled (More Planning only sets it on load or toggle); Open The Windows + ReBuild: Doors and Corners error spam is a third-party conflict.
+- **Last updated**: 2026-10-27
 
 ## Phases
 
