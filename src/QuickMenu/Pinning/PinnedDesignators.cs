@@ -6,7 +6,7 @@ using QuickMenu.Diagnostics;
 using RimWorld;
 using Verse;
 using Log = QuickMenu.Diagnostics.Log;
-using TargetResolver = QuickMenu.Core.Pins.IPinTargetResolver<Verse.Designator, Verse.BuildableDef>;
+using TargetResolver = QuickMenu.Core.Pins.IPinTargetResolver<Verse.Designator, object>;
 
 namespace QuickMenu.Pinning;
 
@@ -14,11 +14,12 @@ namespace QuickMenu.Pinning;
 /// What the pin marker draws (FR-19, ADR 0009): the Core <see cref="PinnedSet{TObj, TDef}"/> over designators, filled from the
 /// pin board through the pin service's resolved cache. Rebuilt off the draw path: by <see cref="PinService"/> after every
 /// toggle, clear, forget and re-resolve (which the catalog triggers after its build and after an Ideology refresh), and by the
-/// settings when the capacity changes. The marker hook only reads it.
+/// settings when the capacity changes. The marker hook only reads it. The set's def map holds the <see cref="BuildableDef"/> of
+/// a build pin and the <see cref="Type"/> of an order pin, so copies another mod draws (Better Architect Menu) are marked too.
 /// </summary>
 internal static class PinnedDesignators
 {
-    private static readonly PinnedSet<Designator, BuildableDef> _set = new();
+    private static readonly PinnedSet<Designator, object> _set = new();
     private static readonly Resolver _resolver = new();
 
     /// <summary>True when nothing is marked (the hook's cheapest early-out).</summary>
@@ -27,9 +28,26 @@ internal static class PinnedDesignators
     /// <summary>Increments on every rebuild.</summary>
     internal static int Version => _set.Version;
 
-    /// <summary>The mark of a designator drawn as a button: identity first, then the def of a build designator (BAM copies). Allocation-free.</summary>
-    internal static PinMark Lookup(Designator designator) =>
-        _set.HasDefs && designator is Designator_Build build ? _set.Lookup(designator, build.PlacingDef) : _set.Lookup(designator);
+    /// <summary>
+    /// The mark of a designator drawn as a button: identity first, then the def of a build designator, then the type of an
+    /// order designator the catalog does not hold (Better Architect Menu's copies). A catalogued instance is decided by its own
+    /// pin only, so an unpinned <c>#n</c> of a type is never marked. Allocation-free.
+    /// </summary>
+    internal static PinMark Lookup(Designator designator)
+    {
+        PinMark mark = _set.Lookup(designator);
+        if (mark != PinMark.None || !_set.HasDefs)
+        {
+            return mark;
+        }
+
+        return designator switch
+        {
+            Designator_Build build => _set.LookupDef(build.PlacingDef),
+            Designator_Dropdown => PinMark.None,
+            _ => DesignatorCatalog.Find(designator) == null ? _set.LookupDef(designator.GetType()) : PinMark.None,
+        };
+    }
 
     /// <summary>
     /// The mark of a single entry inside an open dropdown list: its own identity only (never the def map, never its parent), so a
@@ -52,7 +70,7 @@ internal static class PinnedDesignators
 
     private sealed class Resolver : TargetResolver
     {
-        public void Resolve(PinKey key, List<PinTarget<Designator, BuildableDef>> into)
+        public void Resolve(PinKey key, List<PinTarget<Designator, object>> into)
         {
             if (!PinService.TryGetResolved(key, out CatalogEntry? entry))
             {
@@ -64,15 +82,15 @@ internal static class PinnedDesignators
             {
                 case PinKeyKind.BuildThing:
                 case PinKeyKind.BuildTerrain:
+                    into.Add(new PinTarget<Designator, object>(designator, ParentOf(entry), (designator as Designator_Build)?.PlacingDef));
+                    break;
                 case PinKeyKind.Order:
-                    into.Add(new PinTarget<Designator, BuildableDef>(
-                        designator,
-                        ParentOf(entry),
-                        key.Kind == PinKeyKind.Order ? null : (designator as Designator_Build)?.PlacingDef));
+                    // Only the type's first entry stands for its copies: a click on a copy pins that entry (DesignatorCatalog.Resolve).
+                    into.Add(new PinTarget<Designator, object>(designator, ParentOf(entry), key.Ordinal is null or 1 ? designator.GetType() : null));
                     break;
                 case PinKeyKind.Dropdown:
                 case PinKeyKind.ModDropdown:
-                    into.Add(new PinTarget<Designator, BuildableDef>(designator));
+                    into.Add(new PinTarget<Designator, object>(designator));
                     break;
             }
         }
