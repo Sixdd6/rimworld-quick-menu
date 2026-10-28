@@ -164,7 +164,8 @@ internal static class PinService
     /// A mod dropdown whose stored pin was matched fuzzily (<see cref="ModDropdownMatcher"/>, after the mod added or removed a
     /// child) has a different key than the entry; with no exact pin on the board, the stored pin that resolves to this entry
     /// is toggled instead, and its stored key is never rewritten. If several stored pins resolve to the same entry, each
-    /// toggle removes one of them, in board order, until none is left; only then does a toggle pin the entry's own key.
+    /// toggle removes one of them, in board order, until none is left; only then does a toggle pin the entry's own key. The same
+    /// applies to an order pin stored without its number (see <see cref="DesignatorCatalog.Resolve"/>).
     /// </summary>
     internal static PinResult Toggle(CatalogEntry entry) => Toggle(StoredKeyFor(entry) ?? entry.Key, entry.Label, entry.PackageId, entry, persist: true);
 
@@ -182,7 +183,8 @@ internal static class PinService
 
     private static PinKey? StoredKeyFor(CatalogEntry entry)
     {
-        if (entry.Key.Kind != PinKeyKind.ModDropdown)
+        PinKeyKind kind = entry.Key.Kind;
+        if (kind is not (PinKeyKind.ModDropdown or PinKeyKind.Order))
         {
             return null;
         }
@@ -201,7 +203,7 @@ internal static class PinService
                 return null; // an exact pin exists: the normal toggle finds it
             }
 
-            if (fuzzy == null && stored.Key.Kind == PinKeyKind.ModDropdown && _resolved.TryGetValue(stored.Key, out CatalogEntry? resolved) && ReferenceEquals(resolved, entry))
+            if (fuzzy == null && stored.Key.Kind == kind && _resolved.TryGetValue(stored.Key, out CatalogEntry? resolved) && ReferenceEquals(resolved, entry))
             {
                 fuzzy = stored.Key;
             }

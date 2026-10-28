@@ -98,7 +98,7 @@ internal static class DesignatorCatalog
     internal static void NotifyChanged() => Version++;
 
     /// <summary>
-    /// Finds the entry for a key: exact match, then (for builds, and only while a game is loaded) the architect's own
+    /// Finds the entry for a key: exact match, then for an order key without a number the first entry of that type, then (for builds, and only while a game is loaded) the architect's own
     /// lookup (needs game state), which also finds designators that are hidden or not in the catalog, as ad-hoc entries. Never throws, never logs the key.
     /// </summary>
     /// <returns>The entry, or null when the key is unresolved.</returns>
@@ -117,6 +117,13 @@ internal static class DesignatorCatalog
         if (key.Kind == PinKeyKind.ModDropdown)
         {
             return ResolveModDropdown(key);
+        }
+
+        if (key.Kind == PinKeyKind.Order)
+        {
+            // An order type listed in several categories (vanilla Cancel and Deconstruct) only has numbered keys. A plain key
+            // comes from a copy the catalog does not hold (Better Architect Menu's proxy categories): use the first of that type.
+            return key.Ordinal == null && _byKey.TryGetValue(PinKey.Order(key.Name, 1), out CatalogEntry? first) ? first : null;
         }
 
         if (key.Kind is not (PinKeyKind.BuildThing or PinKeyKind.BuildTerrain) || Current.Game == null)

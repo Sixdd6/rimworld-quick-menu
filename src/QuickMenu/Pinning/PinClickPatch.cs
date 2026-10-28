@@ -289,6 +289,13 @@ internal static class PinClickPatch
                 return;
             }
 
+            if (key.Kind == PinKeyKind.Order && DesignatorCatalog.Resolve(key) is { } twin)
+            {
+                // A copy of a catalogued order type (Better Architect Menu's Cancel, Deconstruct): pin the catalog's own entry.
+                PinService.Toggle(twin);
+                return;
+            }
+
             BuildableDef? placing = (designator as Designator_Build)?.PlacingDef;
             string? packageId = placing?.modContentPack?.PackageId;
             PinService.Toggle(key, label, string.IsNullOrEmpty(packageId) ? null : packageId);
