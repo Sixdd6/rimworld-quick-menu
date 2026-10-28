@@ -1,4 +1,4 @@
-# Uploading Quick Menu 1.0.0 to the Steam Workshop (manual)
+# Uploading Quick Menu 1.0.1 to the Steam Workshop (manual)
 
 The upload is done by you, through the game's built-in uploader. Nothing here is automated, and no agent uploads anything.
 
@@ -11,7 +11,7 @@ How the 1.7 uploader works (checked by decompiling `Assembly-CSharp.dll`: `RimWo
 
 Files for the upload are ready:
 
-- `dist/workshop/QuickMenu/` is the clean folder to upload (the contents of `dist/QuickMenu-1.0.0.zip`: About, LoadFolders.xml, Languages, `1.7/Assemblies/{QuickMenu.dll,QuickMenu.Core.dll}`, LICENSE; no `0Harmony.dll`, no `.pdb`, no `PublishedFileId.txt`).
+- `dist/workshop/QuickMenu/` is the clean folder to upload (the contents of `dist/QuickMenu-1.0.1.zip`: About, LoadFolders.xml, Languages, `1.7/Assemblies/{QuickMenu.dll,QuickMenu.Core.dll}`, LICENSE; no `0Harmony.dll`, no `.pdb`; `About/PublishedFileId.txt` is included, so the upload updates item 3824091158).
 - To rebuild it: `scripts/package.sh`, then unzip into an empty `dist/workshop/`.
 
 ## Steps

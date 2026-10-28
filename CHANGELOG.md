@@ -3,6 +3,27 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] - 2026-10-27
+
+Fixes found by testing with a large mod list (about 860 mods).
+
+### Fixed
+
+- Cancel, Deconstruct and other order buttons pinned from Better Architect Menu now appear in the quick menu. Before, they showed the "pinned" message but no button. Pins made with 1.0.0 are repaired automatically.
+- Pin markers now show on Better Architect Menu's own copies of buttons: order buttons and whole dropdowns (for example cobblestone walls). Clicking such a copy pins and unpins the same pin.
+- Pin markers now show on mod buttons that draw themselves, such as More Planning's Cut, Copy, Paste, Plan and Remove plans.
+- More Planning's Plan and Remove plans show their own icons in the quick menu instead of a red cross. Other buttons without an icon show a grey dot.
+- Labels in the quick menu are up to date, for example More Planning's "Opacity: 60%".
+- Pins keep working after a mod rebuilds the architect menus while the game runs (for example RIMMSqol when its settings are applied).
+
+### Changed
+
+- More Planning's colour squares can't be pinned. They are settings, not tools; pin its Plan tool, which uses the selected colour.
+
+### Known issues
+
+- More Planning: after RIMMSqol rebuilds the architect menus, Planning Visibility has no icon until it is clicked once. More Planning sets that icon only when a game loads or when it is toggled.
+
 ## [1.0.0] - 2026-10-21
 
 Initial release, for RimWorld 1.7.
