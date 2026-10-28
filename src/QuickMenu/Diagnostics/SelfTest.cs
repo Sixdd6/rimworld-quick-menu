@@ -296,6 +296,24 @@ internal static class SelfTest
         }
     }
 
+    /// <summary>
+    /// Logs the report and also writes it to <c>QuickMenu-selftest.txt</c> in the game's save-data folder: with a large mod list
+    /// another mod can filter log messages, and the file does not depend on the log. Dev mode only.
+    /// </summary>
     [DebugAction("Quick Menu", "self-test", allowedGameStates = AllowedGameStates.Playing)]
-    private static void Run() => Verse.Log.Message(BuildReport());
+    private static void Run()
+    {
+        string report = BuildReport();
+        Verse.Log.Message(report);
+        try
+        {
+            string path = System.IO.Path.Combine(GenFilePaths.SaveDataFolderPath, "QuickMenu-selftest.txt");
+            System.IO.File.WriteAllText(path, report);
+            Messages.Message("Quick Menu self-test written to " + path, MessageTypeDefOf.SilentInput, historical: false);
+        }
+        catch (Exception ex)
+        {
+            Verse.Log.Warning(Log.Prefix + "Writing the self-test file failed: " + ex.GetType().Name + ": " + ex.Message);
+        }
+    }
 }
