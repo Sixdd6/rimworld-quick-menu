@@ -8,6 +8,7 @@ using QuickMenu.Core.Diagnostics;
 using QuickMenu.Core.Pins;
 using QuickMenu.Menu;
 using QuickMenu.Pinning;
+using RimWorld;
 using Verse;
 
 namespace QuickMenu.Diagnostics;
@@ -86,6 +87,7 @@ internal static class SelfTest
         }
 
         Append(sb, "duplicate", dupes);
+        CatalogHealth(sb);
     }
 
     private static void Patches(StringBuilder sb)
@@ -117,35 +119,67 @@ internal static class SelfTest
     }
 
     /// <summary>
-    /// ADR 0009: Designator subclasses that declare their own <c>GizmoOnGUIInt</c> override may not reach the base method our
-    /// marker postfix is on, so they may get no pin marker. Runtime types of the catalog's designators, deduplicated.
+    /// ADR 0009 (amendment 2026-10-27): every designator subclass that declares its own <c>GizmoOnGUIInt</c> is patched too, so
+    /// it gets a marker even when it never calls the base method. Lists the patched and failed overrides.
     /// </summary>
     private static void AppendOwnGizmoDrawers(StringBuilder sb)
     {
-        var seen = new HashSet<Type>();
-        var found = new BoundedLines(ExampleLimit);
-        const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public
-            | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.DeclaredOnly;
-        foreach (CatalogEntry e in DesignatorCatalog.Entries)
+        var patched = new BoundedLines(ExampleLimit);
+        foreach (string line in PinMarkerPatch.Overrides)
         {
-            Type? type = e.Designator.GetType();
-            if (!seen.Add(type))
-            {
-                continue;
-            }
+            patched.Add(line);
+        }
 
-            for (Type? t = type; t != null && t != typeof(Designator); t = t.BaseType)
+        var failed = new BoundedLines(ExampleLimit);
+        foreach (string line in PinMarkerPatch.FailedOverrides)
+        {
+            failed.Add(line);
+        }
+
+        sb.AppendLine("marker override patches (GizmoOnGUIInt in designator subclasses): patched=" + patched.Total.ToString(CultureInfo.InvariantCulture)
+            + " failed=" + failed.Total.ToString(CultureInfo.InvariantCulture));
+        Append(sb, "marker override", patched);
+        Append(sb, "marker override failed", failed);
+    }
+
+    /// <summary>
+    /// Catalog health in a running game. Stale: a static top-level entry whose designator is no longer listed by any category
+    /// (something rebuilt a category's designators after the catalog was built, so the menu would use a detached copy).
+    /// Icon-less: entries that would draw the game's bad-texture cross without <see cref="Compat.ForeignIcons"/>.
+    /// </summary>
+    private static void CatalogHealth(StringBuilder sb)
+    {
+        var live = new HashSet<Designator>(ReferenceEqualityComparer.Instance);
+        foreach (DesignationCategoryDef category in DefDatabase<DesignationCategoryDef>.AllDefsListForReading)
+        {
+            foreach (Designator d in category.AllResolvedDesignators)
             {
-                if (t.GetMethod("GizmoOnGUIInt", flags, null, new[] { typeof(UnityEngine.Rect), typeof(GizmoRenderParms) }, null) != null)
-                {
-                    found.Add(type.FullName + " (declared by " + t.FullName + ")");
-                    break;
-                }
+                live.Add(d);
             }
         }
 
-        sb.AppendLine("designator types with their own GizmoOnGUIInt (may get no pin marker): " + found.Total.ToString(CultureInfo.InvariantCulture) + " of " + seen.Count.ToString(CultureInfo.InvariantCulture) + " types");
-        Append(sb, "own GizmoOnGUIInt", found);
+        IReadOnlyList<CatalogEntry> entries = DesignatorCatalog.Entries;
+        int staticCount = entries.Count - DesignatorCatalog.IdeoEntryCount;
+        var stale = new BoundedLines(ExampleLimit);
+        var iconless = new BoundedLines(ExampleLimit);
+        for (int i = 0; i < entries.Count; i++)
+        {
+            CatalogEntry e = entries[i];
+            if (i < staticCount && e.ParentId < 0 && !live.Contains(e.Designator))
+            {
+                stale.Add("#" + e.Id + " " + e.Designator.GetType().FullName + " " + e.Key.Value);
+            }
+
+            if (Compat.ForeignIcons.LacksIcon(e.Designator))
+            {
+                iconless.Add("#" + e.Id + " " + e.Designator.GetType().FullName + " " + e.Key.Value);
+            }
+        }
+
+        sb.AppendLine("catalog health: stale=" + stale.Total.ToString(CultureInfo.InvariantCulture)
+            + " iconless=" + iconless.Total.ToString(CultureInfo.InvariantCulture));
+        Append(sb, "stale", stale);
+        Append(sb, "iconless", iconless);
     }
 
     private static void RoundTrip(StringBuilder sb)
