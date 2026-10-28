@@ -71,7 +71,8 @@ internal static class SelfTest
 
         sb.AppendLine("buildMs=" + DesignatorCatalog.BuildTime.TotalMilliseconds.ToString("F2", CultureInfo.InvariantCulture)
             + " (budget 200) builds=" + DesignatorCatalog.BuildCount.ToString(CultureInfo.InvariantCulture)
-            + " (P-12 expects 1) buildSiteDisabled=" + DesignatorCatalog.BuildSite.Disabled);
+            + " (P-12 expects 1) staleRebuilds=" + DesignatorCatalog.StaleRebuildCount.ToString(CultureInfo.InvariantCulture)
+            + " buildSiteDisabled=" + DesignatorCatalog.BuildSite.Disabled);
         DesignatorCatalog.RefreshIdeology();
         sb.AppendLine("ideology entries=" + DesignatorCatalog.IdeoEntryCount.ToString(CultureInfo.InvariantCulture)
             + " rebuilds=" + DesignatorCatalog.IdeoRebuildCount.ToString(CultureInfo.InvariantCulture)
@@ -309,7 +310,7 @@ internal static class SelfTest
         {
             string path = System.IO.Path.Combine(GenFilePaths.SaveDataFolderPath, "QuickMenu-selftest.txt");
             System.IO.File.WriteAllText(path, report);
-            Messages.Message("Quick Menu self-test written to " + path, MessageTypeDefOf.SilentInput, historical: false);
+            Messages.Message("QuickMenu.Dev.SelfTestWritten".Translate(path), MessageTypeDefOf.SilentInput, historical: false);
         }
         catch (Exception ex)
         {

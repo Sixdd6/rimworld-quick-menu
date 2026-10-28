@@ -6,4 +6,5 @@
   <QuickMenu.Pin.Rejected>{0} can't be pinned: its pin entry is too large to save.</QuickMenu.Pin.Rejected>
   <QuickMenu.Pin.Unavailable>{0} can't be pinned.</QuickMenu.Pin.Unavailable>
   <QuickMenu.Pin.NotATool>This button is a setting, not a tool, so it can't be pinned.</QuickMenu.Pin.NotATool>
+  <QuickMenu.Dev.SelfTestWritten>Quick Menu self-test written to {0}</QuickMenu.Dev.SelfTestWritten>
 </LanguageData>
