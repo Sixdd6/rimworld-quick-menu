@@ -289,9 +289,9 @@ internal static class PinClickPatch
                 return;
             }
 
-            if (key.Kind == PinKeyKind.Order && DesignatorCatalog.Resolve(key) is { } twin)
+            if (key.Kind is PinKeyKind.Order or PinKeyKind.Dropdown && DesignatorCatalog.Resolve(key) is { } twin)
             {
-                // A copy of a catalogued order type (Better Architect Menu's Cancel, Deconstruct): pin the catalog's own entry.
+                // A copy of a catalogued order type or def dropdown (Better Architect Menu's proxy categories): pin the catalog's own entry.
                 PinService.Toggle(twin);
                 return;
             }
