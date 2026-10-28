@@ -126,7 +126,7 @@ internal static class ForeignIcons
 
     private static void DrawPlaceholder(Rect rect)
     {
-        Texture2D? disc = Textures.Glyph(MaskId.Disc).Texture;
+        Texture2D? disc = Textures.Ready ? Textures.Mask(MaskId.Disc) : null;
         if (disc == null)
         {
             return;

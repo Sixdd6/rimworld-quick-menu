@@ -96,6 +96,23 @@ internal sealed class MenuContent
     /// <summary>The saved pin behind each slot (null for empty slots; reserved ones included); what modifier+click unpins.</summary>
     internal PinEntry?[] Pins { get; }
 
+    /// <summary>
+    /// The designator's label now, read once per open: some mods change it at runtime (More Planning's "Opacity: 60%"), so the
+    /// label the catalog captured at startup is only the fallback, for an empty label or a foreign getter that throws.
+    /// </summary>
+    private static string LiveLabel(Designator designator, string fallback)
+    {
+        try
+        {
+            string label = designator.Label;
+            return string.IsNullOrEmpty(label) ? fallback : label;
+        }
+        catch (Exception)
+        {
+            return fallback;
+        }
+    }
+
     internal static MenuContent Build(in MenuPlacement placed, float buttonSize, System.Collections.Generic.IReadOnlyList<PinSlot> pins)
     {
         SlotPlacement[] slots = placed.Slots;
@@ -134,7 +151,7 @@ internal sealed class MenuContent
             designators[i] = d;
             notOffered[i] = entry.ForcedUnavailable;
             bool usable = !entry.ForcedUnavailable && IsUsable(d);
-            model.SetSlot(i, d, usable ? SlotKind.Normal : SlotKind.Disabled, entry.Label);
+            model.SetSlot(i, d, usable ? SlotKind.Normal : SlotKind.Disabled, LiveLabel(d, entry.Label));
             materialPending.Add((i, d));
         }
 
