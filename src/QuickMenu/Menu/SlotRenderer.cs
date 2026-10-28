@@ -120,7 +120,10 @@ internal static class SlotRenderer
         {
             if (icon != null)
             {
-                icon.DrawIcon(rect, null, faded ? _fadedIcon : default);
+                if (!Compat.ForeignIcons.TryDraw(icon, rect))
+                {
+                    icon.DrawIcon(rect, null, faded ? _fadedIcon : default);
+                }
             }
             else
             {
