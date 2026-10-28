@@ -269,6 +269,12 @@ internal static class PinClickPatch
     /// </summary>
     internal static void Toggle(Designator designator)
     {
+        if (PinExclusions.IsExcluded(designator.GetType().FullName))
+        {
+            Reject("QuickMenu.Pin.NotATool".Translate());
+            return;
+        }
+
         DesignatorCatalog.RefreshIdeology(); // O(1) when unchanged; an Ideology designator is findable right after a reform
         if (DesignatorCatalog.Find(designator) is { } entry)
         {
@@ -309,9 +315,15 @@ internal static class PinClickPatch
     private static void Refuse(string label, string reason)
     {
         Diagnostics.Log.LogOnce("Pinning.Uncatalogued." + label, $"{label} was not pinned: {reason}");
+        Reject("QuickMenu.Pin.Unavailable".Translate(label));
+    }
+
+    /// <summary>Shows a pin refusal (the reject message carries its own sound). Never throws.</summary>
+    private static void Reject(TaggedString text)
+    {
         try
         {
-            Messages.Message("QuickMenu.Pin.Unavailable".Translate(label), MessageTypeDefOf.RejectInput, historical: false);
+            Messages.Message(text, MessageTypeDefOf.RejectInput, historical: false);
         }
         catch (Exception ex)
         {
