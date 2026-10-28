@@ -34,6 +34,7 @@ internal static class DesignatorCatalog
     private static readonly List<PinKey> _ideoKeys = new();
     private static readonly List<Designator> _ideoDesignators = new();
     private static List<PinKey>? _modDropdownKeys;
+    private static CategorySnapshot[] _snapshots = Array.Empty<CategorySnapshot>();
     private static int _staticCount;
     private static int _staticSkipped;
 
@@ -57,6 +58,15 @@ internal static class DesignatorCatalog
 
     /// <summary>How many times <see cref="Rebuild"/> has run this session (budget P-12: expected 1).</summary>
     internal static int BuildCount { get; private set; }
+
+    /// <summary>
+    /// Most automatic rebuilds per session after another mod rebuilt the categories' designators. Past it the catalog stays as it
+    /// is (logged once), so a mod that does this all the time cannot make the catalog rebuild over and over.
+    /// </summary>
+    internal const int MaxStaleRebuilds = 10;
+
+    /// <summary>How many times the static part was rebuilt because a category's designator list changed under it.</summary>
+    internal static int StaleRebuildCount { get; private set; }
 
     /// <summary>How many times the Ideology part was rebuilt this session (once per game load or ideoligion change).</summary>
     internal static int IdeoRebuildCount { get; private set; }
@@ -232,8 +242,11 @@ internal static class DesignatorCatalog
             var categories = new List<DesignationCategoryDef>(DefDatabase<DesignationCategoryDef>.AllDefsListForReading);
             categories.Sort(static (a, b) => a.order != b.order ? a.order.CompareTo(b.order) : string.CompareOrdinal(a.defName, b.defName));
             var mods = new ModLookup();
-            foreach (DesignationCategoryDef category in categories)
+            var snapshots = new CategorySnapshot[categories.Count];
+            for (int c = 0; c < categories.Count; c++)
             {
+                DesignationCategoryDef category = categories[c];
+                snapshots[c] = new CategorySnapshot(category);
                 foreach (Designator designator in category.AllResolvedDesignators)
                 {
                     ResolvedDesignatorCount++;
@@ -253,6 +266,7 @@ internal static class DesignatorCatalog
             }
 
             TopLevelCount = nodes.Count;
+            _snapshots = snapshots;
             _staticCount = _entries.Count;
             _staticSkipped = SkippedCount;
         }
@@ -276,6 +290,8 @@ internal static class DesignatorCatalog
         {
             return;
         }
+
+        RefreshStatic();
 
         try
         {
@@ -325,6 +341,54 @@ internal static class DesignatorCatalog
         {
             IdeoSite.Fail(ex);
         }
+    }
+
+    /// <summary>
+    /// Rebuilds the static part when another mod rebuilt a category's designators after the catalog was built (a full mod list
+    /// replaced every instance, so the menu activated detached copies and More Planning's live icon never reached them). The check
+    /// compares each category's list with its snapshot (same list, count, first and last instance): O(category count), no
+    /// allocation, run from <see cref="RefreshIdeology"/>. Pin keys are stable, so pins resolve again against the new instances.
+    /// </summary>
+    private static void RefreshStatic()
+    {
+        if (StaleRebuildCount >= MaxStaleRebuilds || !IsStale())
+        {
+            return;
+        }
+
+        StaleRebuildCount++;
+        try
+        {
+            Rebuild();
+        }
+        catch (Exception ex)
+        {
+            BuildSite.Fail(ex);
+            return;
+        }
+
+        if (StaleRebuildCount == MaxStaleRebuilds)
+        {
+            Log.LogOnce("Catalog.StaleLimit", $"Another mod rebuilt the architect categories {MaxStaleRebuilds} times this session; the catalog is no longer rebuilt to follow it.");
+        }
+        else if (StaleRebuildCount == 1)
+        {
+            Log.Info("Another mod rebuilt the architect categories after startup; the designator catalog was rebuilt to match.");
+        }
+    }
+
+    private static bool IsStale()
+    {
+        CategorySnapshot[] snapshots = _snapshots;
+        for (int i = 0; i < snapshots.Length; i++)
+        {
+            if (!snapshots[i].Matches())
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -587,6 +651,38 @@ internal static class DesignatorCatalog
             SkippedCount++;
             Log.LogOnce("Catalog.Designator." + designator?.GetType().FullName, $"A designator was left out of the catalog: {ex}");
             return null;
+        }
+    }
+
+    /// <summary>A category's designator list as the catalog saw it: the list, its count and its first and last instance.</summary>
+    private readonly struct CategorySnapshot
+    {
+        private readonly DesignationCategoryDef _category;
+        private readonly List<Designator> _list;
+        private readonly int _count;
+        private readonly Designator? _first;
+        private readonly Designator? _last;
+
+        internal CategorySnapshot(DesignationCategoryDef category)
+        {
+            _category = category;
+            _list = category.AllResolvedDesignators;
+            _count = _list.Count;
+            _first = _count > 0 ? _list[0] : null;
+            _last = _count > 0 ? _list[_count - 1] : null;
+        }
+
+        /// <summary>True when the category still holds the same instances (a mod may refill the list or assign a new one).</summary>
+        internal bool Matches()
+        {
+            if (_category == null)
+            {
+                return true;
+            }
+
+            List<Designator> current = _category.AllResolvedDesignators;
+            return ReferenceEquals(current, _list) && current.Count == _count
+                && (_count == 0 || (ReferenceEquals(current[0], _first) && ReferenceEquals(current[_count - 1], _last)));
         }
     }
 

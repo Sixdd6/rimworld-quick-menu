@@ -91,3 +91,13 @@ Multiplayer behaviour checked against its source (`rwmt/Multiplayer` default bra
 Installed: **not installed** on the user's machine. No workshop item under `~/.steam/steam/steamapps/workshop/content/294100` has packageId `rwmt.Multiplayer` (seven other mods only mention it in their load-order lists). Latest release v0.11.5 and the "Continuous" snapshot both target 1.6; there is no 1.7 build (checked on github.com/rwmt/Multiplayer/releases on 2026-10-19).
 
 Status: FR-18 is **blocked, not failed** (A-2). The in-game check is item FR-18 in `docs/project/test-checklist.md` (setup (e)), to run when Multiplayer lists 1.7. Residual risk: Multiplayer's 1.7 port could change how it identifies designators. The checklist steps cover stuff builds, a dropdown entry, an order and an Ideology building so that any such change shows up.
+
+## Amendment 2026-10-27: following categories that another mod rebuilds
+
+With the user's full mod list (859 mods) the self-test found every static entry stale: after startup some mod resolved the
+architect categories again, so `AllResolvedDesignators` held new instances and the catalog kept detached ones. The menu
+then activated copies the game no longer drew, and state a mod sets on its live instance (More Planning's visibility icon)
+never reached them. The catalog now keeps a snapshot per category (its list, count, first and last instance) and compares it
+from `RefreshIdeology` (O(category count), no allocation). A mismatch rebuilds the static part (about 22 ms with 859 mods);
+pin keys are stable, so pins resolve again. At most `MaxStaleRebuilds` (10) such rebuilds per session, then the catalog stays
+as it is and logs once. The self-test reports `staleRebuilds` and lists stale entries.
