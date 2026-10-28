@@ -99,5 +99,7 @@ architect categories again, so `AllResolvedDesignators` held new instances and t
 then activated copies the game no longer drew, and state a mod sets on its live instance (More Planning's visibility icon)
 never reached them. The catalog now keeps a snapshot per category (its list, count, first and last instance) and compares it
 from `RefreshIdeology` (O(category count), no allocation). A mismatch rebuilds the static part (about 22 ms with 859 mods);
-pin keys are stable, so pins resolve again. At most `MaxStaleRebuilds` (10) such rebuilds per session, then the catalog stays
-as it is and logs once. The self-test reports `staleRebuilds` and lists stale entries.
+pin keys are stable, so pins resolve again. The mod was identified as RIMMSqol, which calls the private
+`DesignationCategoryDef.ResolveDesignators()` on every settings apply. There is no cap on these rebuilds (user decision
+2026-10-27: a session of live edits can apply many times); a batch of edits is one apply, so one rebuild. The self-test
+reports `staleRebuilds` and lists stale entries.

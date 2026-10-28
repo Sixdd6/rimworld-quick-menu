@@ -59,12 +59,6 @@ internal static class DesignatorCatalog
     /// <summary>How many times <see cref="Rebuild"/> has run this session (budget P-12: expected 1).</summary>
     internal static int BuildCount { get; private set; }
 
-    /// <summary>
-    /// Most automatic rebuilds per session after another mod rebuilt the categories' designators. Past it the catalog stays as it
-    /// is (logged once), so a mod that does this all the time cannot make the catalog rebuild over and over.
-    /// </summary>
-    internal const int MaxStaleRebuilds = 10;
-
     /// <summary>How many times the static part was rebuilt because a category's designator list changed under it.</summary>
     internal static int StaleRebuildCount { get; private set; }
 
@@ -348,10 +342,12 @@ internal static class DesignatorCatalog
     /// replaced every instance, so the menu activated detached copies and More Planning's live icon never reached them). The check
     /// compares each category's list with its snapshot (same list, count, first and last instance): O(category count), no
     /// allocation, run from <see cref="RefreshIdeology"/>. Pin keys are stable, so pins resolve again against the new instances.
+    /// Not capped (user decision 2026-10-27): RIMMSqol re-resolves categories on every settings apply, and a batch of edits is
+    /// applied at once, so it costs one rebuild (about 22 ms with 859 mods) per apply, not one per edit.
     /// </summary>
     private static void RefreshStatic()
     {
-        if (StaleRebuildCount >= MaxStaleRebuilds || !IsStale())
+        if (!IsStale())
         {
             return;
         }
@@ -367,11 +363,7 @@ internal static class DesignatorCatalog
             return;
         }
 
-        if (StaleRebuildCount == MaxStaleRebuilds)
-        {
-            Log.LogOnce("Catalog.StaleLimit", $"Another mod rebuilt the architect categories {MaxStaleRebuilds} times this session; the catalog is no longer rebuilt to follow it.");
-        }
-        else if (StaleRebuildCount == 1)
+        if (StaleRebuildCount == 1)
         {
             Log.Info("Another mod rebuilt the architect categories after startup; the designator catalog was rebuilt to match.");
         }
