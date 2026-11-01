@@ -6,7 +6,7 @@
   <ItemGroup>
     <!-- Game references (compile-only) -->
     <PackageVersion Include="Krafs.Rimworld.Ref" Version="1.7.4982-unstable" />
-    <PackageVersion Include="Lib.Harmony" Version="3.0.0-rc.3" />
+    <PackageVersion Include="Lib.Harmony" Version="3.0.0-rc.4" />
     <!-- Tests -->
     <PackageVersion Include="xunit.v3" Version="4.0.2" />
     <PackageVersion Include="xunit.analyzers" Version="2.2.0" />
