@@ -10,9 +10,9 @@
       },
       "Lib.Harmony": {
         "type": "Direct",
-        "requested": "[3.0.0-rc.3, )",
-        "resolved": "3.0.0-rc.3",
-        "contentHash": "bW1UU49jqW9w5NxdTs7G+h7Nyi9FGs4cX4lHN3rP7+q62zwLk+cO4ypD/cRboAeq5jtgACt7u37o2KAE+O0RNg=="
+        "requested": "[3.0.0-rc.4, )",
+        "resolved": "3.0.0-rc.4",
+        "contentHash": "8jM3TLkIdfEFDJV/uiHWO/jTkRZmm/OPJpPFaInHWkh/ZhphGgGFjVZfFpJPRpa4Y0becFj/D9Xk9oHGu3NbAw=="
       },
       "quickmenu.core": {
         "type": "Project"
